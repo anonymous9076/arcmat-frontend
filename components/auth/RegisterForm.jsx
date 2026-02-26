@@ -61,7 +61,7 @@ export default function RegisterForm() {
         assignedRole = 'customer';
       }
     } else {
-      assignedRole = vendorType === 'brand' ? 'vendor' : 'retailer';
+      assignedRole = vendorType === 'brand' ? 'brand' : 'retailer';
     }
 
     const finalData = {
