@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import { toast } from '@/components/ui/Toast';
 import { useCreateBanner } from '@/hooks/useBanner';
 import Image from 'next/image';
-import RoleGuard from '@/components/auth/RoleGaurd';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 export default function AddBannerPage() {
     const router = useRouter();

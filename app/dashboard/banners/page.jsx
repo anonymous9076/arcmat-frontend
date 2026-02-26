@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/Toast';
 import { useGetBanners, useDeleteBanner } from '@/hooks/useBanner';
 import Image from 'next/image';
 import { getBannerImageUrl } from '@/lib/productUtils';
-import RoleGuard from '@/components/auth/RoleGaurd';
+import RoleGuard from '@/components/auth/RoleGuard';
 
 export default function BannersPage() {
     const router = useRouter();

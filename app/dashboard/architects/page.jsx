@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HardHat, Search, ChevronDown, ChevronUp, ShoppingBag, User, Phone, Mail, MapPin, Calendar } from "lucide-react";
-import RoleGuard from "@/components/auth/RoleGaurd";
+import RoleGuard from '@/components/auth/RoleGuard';
 
 const STATIC_ARCHITECTS = [
     {
