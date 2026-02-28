@@ -10,8 +10,8 @@ import { useLoader } from '@/context/LoaderContext';
 const setAuthState = (userData, token) => {
     if (token && typeof window !== 'undefined') {
         const user = userData.data || userData;
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
 
         useAuthStore.getState().login(user, token);
     }
@@ -19,16 +19,16 @@ const setAuthState = (userData, token) => {
 
 export const clearAuthState = () => {
     if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('user_details');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_details');
     }
     useAuthStore.getState().logout();
 };
 
 export const useUser = () => {
     const isClient = typeof window !== 'undefined';
-    const token = isClient ? sessionStorage.getItem('token') : null;
+    const token = isClient ? localStorage.getItem('token') : null;
 
     return useQuery({
         queryKey: ['user-info'],
@@ -64,8 +64,8 @@ export const useAuth = () => {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        const token = sessionStorage.getItem('token');
-        const storedUser = sessionStorage.getItem('user');
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
 
         if (token) {
             setIsAuthenticated(true);

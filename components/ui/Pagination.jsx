@@ -7,15 +7,15 @@ import clsx from 'clsx';
 const Pagination = ({
     currentPage = 1,
     totalPages = 1,
-    pageSize = 10,
+    pageSize = 12,
     onPageChange,
     onPageSizeChange,
     totalItems = 0
 }) => {
-    const pageSizes = [10, 20, 50];
+    const pageSizes = [12, 20, 50];
 
     const safeCurrentPage = Number(currentPage) || 1;
-    const safePageSize = Number(pageSize) || 10;
+    const safePageSize = Number(pageSize) || 12;
     const safeTotalItems = Number(totalItems) || 0;
 
     const startItem = safeTotalItems === 0 ? 0 : (safeCurrentPage - 1) * safePageSize + 1;

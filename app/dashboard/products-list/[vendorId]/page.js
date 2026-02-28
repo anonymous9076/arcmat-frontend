@@ -273,7 +273,7 @@ export default function ProductsListPage() {
                 </button>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <Button
                   onClick={handleDataExport}
                   disabled={isExporting}
@@ -293,7 +293,7 @@ export default function ProductsListPage() {
                     </Button>
                     <Link
                       href={`/dashboard/products-list/${effectiveVendorId}/add`}
-                      className="flex items-center rounded-full bg-[#e09a74] text-white min-w-[130px] h-[42px] px-6 border border-[#e09a74] hover:bg-[#d08963] shadow-md transition-all duration-300 font-semibold"
+                      className="flex items-center rounded-full bg-[#e09a74] text-white min-w-[130px] h-[42px] px-6 border border-[#e09a74] hover:bg-[#d08963] text-nowrap shadow-md transition-all duration-300 font-semibold"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add Product

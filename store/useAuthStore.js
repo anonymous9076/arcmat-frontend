@@ -19,11 +19,6 @@ const useAuthStoreBase = create(
         // Normalize: handle API wrappers like { data: user } or { user: user }
         const finalUser = userData?.data || userData?.user || userData;
 
-        // 1. Set Cookie
-        if (token) {
-          document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Strict`; // 1 day
-        }
-
         const brandId = finalUser?.role === 'brand'
           ? (finalUser.brandId || finalUser.id)
           : null;
@@ -44,9 +39,8 @@ const useAuthStoreBase = create(
       initializeAuth: async () => {
         set({ isLoading: true });
         try {
-          // 1. Check for token in cookies
-          const match = document.cookie.match(new RegExp('(^| )token=([^;]+)'));
-          const token = match ? match[2] : null;
+          // 1. Check for token in localStorage
+          const token = localStorage.getItem('token');
 
           if (!token) {
             // No token, ensure we are logged out
@@ -83,9 +77,6 @@ const useAuthStoreBase = create(
       },
 
       logout: () => {
-        // Clear cookie
-        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-
         set({
           user: null,
           token: null,

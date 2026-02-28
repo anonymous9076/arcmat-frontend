@@ -120,20 +120,16 @@ export default function ProductListPage() {
     const displayedProducts = products;
 
     const categoryCounts = useMemo(() => {
-        const counts = { All: products.length };
-        products.forEach(variant => {
-            const rootProduct = variant.productId;
-            if (!rootProduct) return;
+        if (apiData?.data?.categoryCounts) {
+            return apiData.data.categoryCounts;
+        }
+        if (apiData?.categoryCounts) {
+            return apiData.categoryCounts;
+        }
 
-            [rootProduct.categoryId, rootProduct.subcategoryId, rootProduct.subsubcategoryId].forEach(cat => {
-                const id = cat?._id || cat;
-                if (id) {
-                    counts[id] = (counts[id] || 0) + 1;
-                }
-            });
-        });
+        const counts = { All: paginationData?.totalItems || 0 };
         return counts;
-    }, [products]);
+    }, [apiData, paginationData]);
 
     const availableColors = useMemo(() => {
         if (metadata?.availableColors) return metadata.availableColors;
@@ -185,10 +181,10 @@ export default function ProductListPage() {
                     {paginationData?.totalItems > 0 && (
                         <div className="mt-12 mb-8">
                             <Pagination
-                                currentPage={paginationData.currentPage}
-                                totalPages={paginationData.totalPages}
-                                pageSize={paginationData.itemsPerPage}
-                                totalItems={paginationData.totalItems}
+                                currentPage={currentPage}
+                                totalPages={paginationData?.totalPages || 1}
+                                pageSize={pageSize}
+                                totalItems={paginationData?.totalItems || 0}
                                 onPageChange={(page) => {
                                     setCurrentPage(page);
                                     window.scrollTo({ top: 0, behavior: 'smooth' });

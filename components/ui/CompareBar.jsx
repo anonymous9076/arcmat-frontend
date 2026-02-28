@@ -20,7 +20,7 @@ const CompareBar = () => {
 
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-full max-w-xl px-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
-            <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200/50 p-3 pl-4 flex items-center justify-between gap-4">
+            <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-2xl shadow-gray-900/70 border border-gray-500/70 p-3 pl-4 flex items-center justify-between gap-4">
 
                 {/* Product Stack */}
                 <div className="flex -space-x-3 overflow-hidden py-1">
@@ -34,7 +34,7 @@ const CompareBar = () => {
 
                         return (
                             <div key={product._id || product.id} className="relative group transition-transform hover:-translate-y-1 z-0 hover:z-10">
-                                <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-50 shadow-sm relative">
+                                <div className="w-10 h-10 rounded-full border-2 border-gray-500/70 overflow-hidden bg-gray-50 shadow-sm relative">
                                     <Image
                                         src={imageUrl}
                                         alt={root.product_name || root.name}

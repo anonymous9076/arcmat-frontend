@@ -35,30 +35,49 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
     return (
         <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative">
             <div className="flex justify-between items-start mb-4">
-                <div className="space-y-1">
-                    <h3 className="text-xl font-bold text-[#2d3142] group-hover:text-[#d9a88a] transition-colors">
+                <div className="space-y-1 flex-1 min-w-0 pr-4">
+                    <h3 className="text-xl font-bold text-[#2d3142] group-hover:text-[#d9a88a] transition-colors truncate">
                         {projectName}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-sm text-gray-400 font-medium">
-                        <MapPin className="w-4 h-4" />
-                        <span>{location.city}, {location.country}</span>
+                    <div className="flex items-center gap-1.5 text-sm text-gray-400 font-medium overflow-hidden">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{location.city}, {location.country}</span>
                     </div>
                 </div>
-                <div className="px-3 py-1 bg-[#fef7f2] text-[#d9a88a] rounded-full text-xs font-bold uppercase tracking-wider">
-                    {type}
+                <div className="flex flex-col items-end gap-3 shrink-0">
+                    <div className="px-3 py-1 bg-[#fef7f2] text-[#d9a88a] rounded-full text-xs font-bold uppercase tracking-wider">
+                        {type}
+                    </div>
+                    {/* Mobile-only actions */}
+                    <div className="flex md:hidden gap-2">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+                            className="p-1.5 bg-white border border-gray-100 shadow-sm rounded-lg text-[#d9a88a] active:bg-[#d9a88a] active:text-white transition-all shadow-orange-100"
+                            title="Edit project"
+                        >
+                            <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
+                            className="p-1.5 bg-white border border-gray-100 shadow-sm rounded-lg text-red-500 active:bg-red-500 active:text-white transition-all shadow-red-100"
+                            title="Delete project"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="hidden md:flex absolute top-4 right-4 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <button
-                    onClick={() => onEdit(project)}
+                    onClick={(e) => { e.stopPropagation(); onEdit(project); }}
                     className="p-2 bg-white shadow-md rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
                     title="Edit project"
                 >
                     <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                    onClick={() => onDelete(project._id)}
+                    onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
                     className="p-2 bg-white shadow-md rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
                     title="Delete project"
                 >

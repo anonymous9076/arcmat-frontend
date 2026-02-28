@@ -8,7 +8,7 @@ import { Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount } from '@/lib/productUtils'
-import { Heart, ShoppingCart, X } from 'lucide-react'
+import { Heart, ShoppingCart, X, Check } from 'lucide-react'
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
@@ -157,14 +157,20 @@ const ProductCard = ({ product }) => {
         setIsWishlisted(true);
     };
 
-    const comparedProducts = useCompareStore(state => state.comparedProducts);
-    const toggleCompare = useCompareStore(state => state.toggleProduct);
-    const isCompared = comparedProducts.some(p => (p._id || p.id) === id);
-
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const comparedProducts = useCompareStore(state => state.comparedProducts);
+    const toggleCompare = useCompareStore(state => state.toggleProduct);
+
+    // Use a more robust comparison to ensure IDs match regardless of type
+    const isCompared = React.useMemo(() => {
+        if (!mounted) return false;
+        const currentId = String(product._id || product.id);
+        return comparedProducts.some(p => String(p._id || p.id) === currentId);
+    }, [comparedProducts, product, mounted]);
 
     const handleCompareToggle = (e) => {
         e.preventDefault();
@@ -257,13 +263,13 @@ const ProductCard = ({ product }) => {
                     >
                         <button
                             onClick={handleCompareToggle}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all shadow-md ${mounted && isCompared
-                                ? 'bg-[#e09a74] text-white'
-                                : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white'
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all shadow-md ${isCompared
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white border border-transparent'
                                 }`}
                         >
-                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${mounted && isCompared ? 'bg-white border-white' : 'border-gray-400 bg-white/50'}`}>
-                                {mounted && isCompared && <div className="w-2 h-2 bg-[#e09a74] rounded-sm" />}
+                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${isCompared ? 'bg-green-600 border-green-600' : 'border-gray-400 bg-white/50'}`}>
+                                {isCompared && <Check className="w-2.5 h-2.5 text-white" strokeWidth={4} />}
                             </div>
                             <span>Compare</span>
                         </button>
