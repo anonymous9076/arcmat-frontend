@@ -8,7 +8,7 @@ import { Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount } from '@/lib/productUtils'
-import { Heart, ShoppingCart, X, Check } from 'lucide-react'
+import { Heart, ShoppingCart, X, Check, Plus, CheckCircle } from 'lucide-react'
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,11 @@ import { useCartStore } from '@/store/useCartStore'
 import { useAddToCart, useGetCart, useRemoveFromCart } from '@/hooks/useCart'
 import { useCompareStore } from '@/store/useCompareStore'
 import { toast } from '@/components/ui/Toast'
+import useProjectStore from '@/store/useProjectStore'
+import { useSelectionStore } from '@/store/useSelectionStore'
+import { useGetMoodboard } from '@/hooks/useMoodboard'
+import dynamic from 'next/dynamic'
+const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 
 const ProductCard = ({ product }) => {
     const isVariantCentric = Boolean(product.productId && typeof product.productId === 'object');
@@ -60,9 +65,46 @@ const ProductCard = ({ product }) => {
     const hasMultipleImages = images.length > 1;
     const [isAdded, setIsAdded] = React.useState(false);
 
+    const toggleSelection = useSelectionStore((state) => state.toggleProduct);
+    const isSelected = useSelectionStore((state) => {
+        const getProductId = (p) => {
+            const baseProduct = p.productId ? p.productId : p;
+            return String(baseProduct._id || baseProduct.id || p._id || p.id || p.override_id);
+        };
+        const currentId = getProductId(product);
+        return state.selectedProducts.some(p => getProductId(p) === currentId);
+    });
+
     const { mutate: addToWishlist } = useAddToWishlist();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const router = useRouter();
+
+    const { activeProjectId, activeMoodboardName, activeMoodboardId } = useProjectStore();
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    // Check if product is already in the active moodboard
+    const { data: moodboardData } = useGetMoodboard(activeMoodboardId);
+
+    // Safety check: ensure productId is mapped properly
+    const rawId = rootProduct._id || rootProduct.id;
+    const isAlreadyAdded = React.useMemo(() => {
+        if (!moodboardData?.data?.estimatedCostId?.productIds) return false;
+        const addedIds = moodboardData.data.estimatedCostId.productIds;
+
+        // Handle case where productIds might be populated objects vs raw string IDs
+        return addedIds.some(p => {
+            const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
+            return String(addedId) === String(rawId);
+        });
+    }, [moodboardData, rawId]);
+
+    const activeContextText = isAlreadyAdded
+        ? "Added"
+        : activeMoodboardName
+            ? `Add to ${activeMoodboardName}`
+            : "Add to Moodboard";
+
+    const isArchitect = user?.role === 'architect';
 
     const { data: wishlistData } = useGetWishlist(isAuthenticated);
 
@@ -253,6 +295,35 @@ const ProductCard = ({ product }) => {
                     </div>
                 </Link>
 
+                {isArchitect && (
+                    <div className="absolute top-2 left-2 z-20">
+                        {isAlreadyAdded ? (
+                            <div className="flex items-center justify-center p-1.5 bg-green-50/90 backdrop-blur-sm rounded-lg shadow-sm border border-green-200 cursor-default">
+                                <div className="w-5 h-5 rounded border bg-green-500 border-green-500 text-white flex items-center justify-center">
+                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                </div>
+                            </div>
+                        ) : (
+                            <label className="flex items-center justify-center p-1.5 cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm hover:bg-white transition-colors border border-gray-100 group/check">
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                        e.stopPropagation();
+                                        toggleSelection(product);
+                                    }}
+                                    className="hidden"
+                                />
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected
+                                    ? 'bg-[#d9a88a] border-[#d9a88a] text-white'
+                                    : 'bg-white border-gray-300 text-transparent group-hover/check:border-[#d9a88a]'
+                                    }`}>
+                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                </div>
+                            </label>
+                        )}
+                    </div>
+                )}
                 <div className="absolute bottom-6 left-2 z-20">
                     <div
                         onClick={(e) => {
@@ -280,7 +351,7 @@ const ProductCard = ({ product }) => {
             <div className="flex flex-col flex-1 px-3">
                 <h4 className="text-[13px] font-semibold text-gray-800 uppercase tracking-wider mb-0.5 group-hover:text-[#e09a74] transition-colors">{name}</h4>
                 <h3 className="text-[9px] font-semibold text-gray-400 leading-tight mb-1 ">
-                    {(typeof brand === 'object' ? (brand.name || brand.brand_name) : brand) || 'Unknown Brand'}
+                    {(typeof brand === 'object' ? brand.name : brand) || 'Generic'}
                 </h3>
 
                 {displayAttrs.length > 0 && (
@@ -352,6 +423,33 @@ const ProductCard = ({ product }) => {
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
                 </button>
             </div>
+
+            {isArchitect && activeProjectId && (
+                <div className="px-3 mt-2">
+                    <Button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!isAlreadyAdded) setIsAddModalOpen(true);
+                        }}
+                        className={`w-full h-8 flex items-center justify-center gap-1.5 rounded-lg border text-[11px] font-medium transition-all ${isAlreadyAdded
+                            ? 'bg-green-50 text-green-700 border-green-200 cursor-default'
+                            : 'bg-[#2d3142] text-white hover:bg-[#d9a88a]'
+                            }`}
+                    >
+                        {isAlreadyAdded ? <CheckCircle className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        <span>{activeContextText}</span>
+                    </Button>
+                </div>
+            )}
+
+            {isAddModalOpen && (
+                <AddToMoodboardModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    product={product}
+                />
+            )}
 
             <style jsx global>{`
                 .product-card-swiper .swiper-pagination-bullet {

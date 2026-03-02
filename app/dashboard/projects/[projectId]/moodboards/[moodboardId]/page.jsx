@@ -1,26 +1,38 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useGetMoodboard, useDeleteMoodboard } from '@/hooks/useMoodboard';
+import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard } from '@/hooks/useMoodboard';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import { useQueryClient } from '@tanstack/react-query';
 import useProjectStore from '@/store/useProjectStore';
-import { ArrowLeft, IndianRupee, Layout, Package, ShoppingCart, Trash2, Loader2, Info, X, Plus } from 'lucide-react';
+import { ArrowLeft, IndianRupee, Layout, Package, ShoppingCart, Trash2, Loader2, Info, X, Plus, Edit2, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 
 export default function MoodboardDetailPage() {
     const { projectId, moodboardId } = useParams();
     const router = useRouter();
     const setActiveMoodboard = useProjectStore(state => state.setActiveMoodboard);
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState('');
+
     const { data: moodboardData, isLoading } = useGetMoodboard(moodboardId);
     const deleteMutation = useDeleteMoodboard();
     const updateEstimationMutation = useUpdateEstimatedCost();
+    const { mutate: updateMoodboard, isPending: isUpdatingName } = useUpdateMoodboard();
     const queryClient = useQueryClient();
 
     const moodboard = moodboardData?.data;
+
+    useEffect(() => {
+        if (moodboard?.moodboard_name) {
+            setEditName(moodboard.moodboard_name);
+        }
+    }, [moodboard?.moodboard_name]);
+
     const project = moodboard?.projectId;
     const estimation = moodboard?.estimatedCostId;
     const products = estimation?.productIds || [];
@@ -33,7 +45,7 @@ export default function MoodboardDetailPage() {
                 project?._id,
                 project?.projectName
             );
-            router.push('/dashboard/products');
+            router.push('/productlist');
         }
     };
 
@@ -58,6 +70,33 @@ export default function MoodboardDetailPage() {
         }
     };
 
+
+    const handleSaveName = () => {
+        if (!editName.trim()) {
+            toast.error('Moodboard name cannot be empty');
+            return;
+        }
+
+        if (editName === moodboard?.moodboard_name) {
+            setIsEditing(false);
+            return;
+        }
+
+        updateMoodboard(
+            { id: moodboardId, data: { moodboard_name: editName } },
+            {
+                onSuccess: () => {
+                    setIsEditing(false);
+                    queryClient.invalidateQueries(['moodboard', moodboardId]);
+                }
+            }
+        );
+    };
+
+    const handleCancelName = () => {
+        setEditName(moodboard?.moodboard_name || '');
+        setIsEditing(false);
+    };
 
     if (isLoading) {
         return (
@@ -86,9 +125,49 @@ export default function MoodboardDetailPage() {
                             <Layout className="w-4 h-4" />
                             Moodboard Detail
                         </div>
-                        <h1 className="text-5xl font-black text-[#2d3142] mb-4 tracking-tighter">
-                            {moodboard?.moodboard_name}
-                        </h1>
+                        {isEditing ? (
+                            <div className="flex items-center gap-3 mb-4">
+                                <input
+                                    autoFocus
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="text-5xl font-black text-[#2d3142] tracking-tighter bg-transparent border-b-2 border-[#d9a88a] focus:outline-none w-full max-w-xl pb-1"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveName();
+                                        if (e.key === 'Escape') handleCancelName();
+                                    }}
+                                />
+                                <button
+                                    onClick={handleSaveName}
+                                    disabled={isUpdatingName}
+                                    className="p-3 bg-green-50 text-green-600 hover:bg-green-100 rounded-2xl transition-all disabled:opacity-50 shadow-sm"
+                                    title="Save name"
+                                >
+                                    <Check className="w-6 h-6" />
+                                </button>
+                                <button
+                                    onClick={handleCancelName}
+                                    disabled={isUpdatingName}
+                                    className="p-3 bg-gray-50 text-gray-500 hover:bg-gray-100 rounded-2xl transition-all disabled:opacity-50 shadow-sm"
+                                    title="Cancel editing"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-4 mb-4 group/title w-fit">
+                                <h1 className="text-5xl font-black text-[#2d3142] tracking-tighter">
+                                    {moodboard?.moodboard_name}
+                                </h1>
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="p-2.5 text-gray-300 bg-gray-50 hover:bg-[#d9a88a] hover:text-white rounded-2xl opacity-0 group-hover/title:opacity-100 transition-all shadow-sm"
+                                    title="Rename moodboard"
+                                >
+                                    <Edit2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                        )}
                         <div className="flex items-center gap-4">
                             <div className="px-4 py-1.5 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">
                                 Project: {project?.projectName}
@@ -132,7 +211,7 @@ export default function MoodboardDetailPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-[10px] text-[#d9a88a] font-black uppercase tracking-widest mb-1">
-                                                    {product.brand?.name || product.brand_name || 'Generic'}
+                                                    {product.brand?.name || 'Generic'}
                                                 </div>
                                                 <h4 className="text-lg font-bold text-[#2d3142] truncate group-hover:text-[#d9a88a] transition-colors">
                                                     {product.product_name || 'Untitled Material'}

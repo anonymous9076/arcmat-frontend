@@ -6,8 +6,9 @@ import Button from '@/components/ui/Button';
 import { useGetMoodboardDropdown } from '@/hooks/useMoodboard';
 import { useCreateEstimatedCost, useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import useProjectStore from '@/store/useProjectStore';
+import { toast } from 'sonner';
 
-export default function AddToMoodboardModal({ isOpen, onClose, product }) {
+export default function AddToMoodboardModal({ isOpen, onClose, product, products }) {
     const { activeProjectId, activeProjectName, activeMoodboardId, activeMoodboardName } = useProjectStore();
     const [selectedMoodboardId, setSelectedMoodboardId] = useState('');
     const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardDropdown(activeProjectId);
@@ -26,45 +27,70 @@ export default function AddToMoodboardModal({ isOpen, onClose, product }) {
         }
     }, [isOpen, activeMoodboardId]);
 
-    // Removed auto-confirm effect
+    // Handle extraction of single or multiple product IDs
+    const getProductIds = () => {
+        if (products && products.length > 0) {
+            return products.map(p => p.override_id || p._id || p.id).filter(Boolean);
+        }
+        if (product) {
+            // Restore previous logic for single product matching
+            const id = product.override_id || product._id || product.id;
+            return id ? [id] : [];
+        }
+        return [];
+    };
 
     const handleAdd = () => {
-        if (!selectedMoodboardId || !product) return;
+        const productIdsToSend = getProductIds();
+        console.log("AddToMoodboardModal handleAdd -> IDs:", productIdsToSend);
+        console.log("AddToMoodboardModal payload -> selectedMoodboardId:", selectedMoodboardId, "projectId:", activeProjectId);
+
+        if (!selectedMoodboardId) {
+            toast.warning("Please select a moodboard first.");
+            return;
+        }
+
+        if (productIdsToSend.length === 0) {
+            toast.error("Internal Error: Product IDs are missing. Could not evaluate data to send.");
+            return;
+        }
 
         const selectedMb = moodboards.find(mb => mb._id === selectedMoodboardId);
-        const productIdToSend = product.override_id || product._id;
-
-        console.log("AddToMoodboardModal handleAdd:", {
-            product_name: product.product_name || product.productId?.product_name,
-            product_id: product._id,
-            override_id: product.override_id,
-            productIdToSend
-        });
 
         if (selectedMb?.estimatedCostId) {
             // UPDATING existing estimation
             const existingRetailerProductIds = selectedMb.estimatedCostId.productIds || [];
-            if (existingRetailerProductIds.includes(productIdToSend)) {
-                onClose(); // Already added, just close
+            const normalizedExisting = existingRetailerProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
+
+            // Filter out products that are already in the list
+            const newIds = productIdsToSend.filter(id => !normalizedExisting.includes(id));
+
+            if (newIds.length === 0) {
+                toast.success("Products already exist in this moodboard!");
+                onClose(); // All selected products already exist in the moodboard
                 return;
             }
 
             updateEstimateMutation.mutate({
                 id: selectedMb.estimatedCostId._id,
                 data: {
-                    productIds: [...existingRetailerProductIds, productIdToSend]
+                    productIds: [...normalizedExisting, ...newIds]
                 }
             }, {
-                onSuccess: () => onClose()
+                onSuccess: () => {
+                    onClose();
+                }
             });
         } else {
             // CREATING new estimation
             createEstimateMutation.mutate({
                 moodboardId: selectedMoodboardId,
                 projectId: activeProjectId,
-                productIds: [productIdToSend]
+                productIds: productIdsToSend
             }, {
-                onSuccess: () => onClose()
+                onSuccess: () => {
+                    onClose();
+                }
             });
         }
     };
@@ -89,30 +115,42 @@ export default function AddToMoodboardModal({ isOpen, onClose, product }) {
                 </div>
 
                 <div className="px-8 py-4">
-                    <div className="bg-gray-50 rounded-3xl p-4 flex items-center gap-4 mb-2 border border-gray-100">
-                        <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
-                            {product.variant_images?.[0]?.secure_url || product.productId?.product_images?.[0]?.secure_url || product.secure_url ? (
-                                <img
-                                    src={product.variant_images?.[0]?.secure_url || product.productId?.product_images?.[0]?.secure_url || product.secure_url}
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-200">
-                                    <Layout className="w-6 h-6" />
-                                </div>
-                            )}
+                    {products && products.length > 0 ? (
+                        <div className="bg-gray-50 rounded-3xl p-4 flex items-center gap-4 mb-2 border border-gray-100">
+                            <div className="w-16 h-16 bg-[#2d3142] text-[#d9a88a] rounded-2xl flex items-center justify-center shadow-sm shrink-0 border border-gray-50">
+                                <span className="text-xl font-black">{products.length}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-[#2d3142] truncate">Adding Multiple Items</h4>
+                                <p className="text-xs text-gray-400 font-medium">{products.length} items selected for moodboard</p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-[#2d3142] truncate">{product?.product_name || product?.productId?.product_name}</h4>
-                            <p className="text-xs text-gray-400 font-medium">{product?.productId?.brand?.name || product?.brand_name || 'Brand'}</p>
+                    ) : product ? (
+                        <div className="bg-gray-50 rounded-3xl p-4 flex items-center gap-4 mb-2 border border-gray-100">
+                            <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
+                                {product.variant_images?.[0]?.secure_url || product.productId?.product_images?.[0]?.secure_url || product.secure_url ? (
+                                    <img
+                                        src={product.variant_images?.[0]?.secure_url || product.productId?.product_images?.[0]?.secure_url || product.secure_url}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                        <Layout className="w-6 h-6" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-[#2d3142] truncate">{product?.product_name || product?.productId?.product_name}</h4>
+                                <p className="text-xs text-gray-400 font-medium">{product?.productId?.brand?.name || product?.brand_name || 'Brand'}</p>
+                            </div>
                         </div>
-                    </div>
+                    ) : null}
 
                     {activeMoodboardId ? (
                         ''
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-2 mt-4">
                             <label className="text-[10px] uppercase font-black tracking-widest text-gray-400 ml-1">
                                 Choose Moodboard
                             </label>

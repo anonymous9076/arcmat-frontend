@@ -15,7 +15,10 @@ import { Loader2 } from "lucide-react";
 import CompareBar from "@/components/ui/CompareBar";
 import Pagination from "@/components/ui/Pagination";
 import { parseFiltersFromURL, buildURLFromFilters } from "@/lib/urlParamsUtils";
+import { useAuth } from '@/hooks/useAuth';
 import dynamic from 'next/dynamic';
+
+const SelectionBar = dynamic(() => import("@/components/dashboard/projects/SelectionBar"), { ssr: false });
 
 const CompareModal = dynamic(() => import("@/components/ui/CompareModal"), {
     ssr: false,
@@ -25,6 +28,7 @@ export default function ProductListPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
+    const { user } = useAuth();
 
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -250,6 +254,7 @@ export default function ProductListPage() {
 
             <CompareBar />
             <CompareModal />
+            {user?.role === 'architect' && <SelectionBar />}
         </div>
     );
 }
