@@ -13,6 +13,12 @@ export const productService = {
         return response.data;
     },
 
+    // Get retailer-centic products (for storefront/architect)
+    getRetailerProducts: async (params) => {
+        const response = await api.get('/retailer/products', { params });
+        return response.data;
+    },
+
     // Get single product by ID
     getProductById: async (id) => {
         const response = await api.get(`/product/${id}`);

@@ -207,7 +207,6 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
     if (!formData.product_name) newErrors.product_name = "Product name is required";
     if (!formData.product_url) newErrors.product_url = "Product URL is required";
     if (!formData.skucode) newErrors.skucode = "SKU Code is required";
-    if (!formData.sort_description) newErrors.sort_description = "Short description is required";
     if (!formData.description) newErrors.description = "Description is required";
 
     if (!formData.subsubcategoryId && !initialData) newErrors.category = "Category selection is required";
@@ -281,7 +280,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
                 <input name="skucode" value={formData.skucode} onChange={handleChange} className={clsx("w-full px-4 py-2 border rounded-lg outline-none", errors.skucode ? "border-red-500" : "border-gray-200")} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Short Description *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Short Description</label>
                 <textarea name="sort_description" value={formData.sort_description} onChange={handleChange} rows={2} className={clsx("w-full px-4 py-2 border rounded-lg outline-none", errors.sort_description ? "border-red-500" : "border-gray-200")} />
               </div>
               <div className="col-span-2">

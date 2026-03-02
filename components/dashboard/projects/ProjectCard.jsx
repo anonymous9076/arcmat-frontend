@@ -1,6 +1,8 @@
 'use client';
 
-import { MapPin, Calendar, Layout, Info, User, IndianRupee, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Layout, Info, User, IndianRupee, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import useProjectStore from '@/store/useProjectStore';
 
 export default function ProjectCard({ project, onEdit, onDelete }) {
     const {
@@ -102,17 +104,28 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-50 flex items-center justify-between text-[11px] font-medium text-gray-400">
-                <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Created: {formatDate(createdAt)}</span>
-                </div>
-                {estimatedDuration && (
+            <div className="pt-4 border-t border-gray-50 space-y-4">
+                <div className="flex items-center justify-between text-[11px] font-medium text-gray-400">
                     <div className="flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5" />
-                        <span>End: {getMonthName(estimatedDuration.month)} {estimatedDuration.year}</span>
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Created: {formatDate(createdAt)}</span>
                     </div>
-                )}
+                    {estimatedDuration && (
+                        <div className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5" />
+                            <span>End: {getMonthName(estimatedDuration.month)} {estimatedDuration.year}</span>
+                        </div>
+                    )}
+                </div>
+
+                <Link
+                    href={`/dashboard/projects/${project._id}/moodboards`}
+                    onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-[#fef7f2] text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white rounded-2xl font-bold transition-all group/mood"
+                >
+                    View Moodboards
+                    <ArrowRight className="w-4 h-4 group-hover/mood:translate-x-1 transition-transform" />
+                </Link>
             </div>
         </div>
     );

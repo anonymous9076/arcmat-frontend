@@ -9,6 +9,8 @@ export const PRODUCT_KEYS = {
     list: (filters) => [...PRODUCT_KEYS.lists(), { ...filters }],
     details: () => [...PRODUCT_KEYS.all, 'detail'],
     detail: (id) => [...PRODUCT_KEYS.details(), id],
+    retailer: () => [...PRODUCT_KEYS.all, 'retailer'],
+    retailerList: (filters) => [...PRODUCT_KEYS.retailer(), { ...filters }],
 };
 
 export const VARIANT_KEYS = {
@@ -33,6 +35,20 @@ export const useGetProducts = ({ userId, page = 1, limit = 10, enabled = true, o
             keyword: otherFilters.search,
             query: otherFilters.search,
             search_term: otherFilters.search,
+            ...otherFilters
+        }),
+        enabled: enabled,
+    });
+};
+
+// Hook to fetch retailer products
+export const useGetRetailerProducts = ({ page = 1, limit = 10, enabled = true, ...otherFilters } = {}) => {
+    return useQuery({
+        queryKey: PRODUCT_KEYS.retailerList({ page, limit, ...otherFilters }),
+        queryFn: () => productService.getRetailerProducts({
+            page,
+            limit,
+            type: 'storefront', // Use storefront type for flattened variant structure
             ...otherFilters
         }),
         enabled: enabled,
