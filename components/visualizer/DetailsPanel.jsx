@@ -34,7 +34,8 @@ export default function DetailsPanel({
     currentPhase = 'Concept Design',
     onPhaseUpdate,
     projectId,
-    moodboardId
+    moodboardId,
+    projectBudget
 }) {
     const [activeTab, setActiveTab] = useState('details');
     const [isAdded, setIsAdded] = useState(false);
@@ -206,9 +207,33 @@ export default function DetailsPanel({
                     {/* Total budget & Phase */}
                     {materialCount >= 0 && (
                         <div className="mb-4 space-y-3">
-                            <div className="px-3 py-2.5 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-between">
-                                <span className="text-xs font-semibold text-orange-700">Est. Total</span>
-                                <span className="text-sm font-black text-orange-700">{formatCurrency(totalBudget)}</span>
+                            <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-orange-700">Est. Total</span>
+                                    <span className="text-sm font-black text-orange-700">{formatCurrency(totalBudget)}</span>
+                                </div>
+                                {projectBudget && !isNaN(Number(projectBudget)) && Number(projectBudget) > 0 && (
+                                    <div className="flex flex-col gap-1.5 pt-2 border-t border-orange-200/50 mt-1">
+                                        <div className="flex items-center justify-between text-[10px] font-bold text-orange-600/80">
+                                            <span>Project Budget</span>
+                                            <span>{formatCurrency(Number(projectBudget))}</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-orange-200/50 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-500 ${totalBudget > Number(projectBudget) ? 'bg-red-500' : 'bg-orange-500'}`}
+                                                style={{ width: `${Math.min(100, (totalBudget / Number(projectBudget)) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-end mt-0.5">
+                                            <span className={`text-[9px] font-bold ${totalBudget > Number(projectBudget) ? 'text-red-600' : 'text-orange-600/80'}`}>
+                                                {totalBudget > Number(projectBudget)
+                                                    ? 'Over Budget'
+                                                    : `${Math.round((totalBudget / Number(projectBudget)) * 100)}% Used`
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">

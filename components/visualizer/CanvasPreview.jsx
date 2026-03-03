@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
     Lock, LockOpen, RotateCcw, SlidersHorizontal, Trash, Trash2,
     ZoomIn, ZoomOut, Move, CornerUpLeft, ImagePlus,
-    Type, Download, Save, Minus, Plus, FileOutput, Focus
+    Type, Download, Save, Minus, Plus, FileOutput, Focus,
+    ArrowUpToLine, ArrowDownToLine
 } from 'lucide-react';
 import { getProductName, getProductCategory } from '@/lib/productUtils';
 import { useFabricCanvas } from './useFabricCanvas';
@@ -226,6 +227,43 @@ export default function CanvasPreview({
                         <p className="text-sm font-medium">Drag materials or add text</p>
                     </div>
                 )}
+                {activeMenuConfig && (
+                    <div
+                        className="absolute z-50 bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-gray-200 flex flex-col items-center p-1.5 gap-1 transition-opacity pointer-events-auto"
+                        style={{
+                            left: Math.max(10, activeMenuConfig.left),
+                            top: Math.max(10, activeMenuConfig.top),
+                            transform: 'translate(15px, -15px)'
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onWheel={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-1">
+                            <MenuBtn onClick={bringForward} title="Bring Forward (Ctrl+]">
+                                <ArrowUpToLine className="w-4 h-4" />
+                            </MenuBtn>
+                            <MenuBtn onClick={sendBackward} title="Send Backward (Ctrl+[">
+                                <ArrowDownToLine className="w-4 h-4" />
+                            </MenuBtn>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <MenuBtn
+                                onClick={toggleLock}
+                                title={lockedIds.has(activeMenuConfig.id) ? "Unlock Position" : "Lock Position"}
+                                active={lockedIds.has(activeMenuConfig.id)}
+                            >
+                                {lockedIds.has(activeMenuConfig.id) ? (
+                                    <Lock className="w-4 h-4 text-[#e09a74]" />
+                                ) : (
+                                    <LockOpen className="w-4 h-4" />
+                                )}
+                            </MenuBtn>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <MenuBtn onClick={deleteSelection} title="Delete (Del)" isDanger>
+                                <Trash className="w-4 h-4 text-red-500" />
+                            </MenuBtn>
+                        </div>
+                    </div>
+                )}
                 <div>
                     <canvas ref={canvasRef} className="w-full h-full" />
                 </div>
@@ -269,6 +307,24 @@ function BottomBtn({ onClick, title, children, active, disabled }) {
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors
                 ${disabled ? 'opacity-30 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
             style={active ? { backgroundColor: 'rgba(224, 154, 116, 0.1)', color: '#e09a74' } : {}}
+        >
+            {children}
+        </button>
+    );
+}
+
+function MenuBtn({ onClick, title, children, active, isDanger }) {
+    return (
+        <button
+            onClick={onClick}
+            title={title}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all
+                ${active
+                    ? 'bg-[#e09a74]/10 text-[#e09a74]'
+                    : isDanger
+                        ? 'text-red-500 hover:bg-red-50'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                }`}
         >
             {children}
         </button>

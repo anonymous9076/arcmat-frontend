@@ -6,7 +6,6 @@ import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
 import DetailsPanel from '@/components/visualizer/DetailsPanel';
 import ProjectDrawer from '@/components/visualizer/ProjectDrawer';
-import { DUMMY_MATERIALS } from '@/components/visualizer/dummyMaterials';
 import { Loader2, ChevronLeft, ChevronRight, Layout } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import useProjectStore from '@/store/useProjectStore';
@@ -78,9 +77,9 @@ export default function VisualizerPage() {
 
     // Materials for left panel
     const materials = useMemo(() => {
-        if (!moodboard?.estimatedCostId?.productIds) return DUMMY_MATERIALS;
+        if (!moodboard?.estimatedCostId?.productIds) return [];
         const products = moodboard.estimatedCostId.productIds;
-        return products.length > 0 ? products : DUMMY_MATERIALS;
+        return products.length > 0 ? products : [];
     }, [moodboard]);
 
     /* ── Backend save ────────────────────────── */
@@ -299,6 +298,7 @@ export default function VisualizerPage() {
                     onPhaseUpdate={handlePhaseUpdate}
                     projectId={moodboard?.projectId?._id}
                     moodboardId={activeMoodboardId}
+                    projectBudget={moodboard?.projectId?.budget}
                 />
             </div>
         </div>
