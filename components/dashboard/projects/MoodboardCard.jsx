@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X } from 'lucide-react';
+import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X, MonitorPlay } from 'lucide-react';
 import Link from 'next/link';
 import useProjectStore from '@/store/useProjectStore';
 import { useUpdateMoodboard } from '@/hooks/useMoodboard';
@@ -111,24 +111,32 @@ export default function MoodboardCard({ moodboard, projectId, onDelete }) {
                 </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-                <Link
-                    href={`/dashboard/projects/${projectId}/moodboards/${_id}`}
-                    className="flex-[1.2] flex items-center justify-center gap-2 py-3 bg-[#2d3142] text-white hover:bg-[#d9a88a] rounded-2xl font-bold transition-all group/btn shadow-lg shadow-gray-100"
-                >
-                    View Details
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                </Link>
+            <Link
+                href={`/dashboard/projects/${projectId}/moodboards/${_id}`}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#2d3142] text-white hover:bg-[#d9a88a] rounded-2xl font-bold transition-all group/btn shadow-lg shadow-gray-100"
+            >
+                View Details
+                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+            </Link>
 
-                <Link
-                    href="/productlist"
-                    onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-white border-2 border-gray-100 text-[#d9a88a] hover:border-[#d9a88a] rounded-2xl font-bold transition-all group/add hover:bg-[#fef7f2]"
-                >
-                    <Plus className="w-4 h-4" />
-                    Add Items
-                </Link>
-            </div>
+            <Link
+                href="/productlist"
+                onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-white border-2 border-gray-100 text-[#d9a88a] hover:border-[#d9a88a] rounded-2xl font-bold transition-all group/add hover:bg-[#fef7f2]"
+                title="Add Items"
+            >
+                <Plus className="w-5 h-5 hover:scale-110 active:scale-95 transition-transform" />
+            </Link>
+
+            <Link
+                href="/dashboard/visualizer"
+                onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-white border-2 border-gray-100 text-[#d9a88a] hover:border-[#d9a88a] rounded-2xl font-bold transition-all group/add hover:bg-[#fef7f2]"
+                title="Visualizer"
+            >
+                <MonitorPlay className="w-5 h-5 hover:scale-110 active:scale-95 transition-transform" />
+            </Link>
         </div>
+
     );
 }

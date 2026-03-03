@@ -24,8 +24,13 @@ const Header = ({ variant = 'default' }) => {
     const [showResults, setShowResults] = useState(false)
     const [isOpen, setIsOpen] = React.useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const { toggleMobileSidebar } = useSidebarStore();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -222,7 +227,7 @@ const Header = ({ variant = 'default' }) => {
                                 <Link href="/wishlist">
                                     <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/wishlist'>
                                         <Heart size={22} className="text-gray-600 group-hover/wishlist:text-[#e09a74] transition-colors" />
-                                        {wishlistCount > 0 && (
+                                        {mounted && wishlistCount > 0 && (
                                             <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
                                                 {wishlistCount > 99 ? '99+' : wishlistCount}
                                             </span>
@@ -238,7 +243,7 @@ const Header = ({ variant = 'default' }) => {
                             <Link href="/cart">
                                 <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/cart'>
                                     <ShoppingCart size={22} className="text-gray-600 group-hover/cart:text-[#e09a74] transition-colors" />
-                                    {cartCount > 0 && (
+                                    {mounted && cartCount > 0 && (
                                         <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
                                             {cartCount > 99 ? '99+' : cartCount}
                                         </span>

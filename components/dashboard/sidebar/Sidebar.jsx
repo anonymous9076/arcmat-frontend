@@ -18,7 +18,8 @@ import {
   LayoutDashboard,
   Image,
   HardHat,
-  Store
+  Store,
+  Palette
 } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '@/store/useAuthStore';
@@ -41,7 +42,8 @@ const ICON_MAP = {
   LayoutDashboard,
   Image,
   HardHat,
-  Store
+  Store,
+  Palette
 };
 
 const mapIcons = (items) => items.map(item => ({

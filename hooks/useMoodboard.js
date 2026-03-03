@@ -20,6 +20,13 @@ export const useGetMoodboardsByProject = (projectId) => {
     });
 };
 
+export const useGetAllMoodboards = () => {
+    return useQuery({
+        queryKey: [...MOODBOARD_KEYS.all, 'list_all'],
+        queryFn: () => moodboardService.getAllMoodboards(),
+    });
+};
+
 export const useGetMoodboardDropdown = (projectId) => {
     return useQuery({
         queryKey: MOODBOARD_KEYS.dropdown(projectId),
@@ -58,7 +65,7 @@ export const useUpdateMoodboard = () => {
         mutationFn: ({ id, data }) => moodboardService.updateMoodboard(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
-            toast.success('Moodboard updated successfully!');
+            // Silence auto-save toasts to avoid spamming the user
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to update moodboard');

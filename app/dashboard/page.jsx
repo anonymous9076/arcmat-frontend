@@ -14,7 +14,10 @@ import { useGetUsers } from '@/hooks/useAuth';
 import { useGetVendors } from '@/hooks/useVendor';
 import { useGetCategories } from '@/hooks/useCategory';
 import { getProductImageUrl } from '@/lib/productUtils';
-import { Package } from 'lucide-react';
+import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus } from 'lucide-react';
+import { useGetProjects } from '@/hooks/useProject';
+import { useGetAllMoodboards } from '@/hooks/useMoodboard';
+import useProjectStore from '@/store/useProjectStore';
 
 const SEARCH_CATEGORIES = [
     { id: 'tiles', label: 'Tiles' },
@@ -28,27 +31,26 @@ const SEARCH_CATEGORIES = [
     { id: 'leathers', label: 'Leathers' },
 ];
 
-const MOCK_BOARDS = [
-    {
-        id: 1,
-        title: 'Interior Design',
-        items: 4,
-        author: 'Vidit Thapa', // Default fallback
-        thumbnail: '/Images/Hospitality.jpg', // Ensure file exists at public/dashboard/dash2.png
-    },
-    {
-        id: 2,
-        title: 'Office Design',
-        items: 1,
-        author: 'Vidit Thapa', // Default fallback
-        thumbnail: '/Images/Workspaces.png', // Ensure file exists at public/dashboard/dash1.png
-    },
-];
+// Thumbnail helper for moodboards
+const getBoardThumbnail = (board) => {
+    if (!board?.canvasState?.length) return null;
+    const firstMaterial = board.canvasState.find(item => item.type === 'material');
+    if (!firstMaterial?.material) return null;
+
+    const m = firstMaterial.material;
+    if (m.images?.length) return getProductImageUrl(m.images[0]);
+    if (m.variant_images?.length) return getProductImageUrl(m.variant_images[0]);
+    if (typeof m.productId === 'object' && m.productId?.product_images?.length)
+        return getProductImageUrl(m.productId.product_images[0]);
+
+    return null;
+};
 
 export default function DashboardPage() {
     const router = useRouter();
     const [activeFilter, setActiveFilter] = useState('all');
-    const [selectedProject, setSelectedProject] = useState('Project Alpha');
+    const [selectedProjectId, setSelectedProjectId] = useState(null);
+    const [selectedProjectName, setSelectedProjectName] = useState('Select Project');
     const [showProjectMenu, setShowProjectMenu] = useState(false);
 
     // ZUSTAND INTEGRATION
@@ -126,11 +128,24 @@ export default function DashboardPage() {
         .sort((a, b) => (a.stock || 0) - (b.stock || 0))
         .slice(0, 10);
 
-    // Dynamically update board author based on logged-in user
-    const recentBoards = MOCK_BOARDS.map(board => ({
-        ...board,
-        author: mounted && user?.fullName ? user.fullName : board.author
-    }));
+    // PROJECTS & MOODBOARDS
+    const { data: projectsData, isLoading: projectsLoading } = useGetProjects({
+        enabled: mounted && !!user
+    });
+    const { data: boardsData, isLoading: boardsLoading } = useGetAllMoodboards();
+
+    const projects = projectsData?.data || [];
+    const boards = boardsData?.data || [];
+
+    // Set initial project
+    useEffect(() => {
+        if (projects.length > 0 && !selectedProjectId) {
+            setSelectedProjectId(projects[0]._id);
+            setSelectedProjectName(projects[0].projectName);
+        }
+    }, [projects, selectedProjectId]);
+
+    const recentBoards = boards.slice(0, 4);
 
     if (!mounted || (user && !user.role)) {
         return (
@@ -203,7 +218,7 @@ export default function DashboardPage() {
                             ) : recentProducts.length > 0 ? (
                                 recentProducts.map((product) => (
                                     <div key={product._id} className="flex items-center gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-50 last:border-0 pb-3">
-                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                                             {product.product_images?.[0] ? (
                                                 <Image src={getProductImageUrl(product.product_images[0])} alt={product.product_name} fill className="object-cover" />
                                             ) : (
@@ -400,30 +415,45 @@ export default function DashboardPage() {
 
                     {/* Project Selector */}
                     <div className="mb-6 relative">
-                        <button
-                            onClick={() => setShowProjectMenu(!showProjectMenu)}
-                            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
-                        >
-                            <span className="font-medium">{selectedProject}</span>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                        {projectsLoading ? (
+                            <div className="h-6 w-32 animate-pulse bg-gray-100 rounded" />
+                        ) : projects.length > 0 ? (
+                            <>
+                                <button
+                                    onClick={() => setShowProjectMenu(!showProjectMenu)}
+                                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+                                >
+                                    <span className="font-bold text-lg text-[#2d3142]">{selectedProjectName}</span>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
 
-                        {showProjectMenu && (
-                            <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[200px]">
-                                <button
-                                    onClick={() => { setSelectedProject('Project Alpha'); setShowProjectMenu(false); }}
-                                    className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#d9a88a] text-sm"
-                                >
-                                    Project Alpha
-                                </button>
-                                <button
-                                    onClick={() => { setSelectedProject('Project Beta'); setShowProjectMenu(false); }}
-                                    className="w-full text-left px-4 py-2 text-gray-700 hover:text-[#d9a88a] text-sm"
-                                >
-                                    Project Beta
-                                </button>
+                                {showProjectMenu && (
+                                    <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-10 min-w-[240px] overflow-hidden">
+                                        {projects.map(p => (
+                                            <button
+                                                key={p._id}
+                                                onClick={() => {
+                                                    setSelectedProjectId(p._id);
+                                                    setSelectedProjectName(p.projectName);
+                                                    setShowProjectMenu(false);
+                                                }}
+                                                className={clsx(
+                                                    "w-full text-left px-4 py-3 text-sm font-semibold transition-colors",
+                                                    selectedProjectId === p._id ? "bg-[#fef7f2] text-[#d9a88a]" : "text-gray-600 hover:bg-gray-50"
+                                                )}
+                                            >
+                                                {p.projectName}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2 text-gray-400 italic text-sm">
+                                <FolderPlus className="w-4 h-4" />
+                                No projects created yet
                             </div>
                         )}
                     </div>
@@ -467,47 +497,67 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Boards Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {recentBoards.map((board) => (
-                            <Link
-                                key={board.id}
-                                href={`/dashboard/boards/${board.id}`}
-                                className="group"
-                            >
-                                {/* Board Thumbnail Image */}
-                                <div className="relative aspect-4/3 bg-gray-100 rounded-xl overflow-hidden mb-3">
-                                    {board.thumbnail ? (
-                                        <Image
-                                            src={board.thumbnail}
-                                            alt={board.title}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                        />
-                                    ) : (
-                                        // Fallback Icon if image fails
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
+                    {boardsLoading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d9a88a]"></div>
+                        </div>
+                    ) : recentBoards.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            {recentBoards.map((board) => {
+                                const thumb = getBoardThumbnail(board);
+                                return (
+                                    <Link
+                                        key={board._id}
+                                        href="/dashboard/visualizer"
+                                        onClick={() => useProjectStore.getState().setActiveMoodboard(board._id, board.moodboard_name, board.projectId?._id, board.projectId?.projectName)}
+                                        className="group"
+                                    >
+                                        {/* Board Thumbnail Image */}
+                                        <div className="relative aspect-4/3 bg-[#f8f7f5] rounded-2xl border border-gray-100 overflow-hidden mb-3">
+                                            {thumb ? (
+                                                <Image
+                                                    src={thumb}
+                                                    alt={board.moodboard_name}
+                                                    fill
+                                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                                                    <Layout className="w-8 h-8 text-gray-200" />
+                                                    <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">No Preview</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
 
-                                    {/* Hover Overlay */}
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                </div>
-
-                                {/* Board Details */}
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-800 group-hover:text-[#d9a88a] transition-colors mb-1">
-                                        {board.title}
-                                    </h3>
-                                    <p className="text-xs text-gray-500">
-                                        {board.items} items · {board.author}
-                                    </p>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                                        {/* Board Details */}
+                                        <div className="px-1">
+                                            <h3 className="text-sm font-bold text-[#2d3142] group-hover:text-[#d9a88a] transition-colors truncate">
+                                                {board.moodboard_name}
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-2 mt-1">
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight flex items-center gap-1 truncate max-w-[100px]">
+                                                    <Layout className="w-2.5 h-2.5" />
+                                                    {board.projectId?.projectName || 'No Project'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight flex items-center gap-1">
+                                                    <User className="w-2.5 h-2.5" />
+                                                    {user?.fullName?.split(' ')[0] || 'Architect'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="w-16 h-16 bg-[#fef7f2] rounded-2xl flex items-center justify-center mb-4">
+                                <Layout className="w-8 h-8 text-[#d9a88a]" />
+                            </div>
+                            <p className="text-sm text-gray-400 font-medium">No moodboards yet.</p>
+                            <Link href="/dashboard/projects" className="mt-4 text-xs font-bold text-[#d9a88a] hover:underline uppercase tracking-wider">Start Creating</Link>
+                        </div>
+                    )}
                 </div>
             </div>
 

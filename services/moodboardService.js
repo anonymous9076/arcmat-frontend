@@ -6,6 +6,11 @@ export const moodboardService = {
         return response.data;
     },
 
+    getAllMoodboards: async () => {
+        const response = await api.get('/moodboard/list/all');
+        return response.data;
+    },
+
     getMoodboardList: async (projectId) => {
         const response = await api.get(`/moodboard/list/${projectId}`);
         return response.data;

@@ -138,8 +138,8 @@
         },
         {
             "id": "boards",
-            "label": "Boards",
-            "icon": "Layers",
+            "label": "Moodboards",
+            "icon": "Palette",
             "href": "/dashboard/boards"
         },
         {

@@ -13,11 +13,11 @@ const inter = Inter({
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body suppressHydrationWarning className={inter.className}>
         <React.Suspense fallback={null}>
           <ClientProviders>
             <MobileMenu />
-            <Toaster position="bottom-right" theme="light"  closeButton />
+            <Toaster position="bottom-right" theme="light" closeButton />
             {children}
           </ClientProviders>
         </React.Suspense>
