@@ -4,28 +4,41 @@ import { useState, useEffect } from 'react';
 import { X, Search, Loader2, IndianRupee, Layout, CheckCircle2, Plus } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useGetMoodboardDropdown } from '@/hooks/useMoodboard';
+import { useGetProjects } from '@/hooks/useProject';
 import { useCreateEstimatedCost, useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import useProjectStore from '@/store/useProjectStore';
 import { toast } from 'sonner';
 
 export default function AddToMoodboardModal({ isOpen, onClose, product, products }) {
     const { activeProjectId, activeProjectName, activeMoodboardId, activeMoodboardName } = useProjectStore();
-    const [selectedMoodboardId, setSelectedMoodboardId] = useState('');
-    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardDropdown(activeProjectId);
+    const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId || '');
+    const [selectedMoodboardId, setSelectedMoodboardId] = useState(activeMoodboardId || '');
+
+    const { data: projectsData, isLoading: projectsLoading } = useGetProjects({ enabled: isOpen });
+    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardDropdown(selectedProjectId);
+
     const createEstimateMutation = useCreateEstimatedCost();
     const updateEstimateMutation = useUpdateEstimatedCost();
 
+    const projects = projectsData?.data || [];
     const moodboards = moodboardsData?.data || [];
+
 
     useEffect(() => {
         if (isOpen) {
-            if (activeMoodboardId) {
-                setSelectedMoodboardId(activeMoodboardId);
-            } else {
-                setSelectedMoodboardId('');
-            }
+            if (activeProjectId) setSelectedProjectId(activeProjectId);
+            if (activeMoodboardId) setSelectedMoodboardId(activeMoodboardId);
         }
-    }, [isOpen, activeMoodboardId]);
+    }, [isOpen, activeProjectId, activeMoodboardId]);
+
+    // Reset moodboard selection when project changes
+    useEffect(() => {
+        if (selectedProjectId !== activeProjectId) {
+            setSelectedMoodboardId('');
+        } else if (activeMoodboardId) {
+            setSelectedMoodboardId(activeMoodboardId);
+        }
+    }, [selectedProjectId, activeProjectId, activeMoodboardId]);
 
     // Handle extraction of single or multiple product IDs
     const getProductIds = () => {
@@ -42,8 +55,11 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
 
     const handleAdd = () => {
         const productIdsToSend = getProductIds();
-        console.log("AddToMoodboardModal handleAdd -> IDs:", productIdsToSend);
-        console.log("AddToMoodboardModal payload -> selectedMoodboardId:", selectedMoodboardId, "projectId:", activeProjectId);
+
+        if (!selectedProjectId) {
+            toast.warning("Please select a project first.");
+            return;
+        }
 
         if (!selectedMoodboardId) {
             toast.warning("Please select a moodboard first.");
@@ -85,7 +101,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
             // CREATING new estimation
             createEstimateMutation.mutate({
                 moodboardId: selectedMoodboardId,
-                projectId: activeProjectId,
+                projectId: selectedProjectId,
                 productIds: productIdsToSend
             }, {
                 onSuccess: () => {
@@ -147,51 +163,77 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                         </div>
                     ) : null}
 
-                    {activeMoodboardId ? (
-                        ''
-                    ) : (
-                        <div className="space-y-2 mt-4">
+                    <div className="space-y-4 mt-4">
+                        {/* Project Selection */}
+                        <div className="space-y-2">
                             <label className="text-[10px] uppercase font-black tracking-widest text-gray-400 ml-1">
-                                Choose Moodboard
+                                1. Select Project
                             </label>
-
-                            {moodboardsLoading ? (
-                                <div className="flex justify-center py-8">
-                                    <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
+                            {projectsLoading ? (
+                                <div className="flex justify-center py-4">
+                                    <Loader2 className="w-6 h-6 text-[#d9a88a] animate-spin" />
                                 </div>
-                            ) : moodboards.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {moodboards.map((mb) => (
-                                        <button
-                                            key={mb._id}
-                                            onClick={() => setSelectedMoodboardId(mb._id)}
-                                            className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedMoodboardId === mb._id
-                                                ? 'border-[#d9a88a] bg-[#fef7f2]'
-                                                : 'border-gray-50 bg-white hover:border-gray-200'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMoodboardId === mb._id ? 'bg-[#d9a88a] text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                                    <Layout className="w-5 h-5" />
-                                                </div>
-                                                <span className={`font-bold ${selectedMoodboardId === mb._id ? 'text-[#d9a88a]' : 'text-[#2d3142]'}`}>
-                                                    {mb.moodboard_name}
-                                                </span>
-                                            </div>
-                                            {selectedMoodboardId === mb._id && (
-                                                <CheckCircle2 className="w-5 h-5 text-[#d9a88a]" />
-                                            )}
-                                        </button>
+                            ) : projects.length > 0 ? (
+                                <select
+                                    value={selectedProjectId}
+                                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                                    className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-white font-bold text-[#2d3142] focus:border-[#d9a88a] outline-none transition-all cursor-pointer"
+                                >
+                                    <option value="" disabled>Choose a project...</option>
+                                    {projects.map(p => (
+                                        <option key={p._id} value={p._id}>{p.projectName}</option>
                                     ))}
-                                </div>
+                                </select>
                             ) : (
-                                <div className="p-8 bg-orange-50 rounded-3xl text-center border border-dashed border-orange-200">
-                                    <p className="text-orange-500 font-bold text-sm mb-2">No moodboards found</p>
-                                    <p className="text-orange-400 text-xs">Create a moodboard in the project first.</p>
-                                </div>
+                                <p className="text-center py-4 text-gray-400 text-sm">No projects found</p>
                             )}
                         </div>
-                    )}
+
+                        {/* Moodboard Selection */}
+                        {selectedProjectId && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase font-black tracking-widest text-gray-400 ml-1">
+                                    2. Choose Moodboard
+                                </label>
+
+                                {moodboardsLoading ? (
+                                    <div className="flex justify-center py-8">
+                                        <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
+                                    </div>
+                                ) : moodboards.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {moodboards.map((mb) => (
+                                            <button
+                                                key={mb._id}
+                                                onClick={() => setSelectedMoodboardId(mb._id)}
+                                                className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedMoodboardId === mb._id
+                                                    ? 'border-[#d9a88a] bg-[#fef7f2]'
+                                                    : 'border-gray-50 bg-white hover:border-gray-200'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMoodboardId === mb._id ? 'bg-[#d9a88a] text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                                        <Layout className="w-5 h-5" />
+                                                    </div>
+                                                    <span className={`font-bold ${selectedMoodboardId === mb._id ? 'text-[#d9a88a]' : 'text-[#2d3142]'}`}>
+                                                        {mb.moodboard_name}
+                                                    </span>
+                                                </div>
+                                                {selectedMoodboardId === mb._id && (
+                                                    <CheckCircle2 className="w-5 h-5 text-[#d9a88a]" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-8 bg-orange-50 rounded-3xl text-center border border-dashed border-orange-200">
+                                        <p className="text-orange-500 font-bold text-sm mb-2">No moodboards found</p>
+                                        <p className="text-orange-400 text-xs">Create a moodboard in this project first.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="p-8 pt-4 flex gap-3">

@@ -19,6 +19,7 @@ import { toast } from '@/components/ui/Toast'
 import useProjectStore from '@/store/useProjectStore'
 import { useSelectionStore } from '@/store/useSelectionStore'
 import { useGetMoodboard } from '@/hooks/useMoodboard'
+import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import dynamic from 'next/dynamic'
 const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 
@@ -81,6 +82,7 @@ const ProductCard = ({ product }) => {
 
     const { activeProjectId, activeMoodboardName, activeMoodboardId } = useProjectStore();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const { mutate: updateEstimateMutation } = useUpdateEstimatedCost();
 
     // Check if product is already in the active moodboard
     const { data: moodboardData } = useGetMoodboard(activeMoodboardId);
@@ -99,7 +101,7 @@ const ProductCard = ({ product }) => {
     }, [moodboardData, rawId]);
 
     const activeContextText = isAlreadyAdded
-        ? "Added"
+        ? "In Moodboard"
         : activeMoodboardName
             ? `Add to ${activeMoodboardName}`
             : "Add to Moodboard";
@@ -180,6 +182,28 @@ const ProductCard = ({ product }) => {
             setIsAdded(true);
             setTimeout(() => setIsAdded(false), 2000);
         }
+    };
+
+    const handleRemoveFromMoodboard = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        if (!moodboardData?.data?.estimatedCostId) return;
+
+        const existingRetailerProductIds = moodboardData.data.estimatedCostId.productIds || [];
+        const normalizedExisting = existingRetailerProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
+
+        const updatedIds = normalizedExisting.filter(id => String(id) !== String(rawId));
+
+        updateEstimateMutation({
+            id: moodboardData.data.estimatedCostId._id,
+            data: {
+                productIds: updatedIds
+            }
+        });
+        toast.success(`Removed ${name} from board`);
     };
 
     const handleWishlist = (e) => {
@@ -298,13 +322,16 @@ const ProductCard = ({ product }) => {
                 {isArchitect && (
                     <div className="absolute top-2 left-2 z-20">
                         {isAlreadyAdded ? (
-                            <div className="flex items-center justify-center p-1.5 bg-green-50/90 backdrop-blur-sm rounded-lg shadow-sm border border-green-200 cursor-default">
-                                <div className="w-5 h-5 rounded border bg-green-500 border-green-500 text-white flex items-center justify-center">
-                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                                </div>
-                            </div>
+                            <button
+                                onClick={handleRemoveFromMoodboard}
+                                className="flex items-center justify-center p-1 bg-green-500 rounded shadow-sm border border-green-500 hover:bg-red-500 hover:border-red-500 transition-colors group/remove"
+                                title="Remove from moodboard"
+                            >
+                                <Check className="w-4 h-4 text-white group-hover/remove:hidden" strokeWidth={4} />
+                                <X className="w-4 h-4 text-white hidden group-hover/remove:block" strokeWidth={4} />
+                            </button>
                         ) : (
-                            <label className="flex items-center justify-center p-1.5 cursor-pointer bg-white/80 backdrop-blur-sm rounded-lg shadow-sm hover:bg-white transition-colors border border-gray-100 group/check">
+                            <label className="flex items-center justify-center cursor-pointer group/check">
                                 <input
                                     type="checkbox"
                                     checked={isSelected}
@@ -314,64 +341,90 @@ const ProductCard = ({ product }) => {
                                     }}
                                     className="hidden"
                                 />
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected
-                                    ? 'bg-[#d9a88a] border-[#d9a88a] text-white'
-                                    : 'bg-white border-gray-300 text-transparent group-hover/check:border-[#d9a88a]'
+                                <div className={`w-6 h-6 rounded flex items-center justify-center transition-all shadow-sm ${isSelected
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-white/80 backdrop-blur-sm border border-gray-200 text-transparent group-hover/check:border-green-500'
                                     }`}>
-                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                    <Check className="w-4 h-4" strokeWidth={4} />
                                 </div>
                             </label>
                         )}
                     </div>
                 )}
-                <div className="absolute bottom-6 left-2 z-20">
+                <div className="absolute bottom-3 left-2 z-20 flex items-center gap-2">
                     <div
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                         }}
-                        className="inline-block"
+                        className="inline-block opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     >
                         <button
                             onClick={handleCompareToggle}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all shadow-md ${isCompared
-                                ? 'bg-green-50 text-green-700 border border-green-200'
-                                : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white border border-transparent'
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-md backdrop-blur-sm ${isCompared
+                                ? 'bg-green-50 text-green-700 border border-green-200 opacity-100'
+                                : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white border border-gray-100'
                                 }`}
                         >
-                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${isCompared ? 'bg-green-600 border-green-600' : 'border-gray-400 bg-white/50'}`}>
-                                {isCompared && <Check className="w-2.5 h-2.5 text-white" strokeWidth={4} />}
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isCompared ? 'bg-green-600 border-green-600' : 'border-gray-300 bg-white/50'}`}>
+                                {isCompared && <Check className="w-3 h-3 text-white" strokeWidth={4} />}
                             </div>
-                            <span>Compare</span>
+                            <span className="tracking-tight">Compare</span>
                         </button>
                     </div>
+
+                    {isArchitect && (
+                        <div
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                            className="inline-block opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        >
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-md backdrop-blur-sm ${isAlreadyAdded
+                                    ? 'bg-green-50 text-green-700 border border-green-200'
+                                    : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white border border-gray-100'
+                                    }`}
+                            >
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isAlreadyAdded ? 'bg-green-600 border-green-600' : 'border-gray-300 bg-white/50'}`}>
+                                    {isAlreadyAdded ? <Check className="w-3 h-3 text-white" strokeWidth={4} /> : <Plus className="w-3 h-3" />}
+                                </div>
+                                <span className="tracking-tight">
+                                    {isAlreadyAdded ? 'In Board' : 'Add to Board'}
+                                </span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             <div className="flex flex-col flex-1 px-3">
-                <h4 className="text-[13px] font-semibold text-gray-800 uppercase tracking-wider mb-0.5 group-hover:text-[#e09a74] transition-colors">{name}</h4>
-                <h3 className="text-[9px] font-semibold text-gray-400 leading-tight mb-1 ">
+                <h4 className="text-[14px] font-bold text-gray-900 uppercase tracking-tight mb-0.5 group-hover:text-[#e09a74] transition-colors line-clamp-2">{name}</h4>
+                <h3 className="text-[11px] font-medium text-gray-400 leading-tight mb-1 ">
                     {(typeof brand === 'object' ? brand.name : brand) || 'Generic'}
                 </h3>
 
                 {displayAttrs.length > 0 && (
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mb-1.5 opacity-80">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2">
                         {displayAttrs.map((attr, idx) => {
                             const isColor = attr.label.toLowerCase() === 'color'
                             const colorCode = isColor ? getColorCode(attr.value) : null
 
                             return (
-                                <span key={idx} className="text-[9px] text-gray-500 font-medium whitespace-nowrap flex items-center gap-1">
-                                    {!isColor && <>{attr.label}: </>}
+                                <span key={idx} className="text-[11px] text-gray-400 font-medium whitespace-nowrap flex items-center gap-1.5">
+                                    {!isColor && <><span className="text-gray-500 font-bold">{attr.label}:</span> <span className="text-gray-500">{attr.value}</span></>}
                                     {isColor && colorCode && (
-                                        <span
-                                            className="w-3 h-3 rounded-full border border-gray-100 shadow-sm"
-                                            style={{ backgroundColor: colorCode }}
-                                            title={attr.value}
-                                        />
+                                        <>
+                                            <span className="text-gray-500 font-bold">Color:</span>
+                                            <span
+                                                className="w-3.5 h-3.5 rounded-full border border-gray-100 shadow-sm"
+                                                style={{ backgroundColor: colorCode }}
+                                                title={attr.value}
+                                            />
+                                        </>
                                     )}
-                                    {!isColor && <span className="text-gray-800">{attr.value}</span>}
-                                    {idx < displayAttrs.length - 1 && <span className="ml-2 text-gray-300">|</span>}
                                 </span>
                             )
                         })}
@@ -380,14 +433,14 @@ const ProductCard = ({ product }) => {
 
                 <p className="text-[12px] font-normal text-gray-500 mb-2 line-clamp-1">{subtitle}</p>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-3">
                     {price && (
-                        <span className="text-[14px] font-bold text-[#e09a74]">₹{price.toLocaleString()}</span>
+                        <span className="text-[16px] font-bold text-[#e09a74]">₹{price.toLocaleString()}</span>
                     )}
                     {mrp && mrp > price && (
                         <>
-                            <span className="text-[11px] text-gray-400 line-through">₹{mrp.toLocaleString()}</span>
-                            <span className="text-[10px] font-bold text-green-600">-{discountPercentage}%</span>
+                            <span className="text-[12px] text-gray-400 line-through font-medium">₹{mrp.toLocaleString()}</span>
+                            <span className="text-[11px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">-{discountPercentage}%</span>
                         </>
                     )}
                 </div>
@@ -424,24 +477,6 @@ const ProductCard = ({ product }) => {
                 </button>
             </div>
 
-            {isArchitect && activeProjectId && (
-                <div className="px-3 mt-2">
-                    <Button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!isAlreadyAdded) setIsAddModalOpen(true);
-                        }}
-                        className={`w-full h-8 flex items-center justify-center gap-1.5 rounded-lg border text-[11px] font-medium transition-all ${isAlreadyAdded
-                            ? 'bg-green-50 text-green-700 border-green-200 cursor-default'
-                            : 'bg-[#2d3142] text-white hover:bg-[#d9a88a]'
-                            }`}
-                    >
-                        {isAlreadyAdded ? <CheckCircle className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                        <span>{activeContextText}</span>
-                    </Button>
-                </div>
-            )}
 
             {isAddModalOpen && (
                 <AddToMoodboardModal
