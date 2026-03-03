@@ -150,15 +150,36 @@ export function useFabricCanvas({
                 });
             } else if (obj.id) {
                 onReposition(obj.id, obj.left, obj.top);
-                onUpdateItem(obj.id, {
+
+                const updates = {
                     scaleX: obj.scaleX,
                     scaleY: obj.scaleY,
                     rotation: obj.angle,
                     w: obj.width * obj.scaleX,
                     h: obj.height * obj.scaleY
-                });
+                };
+
+                if (obj.type === 'i-text' || obj.type === 'text') {
+                    updates.text = obj.text;
+                }
+
+                onUpdateItem(obj.id, updates);
             }
             updateMenu();
+        });
+
+        canvas.on('text:changed', (e) => {
+            const obj = e.target;
+            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text')) {
+                onUpdateItem(obj.id, { text: obj.text });
+            }
+        });
+
+        canvas.on('text:editing:exited', (e) => {
+            const obj = e.target;
+            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text')) {
+                onUpdateItem(obj.id, { text: obj.text });
+            }
         });
 
         canvas.on('object:moving', updateMenu);

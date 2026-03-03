@@ -6,6 +6,7 @@ import {
     ZoomIn, ZoomOut, Move, CornerUpLeft, ImagePlus,
     Type, Download, Save, Minus, Plus, FileOutput, Focus
 } from 'lucide-react';
+import { getProductName, getProductCategory } from '@/lib/productUtils';
 import { useFabricCanvas } from './useFabricCanvas';
 
 const TOOLBAR_W = 44;
@@ -149,8 +150,8 @@ export default function CanvasPreview({
         const headers = ['Product Name', 'Category', 'Quantity', 'Unit Price', 'Total Cost'];
         let grandTotal = 0;
         const rows = materials.map(item => {
-            const name = item.material?.name || item.material?.product_name || 'Material';
-            const category = item.material?.category || item.material?.product_type || 'Material';
+            const name = getProductName(item.material);
+            const category = getProductCategory(item.material);
             const qty = item.quantity || 1;
             const unitPrice = item.price || 0;
             const total = qty * unitPrice;
