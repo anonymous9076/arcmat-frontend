@@ -89,6 +89,11 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!formData.phase) {
+            toast.error('Please select a project phase');
+            return;
+        }
+
         const payload = {
             projectName: formData.name,
             location: formData.location,

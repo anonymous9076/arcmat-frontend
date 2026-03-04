@@ -1,40 +1,86 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Edit2, Trash2, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
-import { useUpdateProject } from '@/hooks/useProject'; // Assuming there is a hook to update project
-import { toast } from '@/components/ui/Toast'; // Assuming toast exists
+import { useUpdateProject } from '@/hooks/useProject';
+import { toast } from '@/components/ui/Toast';
+import CoverSelectionModal from './CoverSelectionModal';
 
 export default function ProjectCard({ project, onEdit, onDelete }) {
     const {
         _id,
         projectName,
-        phase,
+        phase = 'Concept Design',
         status = 'Active'
     } = project;
 
     const [currentStatus, setCurrentStatus] = useState(status);
+    const [currentPhase, setCurrentPhase] = useState(phase);
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const [isPhaseDropdownOpen, setIsPhaseDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const phaseDropdownRef = useRef(null);
+    const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
     const updateProjectMutation = useUpdateProject();
 
     useEffect(() => {
         setCurrentStatus(status);
     }, [status]);
 
+    useEffect(() => {
+        setCurrentPhase(phase);
+    }, [phase]);
+
     const STATUS_OPTIONS = ['Active', 'On hold', 'Completed', 'Canceled', 'Archived'];
+    const PHASE_OPTIONS = [
+        'Concept Design',
+        'Schematic Design',
+        'Design Development',
+        'Specification',
+        'Construction Admin',
+        'Reselection Substitution'
+    ];
 
     useEffect(() => {
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsStatusDropdownOpen(false);
             }
+            if (phaseDropdownRef.current && !phaseDropdownRef.current.contains(event.target)) {
+                setIsPhaseDropdownOpen(false);
+            }
         }
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const handlePhaseChange = (newPhase) => {
+        if (newPhase === currentPhase) {
+            setIsPhaseDropdownOpen(false);
+            return;
+        }
+
+        const previousPhase = currentPhase;
+        setCurrentPhase(newPhase);
+
+        updateProjectMutation.mutate(
+            { id: _id, data: { phase: newPhase } },
+            {
+                onSuccess: () => {
+                    toast.success('Project phase updated');
+                    setIsPhaseDropdownOpen(false);
+                },
+                onError: () => {
+                    setCurrentPhase(previousPhase);
+                    toast.error('Failed to update phase');
+                    setIsPhaseDropdownOpen(false);
+                }
+            }
+        );
+    };
 
     const handleStatusChange = (newStatus) => {
         if (newStatus === currentStatus) {
@@ -61,8 +107,27 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
         );
     };
 
+    const handleCoverSelect = (selection) => {
+        const formData = new FormData();
+        if (selection.type === 'file') {
+            formData.append('coverImage', selection.file);
+        } else {
+            formData.append('coverImage', selection.url);
+        }
+
+        updateProjectMutation.mutate(
+            { id: _id, data: formData },
+            {
+                onSuccess: () => {
+                    toast.success('Project cover updated');
+                    setIsCoverModalOpen(false);
+                }
+            }
+        );
+    };
+
     return (
-        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full">
+        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full max-w-[500px] mx-auto lg:mx-0">
             {/* Absolute Action Buttons (Hover) */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button
@@ -94,12 +159,30 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
                     <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
                 </Link>
 
-                <div className="mb-auto">
+                <div className="mb-auto relative" ref={phaseDropdownRef}>
                     <span className="text-[10px] text-gray-400 font-bold mb-2 block tracking-wide">Project Phase</span>
-                    <button className="flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] hover:bg-gray-50 transition-colors">
-                        {phase || 'Concept Design'}
-                        <ChevronDown className="w-4 h-4 text-gray-400 ml-2" />
+                    <button
+                        onClick={() => setIsPhaseDropdownOpen(!isPhaseDropdownOpen)}
+                        className="flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] hover:bg-gray-50 transition-colors"
+                    >
+                        <span className="truncate max-w-[120px]">{currentPhase}</span>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${isPhaseDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
+
+                    {isPhaseDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-1 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
+                            {PHASE_OPTIONS.map((option) => (
+                                <button
+                                    key={option}
+                                    onClick={() => handlePhaseChange(option)}
+                                    className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentPhase === option ? 'text-[#D9A88A] bg-gray-50' : 'text-gray-500'}`}
+                                >
+                                    {option}
+                                    {currentPhase === option && <Check className="w-4 h-4 text-gray-400" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-8 relative" ref={dropdownRef}>
@@ -117,7 +200,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
                                 <button
                                     key={option}
                                     onClick={() => handleStatusChange(option)}
-                                    className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentStatus === option ? 'text-[#2d3142] bg-gray-50' : 'text-gray-500'
+                                    className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentStatus === option ? 'text-[#D9A88A] bg-gray-50' : 'text-gray-500'
                                         }`}
                                 >
                                     {option}
@@ -130,15 +213,31 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
             </div>
 
             {/* Right Section */}
-            <div className="flex-[1.4] bg-[#fafafb] rounded-[16px] p-4 flex items-center justify-between border border-gray-50 group-hover:border-gray-100 transition-colors relative min-w-0">
-                <div className="flex flex-col h-full justify-between gap-4 z-10 w-full min-w-0 pr-2">
-                    <h4 className="font-extrabold text-[#2d3142] text-[15px] truncate">Spec'd Brands</h4>
+            <div className="flex-[1.4] bg-[#fafafb] rounded-[16px] flex items-center justify-between border border-gray-50 group-hover:border-gray-100 transition-colors relative min-w-0 overflow-hidden">
+                {project.coverImage && (
+                    <div className="absolute inset-0 z-0">
+                        <Image src={project.coverImage} alt="" fill className="object-cover opacity-20" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#fafafb] via-[#fafafb]/80 to-transparent" />
+                    </div>
+                )}
+
+                <div className="flex flex-col h-full justify-between gap-4 z-10 w-full min-w-0 pr-2 p-4">
+                    <div className="flex items-center justify-between">
+                        <h4 className="font-extrabold text-[#2d3142] text-[15px] truncate">Spec'd Brands</h4>
+                        <button
+                            onClick={() => setIsCoverModalOpen(true)}
+                            className="p-1.5 bg-white shadow-sm rounded-lg text-gray-400 hover:text-[#d9a88a] transition-colors"
+                            title="Change Project Cover"
+                        >
+                            <Camera className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
 
                     <div className="mt-auto">
                         <Link
-                            href="/dashboard/products-list"
+                            href="/productlist"
                             onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-[#4a4e61] text-white text-[12px] font-bold rounded-full hover:bg-[#2d3142] shadow-sm transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center px-4 py-2 bg-[#D9A88A] text-white text-[12px] font-bold rounded-full hover:bg-[#D9A88A] shadow-sm transition-colors whitespace-nowrap"
                         >
                             See all products
                         </Link>
@@ -152,6 +251,13 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
                     </span>
                 </div>
             </div>
+
+            <CoverSelectionModal
+                isOpen={isCoverModalOpen}
+                onClose={() => setIsCoverModalOpen(false)}
+                onSelect={handleCoverSelect}
+                isUploading={updateProjectMutation.isPending}
+            />
         </div>
     );
 }

@@ -6,9 +6,10 @@ import { useGetMoodboardsByProject, useDeleteMoodboard } from '@/hooks/useMoodbo
 import { useGetProject } from '@/hooks/useProject';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import CreateMoodboardModal from '@/components/dashboard/projects/CreateMoodboardModal';
-import { Loader2, Plus, ArrowLeft, Layout } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Layout, Search, ChevronDown, Filter } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import Container from '@/components/ui/Container';
 
 export default function MoodboardsPage() {
     const { projectId } = useParams();
@@ -16,6 +17,9 @@ export default function MoodboardsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [moodboardToDelete, setMoodboardToDelete] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
+    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
     const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
     const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);
@@ -36,6 +40,14 @@ export default function MoodboardsPage() {
         }
     };
 
+    const filteredMoodboards = moodboards
+        .filter(mb => mb.moodboard_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => {
+            if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+            if (sortBy === 'name') return a.moodboard_name.localeCompare(b.moodboard_name);
+            return 0;
+        });
+
     if (projectLoading || moodboardsLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -46,36 +58,87 @@ export default function MoodboardsPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 text-gray-400 hover:text-[#d9a88a] font-bold mb-8 transition-colors group"
-            >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                Back to Projects
-            </button>
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                <div>
-                    <h1 className="text-4xl font-black text-[#2d3142] mb-2 tracking-tight">
-                        {project?.projectName} <span className="text-[#d9a88a]">/ Moodboards</span>
-                    </h1>
-                    <p className="text-gray-400 font-medium">
-                        Concepts and budget estimations for this project.
-                    </p>
-                </div>
-                <Button
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-[#d9a88a] text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95"
+        <Container className="py-8">
+            <div className="flex items-center justify-between mb-10">
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2 text-gray-400 hover:text-[#d9a88a] font-bold transition-colors group"
                 >
-                    <Plus className="w-5 h-5" />
-                    New Moodboard
-                </Button>
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    Back to Projects
+                </button>
+
+                <div className="flex items-center gap-4">
+                    <Button
+                        onClick={() => setIsModalOpen(true)}
+                        className="bg-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95 text-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Moodboard
+                    </Button>
+                </div>
             </div>
 
-            {moodboards.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {moodboards.map(mb => (
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-2xl bg-[#fef7f2] flex items-center justify-center">
+                            <Layout className="w-5 h-5 text-[#d9a88a]" />
+                        </div>
+                        <h1 className="text-3xl font-black text-[#2d3142] tracking-tight">
+                            {project?.projectName} <span className="text-[#d9a88a]">Boards</span>
+                        </h1>
+                    </div>
+                    <p className="text-gray-500 font-medium ml-1">
+                        Conceptual designs and project estimations.
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search boards..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-700 w-48 focus:ring-2 focus:ring-[#d9a88a]/20 transition-all outline-none"
+                        />
+                    </div>
+
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                            className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-2xl text-sm font-bold text-gray-500 hover:text-[#d9a88a] transition-all"
+                        >
+                            <Filter className="w-4 h-4" />
+                            {sortBy === 'newest' ? 'Newest' : 'Name'}
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isSortDropdownOpen && (
+                            <div className="absolute top-full right-0 mt-2 w-40 bg-white shadow-2xl rounded-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                                <button
+                                    onClick={() => { setSortBy('newest'); setIsSortDropdownOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${sortBy === 'newest' ? 'text-[#d9a88a] bg-[#fef7f2]' : 'text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                    Newest
+                                </button>
+                                <button
+                                    onClick={() => { setSortBy('name'); setIsSortDropdownOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${sortBy === 'name' ? 'text-[#d9a88a] bg-[#fef7f2]' : 'text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                    Name
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {filteredMoodboards.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    {filteredMoodboards.map(mb => (
                         <MoodboardCard
                             key={mb._id}
                             moodboard={mb}
@@ -89,16 +152,20 @@ export default function MoodboardsPage() {
                     <div className="w-24 h-24 bg-[#fef7f2] rounded-3xl flex items-center justify-center mb-8">
                         <Layout className="w-12 h-12 text-[#d9a88a]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-[#2d3142] mb-3">No moodboards yet</h3>
+                    <h3 className="text-2xl font-bold text-[#2d3142] mb-3">
+                        {searchQuery ? 'No matching boards' : 'No moodboards yet'}
+                    </h3>
                     <p className="text-gray-400 font-medium max-w-sm mx-auto mb-10">
-                        Start by creating your first moodboard to organize your design ideas and costs.
+                        {searchQuery ? `We couldn't find any boards matching "${searchQuery}"` : 'Start by creating your first moodboard to organize your design ideas and costs.'}
                     </p>
-                    <Button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-[#d9a88a] text-white px-10 py-4 rounded-2xl font-black"
-                    >
-                        Create Your First Moodboard
-                    </Button>
+                    {!searchQuery && (
+                        <Button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-[#d9a88a] text-white px-10 py-4 rounded-2xl font-black"
+                        >
+                            Create Your First Moodboard
+                        </Button>
+                    )}
                 </div>
             )}
 
@@ -117,6 +184,6 @@ export default function MoodboardsPage() {
                 confirmText="Delete"
                 type="danger"
             />
-        </div>
+        </Container>
     );
 }

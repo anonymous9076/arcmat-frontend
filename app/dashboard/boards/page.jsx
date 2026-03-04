@@ -3,35 +3,26 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Layout, Filter, User, ArrowRight, FolderOpen, Loader2 } from 'lucide-react';
+import { Search, Layout, Filter, User, ArrowRight, FolderOpen, Loader2, Plus, ArrowLeft } from 'lucide-react';
 import Container from '@/components/ui/Container';
-import { useGetAllMoodboards } from '@/hooks/useMoodboard';
+import { useGetAllMoodboards, useDeleteMoodboard } from '@/hooks/useMoodboard';
 import { useGetProjects } from '@/hooks/useProject';
 import { getProductImageUrl } from '@/lib/productUtils';
 import { useAuthStore } from '@/store/useAuthStore';
 import useProjectStore from '@/store/useProjectStore';
+import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import clsx from 'clsx';
 
-// Thumbnail helper for moodboards
-const getBoardThumbnail = (board) => {
-    if (!board?.canvasState?.length) return null;
-    const firstMaterial = board.canvasState.find(item => item.type === 'material');
-    if (!firstMaterial?.material) return null;
-
-    const m = firstMaterial.material;
-    if (m.images?.length) return getProductImageUrl(m.images[0]);
-    if (m.variant_images?.length) return getProductImageUrl(m.variant_images[0]);
-    if (typeof m.productId === 'object' && m.productId?.product_images?.length)
-        return getProductImageUrl(m.productId.product_images[0]);
-
-    return null;
-};
+// Deletion logic and filter state handled in the component
 
 export default function AllBoardsPage() {
     const { user } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProject, setSelectedProject] = useState('all');
     const [mounted, setMounted] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [moodboardToDelete, setMoodboardToDelete] = useState(null);
 
     useEffect(() => {
         setMounted(true);
@@ -39,6 +30,19 @@ export default function AllBoardsPage() {
 
     const { data: boardsData, isLoading: boardsLoading } = useGetAllMoodboards();
     const { data: projectsData } = useGetProjects({ enabled: mounted });
+    const deleteMutation = useDeleteMoodboard();
+
+    const handleDeleteClick = (id) => {
+        setMoodboardToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (moodboardToDelete) {
+            deleteMutation.mutate(moodboardToDelete);
+            setIsDeleteModalOpen(false);
+        }
+    };
 
     const allBoards = boardsData?.data || [];
     const allProjects = projectsData?.data || [];
@@ -114,69 +118,15 @@ export default function AllBoardsPage() {
                     <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching your boards...</p>
                 </div>
             ) : filteredBoards.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredBoards.map((board) => {
-                        const thumb = getBoardThumbnail(board);
-                        return (
-                            <Link
-                                key={board._id}
-                                href="/dashboard/visualizer"
-                                onClick={() => useProjectStore.getState().setActiveMoodboard(board._id, board.moodboard_name, board.projectId?._id, board.projectId?.projectName)}
-                                className="group bg-white rounded-4xl p-4 border border-gray-100 hover:border-[#d9a88a]/30 hover:shadow-xl hover:shadow-[#d9a88a]/5 transition-all duration-500"
-                            >
-                                {/* Thumbnail */}
-                                <div className="relative aspect-4/3 bg-[#f8f7f5] rounded-3xl overflow-hidden mb-5">
-                                    {thumb ? (
-                                        <Image
-                                            src={thumb}
-                                            alt={board.moodboard_name}
-                                            fill
-                                            className="object-cover group-hover:scale-110 transition-transform duration-700"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                                            <Layout className="w-10 h-10 text-gray-200" />
-                                            <span className="text-[10px] text-gray-300 font-extrabold uppercase tracking-[0.2em]">No Items Added</span>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-
-                                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                                        <div className="bg-white/90 backdrop-blur p-2 rounded-xl shadow-lg text-[#d9a88a]">
-                                            <ArrowRight className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Info */}
-                                <div className="px-1 pb-1">
-                                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                                        <h3 className="font-bold text-[#2d3142] group-hover:text-[#d9a88a] transition-colors truncate text-base">
-                                            {board.moodboard_name}
-                                        </h3>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-5 h-5 rounded-md bg-gray-50 flex items-center justify-center">
-                                                <FolderOpen className="w-3 h-3 text-gray-400" />
-                                            </div>
-                                            <span className="text-xs text-gray-500 font-bold truncate max-w-[120px]">
-                                                {board.projectId?.projectName || 'No Project'}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 ml-auto">
-                                            <User className="w-3 h-3 text-gray-300" />
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                                                {user?.fullName || 'Architect'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    {filteredBoards.map((board) => (
+                        <MoodboardCard
+                            key={board._id}
+                            moodboard={board}
+                            projectId={board.projectId?._id}
+                            onDelete={handleDeleteClick}
+                        />
+                    ))}
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 bg-white rounded-4xl border border-dashed border-gray-200">
@@ -199,6 +149,15 @@ export default function AllBoardsPage() {
                     )}
                 </div>
             )}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Moodboard"
+                message="Are you sure you want to delete this moodboard and its associated costs? This action cannot be undone."
+                confirmText="Delete"
+                type="danger"
+            />
         </Container>
     );
 }
