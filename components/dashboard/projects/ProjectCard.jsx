@@ -1,131 +1,156 @@
 'use client';
 
-import { MapPin, Calendar, Layout, Info, User, IndianRupee, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check } from 'lucide-react';
 import Link from 'next/link';
 import useProjectStore from '@/store/useProjectStore';
+import { useUpdateProject } from '@/hooks/useProject'; // Assuming there is a hook to update project
+import { toast } from '@/components/ui/Toast'; // Assuming toast exists
 
 export default function ProjectCard({ project, onEdit, onDelete }) {
     const {
+        _id,
         projectName,
-        type,
         phase,
-        location,
-        budget,
-        description,
-        createdAt,
-        estimatedDuration
+        status = 'Active'
     } = project;
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-    };
+    const [currentStatus, setCurrentStatus] = useState(status);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+    const updateProjectMutation = useUpdateProject();
 
-    const getMonthName = (monthNum) => {
-        const months = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        ];
-        return months[parseInt(monthNum) - 1] || monthNum;
+    useEffect(() => {
+        setCurrentStatus(status);
+    }, [status]);
+
+    const STATUS_OPTIONS = ['Active', 'On hold', 'Completed', 'Canceled', 'Archived'];
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsStatusDropdownOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleStatusChange = (newStatus) => {
+        if (newStatus === currentStatus) {
+            setIsStatusDropdownOpen(false);
+            return;
+        }
+
+        const previousStatus = currentStatus;
+        setCurrentStatus(newStatus); // Optimistic UI Update
+
+        updateProjectMutation.mutate(
+            { id: _id, data: { status: newStatus } },
+            {
+                onSuccess: () => {
+                    toast.success('Project status updated');
+                    setIsStatusDropdownOpen(false);
+                },
+                onError: () => {
+                    setCurrentStatus(previousStatus); // Revert on failure
+                    toast.error('Failed to update status');
+                    setIsStatusDropdownOpen(false);
+                }
+            }
+        );
     };
 
     return (
-        <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative">
-            <div className="flex justify-between items-start mb-4">
-                <div className="space-y-1 flex-1 min-w-0 pr-4">
-                    <h3 className="text-xl font-bold text-[#2d3142] group-hover:text-[#d9a88a] transition-colors truncate">
-                        {projectName}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-sm text-gray-400 font-medium overflow-hidden">
-                        <MapPin className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{location.city}, {location.country}</span>
-                    </div>
-                </div>
-                <div className="flex flex-col items-end gap-3 shrink-0">
-                    <div className="px-3 py-1 bg-[#fef7f2] text-[#d9a88a] rounded-full text-xs font-bold uppercase tracking-wider">
-                        {type}
-                    </div>
-                    {/* Mobile-only actions */}
-                    <div className="flex md:hidden gap-2">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-                            className="p-1.5 bg-white border border-gray-100 shadow-sm rounded-lg text-[#d9a88a] active:bg-[#d9a88a] active:text-white transition-all shadow-orange-100"
-                            title="Edit project"
-                        >
-                            <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
-                            className="p-1.5 bg-white border border-gray-100 shadow-sm rounded-lg text-red-500 active:bg-red-500 active:text-white transition-all shadow-red-100"
-                            title="Delete project"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="hidden md:flex absolute top-4 right-4 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full">
+            {/* Absolute Action Buttons (Hover) */}
+            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button
                     onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-                    className="p-2 bg-white shadow-md rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
+                    className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
                     title="Edit project"
                 >
                     <Edit2 className="w-4 h-4" />
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
-                    className="p-2 bg-white shadow-md rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
+                    className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
                     title="Delete project"
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="space-y-1">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Phase</span>
-                    <div className="flex items-center gap-2 text-sm text-gray-700 font-semibold">
-                        <Layout className="w-4 h-4 text-[#d9a88a]" />
-                        {phase}
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Budget</span>
-                    <div className="flex items-center gap-1 text-sm text-gray-700 font-semibold">
-                        <IndianRupee className="w-3.5 h-3.5 text-[#d9a88a]" />
-                        {budget}
-                    </div>
-                </div>
-            </div>
-
-            <div className="pt-4 border-t border-gray-50 space-y-4">
-                <div className="flex items-center justify-between text-[11px] font-medium text-gray-400">
-                    <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Created: {formatDate(createdAt)}</span>
-                    </div>
-                    {estimatedDuration && (
-                        <div className="flex items-center gap-1.5">
-                            <Info className="w-3.5 h-3.5" />
-                            <span>End: {getMonthName(estimatedDuration.month)} {estimatedDuration.year}</span>
-                        </div>
-                    )}
-                </div>
-
+            {/* Left Section */}
+            <div className="flex-[1.2] flex flex-col min-w-0 p-2">
                 <Link
                     href={`/dashboard/projects/${project._id}/moodboards`}
                     onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-[#fef7f2] text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white rounded-2xl font-bold transition-all group/mood"
+                    className="flex items-center gap-2 group/title mb-6 w-max"
                 >
-                    View Moodboards
-                    <ArrowRight className="w-4 h-4 group-hover/mood:translate-x-1 transition-transform" />
+                    <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
+                        {projectName}
+                    </h3>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
                 </Link>
+
+                <div className="mb-auto">
+                    <span className="text-[10px] text-gray-400 font-bold mb-2 block tracking-wide">Project Phase</span>
+                    <button className="flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] hover:bg-gray-50 transition-colors">
+                        {phase || 'Concept Design'}
+                        <ChevronDown className="w-4 h-4 text-gray-400 ml-2" />
+                    </button>
+                </div>
+
+                <div className="mt-8 relative" ref={dropdownRef}>
+                    <button
+                        onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#f4f5f7] rounded-full text-[13px] font-bold text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                        {currentStatus}
+                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isStatusDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-1 w-40 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
+                            {STATUS_OPTIONS.map((option) => (
+                                <button
+                                    key={option}
+                                    onClick={() => handleStatusChange(option)}
+                                    className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentStatus === option ? 'text-[#2d3142] bg-gray-50' : 'text-gray-500'
+                                        }`}
+                                >
+                                    {option}
+                                    {currentStatus === option && <Check className="w-4 h-4 text-gray-400" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Right Section */}
+            <div className="flex-[1.4] bg-[#fafafb] rounded-[16px] p-4 flex items-center justify-between border border-gray-50 group-hover:border-gray-100 transition-colors relative min-w-0">
+                <div className="flex flex-col h-full justify-between gap-4 z-10 w-full min-w-0 pr-2">
+                    <h4 className="font-extrabold text-[#2d3142] text-[15px] truncate">Spec'd Brands</h4>
+
+                    <div className="mt-auto">
+                        <Link
+                            href="/dashboard/products-list"
+                            onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                            className="inline-flex items-center justify-center px-4 py-2 bg-[#4a4e61] text-white text-[12px] font-bold rounded-full hover:bg-[#2d3142] shadow-sm transition-colors whitespace-nowrap"
+                        >
+                            See all products
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Circular indicator moved more to the right and absolutely positioned to slightly overlap? No, let's keep it in flex layout */}
+                <div className="w-[70px] h-[70px] rounded-full border-[5px] border-[#f4f5f7] flex items-center justify-center shrink-0 bg-white z-20">
+                    <span className="text-[9px] font-bold text-gray-400 text-center leading-tight px-1">
+                        No orders yet
+                    </span>
+                </div>
             </div>
         </div>
     );

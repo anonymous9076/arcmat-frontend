@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useGetProjects } from '@/hooks/useProject';
 import ProjectCard from '@/components/dashboard/projects/ProjectCard';
 import useAuthStore from '@/store/useAuthStore';
-import { Grid, List, Search, Filter, Loader2, Plus, AlertTriangle } from 'lucide-react';
+import { Grid, List, Search, Filter, Loader2, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import CreateProjectModal from '@/components/dashboard/sidebar/CreateProjectModal';
 import { useDeleteProject } from '@/hooks/useProject';
@@ -19,6 +19,7 @@ export default function AllProjectsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [mounted, setMounted] = useState(false);
+    const [activeTab, setActiveTab] = useState('All');
 
     const deleteProjectMutation = useDeleteProject();
 
@@ -54,43 +55,65 @@ export default function AllProjectsPage() {
         setEditingProject(null);
     };
 
-    const filteredProjects = projects.filter(project =>
-        project.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.location.city.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProjects = projects.filter(project => {
+        const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            project.location?.city?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Default project status to 'Active' if it doesn't exist
+        const projectStatus = project.status || 'Active';
+        const matchesTab = activeTab === 'All' || projectStatus === activeTab;
+
+        return matchesSearch && matchesTab;
+    });
 
     if (!mounted) return null;
 
     return (
         <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div>
-                    <h1 className="text-4xl font-black text-[#2d3142] mb-2 tracking-tight">
-                        All Projects
-                    </h1>
-                    <p className="text-gray-400 font-medium">
-                        Manage and track all your architectural projects in one place.
-                    </p>
-                </div>
-                <Button
-                    onClick={() => setIsProjectModalOpen(true)}
-                    className="bg-[#d9a88a] hover:bg-white border hover:border-[#d9a88a] text-white hover:text-[#d9a88a] px-8 py-4 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 shrink-0"
-                >
-                    <Plus className="w-5 h-5" />
-                    New Project
-                </Button>
+            <div className="mb-8">
+                <h1 className="text-[28px] font-extrabold text-[#2d3142] tracking-tight">
+                    Projects
+                </h1>
             </div>
 
-            <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
-                    <input
-                        type="text"
-                        placeholder="Search projects by name or city..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-14 pr-6 py-4 bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 rounded-2xl transition-all text-gray-600 font-medium"
-                    />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                    {['All', 'Active', 'On hold', 'Completed', 'Canceled', 'Archived'].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setActiveTab(status)}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeTab === status
+                                ? 'bg-[#2d3142] text-white hover:bg-gray-800'
+                                : 'bg-[#f4f5f7] text-gray-500 hover:bg-gray-200'
+                                }`}
+                        >
+                            {status}
+                        </button>
+                    ))}
+                    <div className="relative ml-4 shrink-0">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search projects..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 pr-4 py-2 bg-[#f4f5f7] border border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-1 focus:ring-[#d9a88a] rounded-full transition-all text-sm text-gray-600 font-medium w-48 md:w-64 outline-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                    <button className="flex items-center gap-1.5 text-sm text-gray-500 font-medium hover:text-gray-700 transition-colors">
+                        Last updated
+                        <ChevronDown className="w-4 h-4" />
+                    </button>
+                    <Button
+                        onClick={() => setIsProjectModalOpen(true)}
+                        className="bg-[#3c4153] hover:bg-[#2d3142] text-white px-5 py-2.5 rounded-full font-semibold flex items-center gap-2 transition-all active:scale-95 text-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New project
+                    </Button>
                 </div>
             </div>
 
@@ -100,7 +123,7 @@ export default function AllProjectsPage() {
                     <p className="text-gray-400 font-bold text-lg">Loading your projects...</p>
                 </div>
             ) : filteredProjects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredProjects.map(project => (
                         <ProjectCard
                             key={project._id}
