@@ -2,7 +2,48 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
-import { removeBackground } from '@imgly/background-removal';
+import { removeBackground, preload } from '@imgly/background-removal';
+
+/**
+ * Helper to resize image for faster AI processing
+ */
+const resizeImageForAI = (src, maxDim = 1024) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const width = img.width;
+            const height = img.height;
+
+            if (width <= maxDim && height <= maxDim) {
+                resolve(src); // No need to resize
+                return;
+            }
+
+            let newWidth, newHeight;
+            if (width > height) {
+                newWidth = maxDim;
+                newHeight = (height / width) * maxDim;
+            } else {
+                newHeight = maxDim;
+                newWidth = (width / height) * maxDim;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(src); // Fallback to original
+        img.src = src;
+    });
+};
+
+/**
+ * Custom hook to manage the Fabric.js canvas
+ */
 import { getProductImageUrl, getVariantImageUrl, getProductName, getProductCategory } from '@/lib/productUtils';
 
 const DEFAULT_CARD_W = 148;
@@ -468,7 +509,15 @@ export function useFabricCanvas({
         onUpdateItem(id, props);
     }, [onUpdateItem]);
 
+    /* ── Background Removal ──────────────────────────── */
     const [isProcessingBg, setIsProcessingBg] = useState(false);
+    const [bgProgress, setBgProgress] = useState(0);
+
+    // Preload AI assets on mount
+    useEffect(() => {
+        console.log("Preloading AI background removal assets...");
+        preload({ model: 'small' }).catch(err => console.warn("AI Preload failed", err));
+    }, []);
 
     const removeSelectedBackground = async () => {
         const activeObj = fabricRef.current?.getActiveObject();
@@ -486,15 +535,26 @@ export function useFabricCanvas({
 
         try {
             setIsProcessingBg(true);
-            const src = imgObj.getSrc();
+            setBgProgress(1); // Start with 1% to show it's alive
+
+            let src = imgObj.getSrc();
+
+            // 0. Resize image if too large (speeds up processing significantly)
+            setBgProgress(5); // Resizing...
+            src = await resizeImageForAI(src);
 
             // 1. Remove background
             const blob = await removeBackground(src, {
                 progress: (key, current, total) => {
-                    console.log(`Background removal progress [${key}]: ${Math.round((current / total) * 100)}%`);
+                    const p = Math.round((current / total) * 100);
+                    // Map progress to 10-90 range to account for setup/finalize
+                    setBgProgress(10 + Math.round(p * 0.8));
+                    console.log(`AI Progress [${key}]: ${p}%`);
                 },
-                model: 'medium' // Balance between quality and speed
+                model: 'small',
             });
+
+            setBgProgress(95); // Finalizing...
 
             // 2. Convert result to DataURL
             const reader = new FileReader();
@@ -539,13 +599,15 @@ export function useFabricCanvas({
 
                 fabricRef.current.requestRenderAll();
                 setIsProcessingBg(false);
+                setBgProgress(0);
             };
             reader.readAsDataURL(blob);
 
         } catch (error) {
             console.error("Background removal failed:", error);
             setIsProcessingBg(false);
-            alert("Background removal failed. Please try again with a simpler image.");
+            setBgProgress(0);
+            alert("Background removal failed. This usually happens if the image is corrupt or device memory is low. Try with a smaller image!");
         }
     };
 
@@ -570,6 +632,7 @@ export function useFabricCanvas({
         updateFabricObject,
         removeSelectedBackground,
         isProcessingBg,
+        bgProgress,
         activeMenuConfig
     };
 }

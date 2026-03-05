@@ -56,6 +56,7 @@ export default function CanvasPreview(props) {
         updateFabricObject,
         removeSelectedBackground,
         isProcessingBg,
+        bgProgress,
         activeMenuConfig
     } = useFabricCanvas({
         boardItems,
@@ -263,7 +264,14 @@ export default function CanvasPreview(props) {
                                 active={isProcessingBg}
                             >
                                 {isProcessingBg ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-[#e09a74]" />
+                                    <div className="relative flex items-center justify-center">
+                                        <Loader2 className="w-4 h-4 animate-spin text-[#e09a74]" />
+                                        {bgProgress > 0 && (
+                                            <span className="absolute -bottom-4 text-[8px] font-bold text-[#e09a74] whitespace-nowrap bg-white/80 px-1 rounded-sm">
+                                                {bgProgress < 10 ? 'Loading...' : `${bgProgress}%`}
+                                            </span>
+                                        )}
+                                    </div>
                                 ) : (
                                     <Wand2 className="w-4 h-4" />
                                 )}
