@@ -11,8 +11,7 @@ const STATUSES = [
 
 export default function CardContextMenu({
     x, y, currentStatus = 'Considering',
-    onStatusChange, onRemove, onSetCover,
-    onEditTitle, isPhoto,
+    onStatusChange, onRemove,
     onClose
 }) {
     const ref = useRef(null);
@@ -51,36 +50,6 @@ export default function CardContextMenu({
                     {currentStatus === label && <Check className="w-3.5 h-3.5 ml-auto text-gray-500" />}
                 </button>
             ))}
-
-            <div className="border-t border-gray-100 my-1" />
-
-            <button className="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Add a tag
-            </button>
-            <button className="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Add a note
-            </button>
-            <button className="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Copy to
-            </button>
-
-            {isPhoto && onEditTitle && (
-                <button
-                    onClick={() => { onEditTitle(); onClose(); }}
-                    className="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                    Edit title &amp; description
-                </button>
-            )}
-
-            {onSetCover && (
-                <button
-                    onClick={() => { onSetCover(); onClose(); }}
-                    className="w-full text-left px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                    Set as cover image
-                </button>
-            )}
 
             <div className="border-t border-gray-100 my-1" />
 

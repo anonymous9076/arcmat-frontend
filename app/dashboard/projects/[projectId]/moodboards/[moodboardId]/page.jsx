@@ -341,26 +341,36 @@ export default function MoodboardDetailPage() {
 
     /* ── CSV Export ─────────────────────────────── */
     const exportAsCSV = () => {
-        const mats = boardItems.filter(i => i.type !== 'text');
-        if (mats.length === 0 && products.length === 0) { toast.error('No materials to export'); return; }
-        const source = mats.length > 0 ? mats.map(i => ({
-            name: getProductName(i.material),
-            category: getProductCategory(i.material),
-            brand: getProductBrand(i.material),
-            sku: i.material?.skucode || i.material?.productId?.skucode || '',
-            qty: i.quantity || 1,
-            price: i.price || 0,
-        })) : products.map(p => ({
-            name: getProductName(p),
-            category: getProductCategory(p),
-            brand: getProductBrand(p),
-            sku: p.skucode || p.productId?.skucode || '',
-            qty: 1,
-            price: 0,
-        }));
+        const matsOnBoard = boardItems.filter(i => i.type !== 'text');
+
+        // Unify all overview items (products + custom photos)
+        const allOverviewItems = [
+            ...products.map(p => ({ isPhoto: false, data: p })),
+            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
+        ];
+
+        if (allOverviewItems.length === 0) { toast.error('No materials to export'); return; }
+
+        const source = allOverviewItems.map(({ isPhoto, data }) => {
+            const id = isPhoto ? data.id : data._id;
+            // Check if this item is on the canvas to get quantity and price
+            const canvasInstances = matsOnBoard.filter(i => i.material?._id === id);
+            const totalQty = canvasInstances.length > 0 ? canvasInstances.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0) : 1;
+            const price = canvasInstances.length > 0 ? canvasInstances[0].price : 0; // Using first instance price if applicable
+
+            return {
+                name: isPhoto ? data.title : getProductName(data),
+                category: isPhoto ? 'Uploaded Image' : getProductCategory(data),
+                brand: isPhoto ? 'Custom Upload' : getProductBrand(data),
+                sku: isPhoto ? '—' : (data?.skucode || data?.productId?.skucode || ''),
+                qty: totalQty,
+                price: price || 0,
+                status: isPhoto ? (data.status || 'Considering') : (productStatuses[id] || 'Considering')
+            };
+        });
 
         const headers = ['Name', 'Spec Status', 'Project Name', 'Tags', 'Brand', 'Manufacturer SKU'];
-        const rows = source.map(r => [r.name, 'Considering', project?.projectName || 'ArcMat', 'Add tag', r.brand, r.sku]
+        const rows = source.map(r => [r.name, r.status, project?.projectName || 'ArcMat', 'Add tag', r.brand, r.sku]
             .map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -835,23 +845,29 @@ export default function MoodboardDetailPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 bg-white">
-                                    {products.length === 0 && boardItems.filter(i => i.type !== 'text').length === 0 ? (
+                                    {(products.length === 0 && customPhotos.length === 0) ? (
                                         <tr>
                                             <td colSpan={7} className="py-16 text-center text-gray-400 text-sm font-medium">
-                                                No materials to export. Add products first.
+                                                No materials to export. Add products or images first.
                                             </td>
                                         </tr>
                                     ) : (
-                                        (boardItems.filter(i => i.type !== 'text').length > 0
-                                            ? boardItems.filter(i => i.type !== 'text').map(item => ({ p: item.material, item }))
-                                            : products.map(p => ({ p, item: null }))
-                                        ).map(({ p, item }, i) => {
-                                            const thumb = getProductThumbnail(p);
-                                            const name = getProductName(p);
-                                            const brand = getProductBrand(p);
-                                            const sku = p?.skucode || (typeof p?.productId === 'object' ? p?.productId?.skucode : '') || '—';
+                                        [
+                                            ...products.map(p => ({ isPhoto: false, data: p })),
+                                            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
+                                        ].map(({ isPhoto, data }, i) => {
+                                            const id = isPhoto ? data.id : data._id;
+                                            const thumb = isPhoto ? (data.previewUrl || '/Icons/arcmatlogo.svg') : getProductThumbnail(data);
+                                            const name = isPhoto ? data.title : getProductName(data);
+                                            const brand = isPhoto ? 'Custom Upload' : getProductBrand(data);
+                                            const sku = isPhoto ? '—' : (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '—');
+                                            const st = isPhoto ? (data.status || 'Considering') : (productStatuses[id] || 'Considering');
+
+                                            // Optional: calculate quantity based on canvas if we wanted to show it in the table
+                                            // const onCanvasCount = boardItems.filter(ci => ci.material?._id === id && ci.type !== 'text').length;
+
                                             return (
-                                                <tr key={`${p?._id || 'item'}-${i}`} className="hover:bg-gray-50 transition-colors group">
+                                                <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50 transition-colors group">
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
@@ -863,7 +879,6 @@ export default function MoodboardDetailPage() {
                                                     </td>
                                                     <td className="px-4 py-3.5">
                                                         {(() => {
-                                                            const st = productStatuses[p?._id] ?? 'Considering';
                                                             const sty = STATUS_STYLES[st] || STATUS_STYLES['Considering'];
                                                             return (
                                                                 <span className={`flex items-center gap-1.5 text-xs font-semibold ${sty.label}`}>
@@ -881,13 +896,15 @@ export default function MoodboardDetailPage() {
                                                     <td className="px-4 py-3.5">
                                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400" title="Email"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg></button>
-                                                            <button
-                                                                onClick={() => handleAddToCart(p)}
-                                                                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
-                                                                title="Add to Cart"
-                                                            >
-                                                                <ShoppingCart className="w-4 h-4" />
-                                                            </button>
+                                                            {!isPhoto && (
+                                                                <button
+                                                                    onClick={() => handleAddToCart(data)}
+                                                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
+                                                                    title="Add to Cart"
+                                                                >
+                                                                    <ShoppingCart className="w-4 h-4" />
+                                                                </button>
+                                                            )}
                                                             <button className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400" title="More"><MoreHorizontal className="w-4 h-4" /></button>
                                                         </div>
                                                     </td>
