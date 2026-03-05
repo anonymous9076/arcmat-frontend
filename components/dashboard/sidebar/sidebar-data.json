@@ -138,8 +138,8 @@
         },
         {
             "id": "boards",
-            "label": "Moodboards",
-            "icon": "Palette",
+            "label": "Spaces",
+            "icon": "PlayCircle",
             "href": "/dashboard/boards"
         },
         {

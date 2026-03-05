@@ -20,7 +20,7 @@ export default function MoodboardCard({ moodboard, projectId, onDelete }) {
 
     const handleSave = () => {
         if (!editName.trim()) {
-            toast.error('Moodboard name cannot be empty');
+            toast.error('Space name cannot be empty');
             return;
         }
 
@@ -88,7 +88,7 @@ export default function MoodboardCard({ moodboard, projectId, onDelete }) {
                 <button
                     onClick={(e) => { e.preventDefault(); onDelete(_id); }}
                     className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                    title="Delete moodboard"
+                    title="Delete space"
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>

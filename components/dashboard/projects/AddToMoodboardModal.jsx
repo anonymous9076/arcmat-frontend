@@ -189,11 +189,11 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                             )}
                         </div>
 
-                        {/* Moodboard Selection */}
+                        {/* Space Selection */}
                         {selectedProjectId && (
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase font-black tracking-widest text-gray-400 ml-1">
-                                    2. Choose Moodboard
+                                    2. Choose Space
                                 </label>
 
                                 {moodboardsLoading ? (
@@ -227,8 +227,8 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                                     </div>
                                 ) : (
                                     <div className="p-8 bg-orange-50 rounded-3xl text-center border border-dashed border-orange-200">
-                                        <p className="text-orange-500 font-bold text-sm mb-2">No moodboards found</p>
-                                        <p className="text-orange-400 text-xs">Create a moodboard in this project first.</p>
+                                        <p className="text-orange-500 font-bold text-sm mb-2">No spaces found</p>
+                                        <p className="text-orange-400 text-xs">Create a space in this project first.</p>
                                     </div>
                                 )}
                             </div>

@@ -52,7 +52,7 @@ export default function MoodboardsPage() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
                 <Loader2 className="w-12 h-12 text-[#d9a88a] animate-spin mb-4" />
-                <p className="text-gray-400 font-bold">Loading moodboards...</p>
+                <p className="text-gray-400 font-bold">Loading spaces...</p>
             </div>
         );
     }
@@ -74,7 +74,7 @@ export default function MoodboardsPage() {
                         className="bg-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95 text-sm"
                     >
                         <Plus className="w-4 h-4" />
-                        New Moodboard
+                        New Space
                     </Button>
                 </div>
             </div>
@@ -86,7 +86,7 @@ export default function MoodboardsPage() {
                             <Layout className="w-5 h-5 text-[#d9a88a]" />
                         </div>
                         <h1 className="text-3xl font-black text-[#2d3142] tracking-tight">
-                            {project?.projectName} <span className="text-[#d9a88a]">Boards</span>
+                            {project?.projectName} <span className="text-[#d9a88a]">Spaces</span>
                         </h1>
                     </div>
                     <p className="text-gray-500 font-medium ml-1">
@@ -99,7 +99,7 @@ export default function MoodboardsPage() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search boards..."
+                            placeholder="Search spaces..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-700 w-48 focus:ring-2 focus:ring-[#d9a88a]/20 transition-all outline-none"
@@ -153,17 +153,17 @@ export default function MoodboardsPage() {
                         <Layout className="w-12 h-12 text-[#d9a88a]" />
                     </div>
                     <h3 className="text-2xl font-bold text-[#2d3142] mb-3">
-                        {searchQuery ? 'No matching boards' : 'No moodboards yet'}
+                        {searchQuery ? 'No matching spaces' : 'No spaces yet'}
                     </h3>
                     <p className="text-gray-400 font-medium max-w-sm mx-auto mb-10">
-                        {searchQuery ? `We couldn't find any boards matching "${searchQuery}"` : 'Start by creating your first moodboard to organize your design ideas and costs.'}
+                        {searchQuery ? `We couldn't find any spaces matching "${searchQuery}"` : 'Start by creating your first space to organize your design ideas and costs.'}
                     </p>
                     {!searchQuery && (
                         <Button
                             onClick={() => setIsModalOpen(true)}
                             className="bg-[#d9a88a] text-white px-10 py-4 rounded-2xl font-black"
                         >
-                            Create Your First Moodboard
+                            Create Your First Space
                         </Button>
                     )}
                 </div>
@@ -179,8 +179,8 @@ export default function MoodboardsPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Moodboard"
-                message="Are you sure you want to delete this moodboard and its associated costs? This action cannot be undone."
+                title="Delete Space"
+                message="Are you sure you want to delete this space and its associated costs? This action cannot be undone."
                 confirmText="Delete"
                 type="danger"
             />

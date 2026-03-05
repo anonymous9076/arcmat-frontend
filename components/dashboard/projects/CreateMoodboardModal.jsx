@@ -51,10 +51,10 @@ export default function CreateMoodboardModal({ isOpen, onClose, projectId, moodb
                 <div className="px-8 pt-8 pb-6 flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-black text-[#2d3142]">
-                            {isEditing ? 'Edit Moodboard' : 'New Moodboard'}
+                            {isEditing ? 'Edit Space' : 'New Space'}
                         </h2>
                         <p className="text-sm text-gray-400 font-medium">
-                            {isEditing ? 'Update the name of your moodboard' : 'Create a fresh canvas for your project ideas'}
+                            {isEditing ? 'Update the name of your space' : 'Create a fresh canvas for your project ideas'}
                         </p>
                     </div>
                     <button
@@ -68,7 +68,7 @@ export default function CreateMoodboardModal({ isOpen, onClose, projectId, moodb
                 <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-6">
                     <div className="space-y-2">
                         <label className="text-xs uppercase font-black tracking-widest text-[#2d3142] ml-1">
-                            Moodboard Name
+                            Space Name
                         </label>
                         <div className="relative">
                             <Layout className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
@@ -98,7 +98,7 @@ export default function CreateMoodboardModal({ isOpen, onClose, projectId, moodb
                         >
                             {isLoading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : isEditing ? 'Update Moodboard' : 'Create Moodboard'}
+                            ) : isEditing ? 'Update Space' : 'Create Space'}
                         </Button>
                     </div>
                 </form>

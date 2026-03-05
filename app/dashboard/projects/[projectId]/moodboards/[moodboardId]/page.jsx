@@ -553,7 +553,7 @@ export default function MoodboardDetailPage() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
                 <Loader2 className="w-10 h-10 text-[#d9a88a] animate-spin mb-3" />
-                <p className="text-gray-400 font-semibold text-sm">Loading board...</p>
+                <p className="text-gray-400 font-semibold text-sm">Loading space...</p>
             </div>
         );
     }
@@ -615,7 +615,7 @@ export default function MoodboardDetailPage() {
                                     <button
                                         onClick={() => {
                                             setMenuOpen(false);
-                                            if (window.confirm('Delete this moodboard?')) {
+                                            if (window.confirm('Delete this space?')) {
                                                 deleteMutation.mutate(moodboardId, {
                                                     onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
                                                 });
@@ -628,7 +628,7 @@ export default function MoodboardDetailPage() {
                                     {siblingBoards.length > 0 && (
                                         <>
                                             <div className="border-t border-gray-100 my-1" />
-                                            <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Boards</p>
+                                            <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Spaces</p>
                                             {siblingBoards.map(b => (
                                                 <button
                                                     key={b._id}
@@ -648,7 +648,7 @@ export default function MoodboardDetailPage() {
                             href={`/dashboard/projects/${projectId}/moodboards`}
                             className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#d9a88a] transition-colors"
                         >
-                            Project Board
+                            Project Space
                         </Link>
                     </div>
                 </div>

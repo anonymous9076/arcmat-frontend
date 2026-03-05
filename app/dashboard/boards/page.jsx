@@ -61,7 +61,7 @@ export default function AllBoardsPage() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-3xl font-black text-[#2d3142] tracking-tight">All Moodboards</h1>
+                    <h1 className="text-3xl font-black text-[#2d3142] tracking-tight">All Spaces</h1>
                     <p className="text-gray-500 mt-1 font-medium">Manage and view your visual inspirations across all projects.</p>
                 </div>
 
@@ -83,7 +83,7 @@ export default function AllBoardsPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search moodboards..."
+                        placeholder="Search spaces..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-[#d9a88a]/20 transition-all outline-none"
@@ -115,7 +115,7 @@ export default function AllBoardsPage() {
             {boardsLoading ? (
                 <div className="flex flex-col items-center justify-center py-32">
                     <Loader2 className="w-12 h-12 text-[#d9a88a] animate-spin mb-4" />
-                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching your boards...</p>
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching your spaces...</p>
                 </div>
             ) : filteredBoards.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -133,11 +133,11 @@ export default function AllBoardsPage() {
                     <div className="w-20 h-20 bg-[#fef7f2] rounded-3xl flex items-center justify-center mb-6">
                         <Layout className="w-10 h-10 text-[#d9a88a]" />
                     </div>
-                    <h3 className="text-xl font-bold text-[#2d3142] mb-2">No moodboards found</h3>
+                    <h3 className="text-xl font-bold text-[#2d3142] mb-2">No spaces found</h3>
                     <p className="text-gray-400 font-medium max-w-xs text-center">
                         {searchQuery || selectedProject !== 'all'
                             ? "Try adjusting your filters or search query to find what you're looking for."
-                            : "Start by creating your first moodboard within a project."}
+                            : "Start by creating your first space within a project."}
                     </p>
                     {(searchQuery || selectedProject !== 'all') && (
                         <button
@@ -153,8 +153,8 @@ export default function AllBoardsPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Moodboard"
-                message="Are you sure you want to delete this moodboard and its associated costs? This action cannot be undone."
+                title="Delete Space"
+                message="Are you sure you want to delete this space and its associated costs? This action cannot be undone."
                 confirmText="Delete"
                 type="danger"
             />

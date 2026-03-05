@@ -19,7 +19,8 @@ import {
   Image,
   HardHat,
   Store,
-  Palette
+  Palette,
+  PlayCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '@/store/useAuthStore';
@@ -43,7 +44,8 @@ const ICON_MAP = {
   Image,
   HardHat,
   Store,
-  Palette
+  Palette,
+  PlayCircle
 };
 
 const mapIcons = (items) => items.map(item => ({

@@ -479,17 +479,17 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: Recent Boards */}
+                {/* RIGHT COLUMN: Recent Spaces */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200 h-full">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-semibold text-gray-800">
-                            Recent Boards
+                            Recent Spaces
                         </h2>
                         <Link
                             href="/dashboard/boards"
                             className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
                         >
-                            All Boards
+                            All Spaces
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                             <div className="w-16 h-16 bg-[#fef7f2] rounded-2xl flex items-center justify-center mb-4">
                                 <Layout className="w-8 h-8 text-[#d9a88a]" />
                             </div>
-                            <p className="text-sm text-gray-400 font-medium">No moodboards yet.</p>
+                            <p className="text-sm text-gray-400 font-medium">No spaces yet.</p>
                             <Link href="/dashboard/projects" className="mt-4 text-xs font-bold text-[#d9a88a] hover:underline uppercase tracking-wider">Start Creating</Link>
                         </div>
                     )}
