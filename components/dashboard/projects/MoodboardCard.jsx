@@ -151,14 +151,11 @@ export default function MoodboardCard({ moodboard, projectId, onDelete }) {
                     <Camera className="w-4 h-4" />
                 </button>
 
-                {/* Visualizer Floating Button - Moved OUTSIDE the Link above */}
+                {/* Visualizer Floating Button - Now goes to Design Desk tab */}
                 <Link
-                    href="/dashboard/visualizer"
-                    onClick={() => {
-                        useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "");
-                    }}
+                    href={`/dashboard/projects/${projectId}/moodboards/${_id}?tab=designDesk`}
                     className="absolute bottom-4 right-4 p-3 bg-white/95 backdrop-blur text-[#d9a88a] rounded-2xl shadow-xl opacity-0 translate-y-2 group-hover/preview:opacity-100 group-hover/preview:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-20"
-                    title="Open Visualizer"
+                    title="Open Design Desk"
                 >
                     <MonitorPlay className="w-5 h-5" />
                 </Link>
