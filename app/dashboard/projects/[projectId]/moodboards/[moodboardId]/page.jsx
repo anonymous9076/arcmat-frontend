@@ -450,15 +450,20 @@ export default function MoodboardDetailPage() {
                 qty: qty,
                 price: price,
                 total: total,
-                status: st
+                status: st,
+                image: isPhoto ? (data.previewUrl || '') : getProductThumbnail(data)
             };
         });
 
-        const headers = ['Name', 'Spec Status', 'Project Name', 'Brand', 'Manufacturer SKU', 'Quantity', 'Unit Price', 'Total Cost'];
+        const headers = ['Name', 'Spec Status', 'Project Name', 'Brand', 'Manufacturer SKU', 'Quantity', 'Unit Price', 'Total Cost', 'Image URL'];
         const rows = source.map(r => [
-            r.name, r.status, project?.projectName || 'ArcMat', r.brand, r.sku, r.qty, r.price, r.total
+            r.name, r.status, project?.projectName || 'ArcMat', r.brand, r.sku, r.qty, r.price, r.total, r.image
         ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-        const csvContent = [headers.join(','), ...rows].join('\n');
+
+        const totalSum = source.reduce((sum, r) => sum + r.total, 0);
+        const totalRow = ['', '', '', '', '', '', 'GRAND TOTAL', totalSum, ''].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+
+        const csvContent = [headers.join(','), ...rows, totalRow].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
