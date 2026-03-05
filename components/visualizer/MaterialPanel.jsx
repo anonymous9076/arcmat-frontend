@@ -115,6 +115,7 @@ export default function MaterialPanel({ materials, selectedMaterial, stagedMater
                                             src={imgUrl}
                                             alt={productName}
                                             fill
+                                            sizes="(max-width: 240px) 50vw, 120px"
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             onError={e => { e.target.src = '/Icons/arcmatlogo.svg'; }}
                                         />

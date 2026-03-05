@@ -29,6 +29,24 @@ import {
 // Visualizer components
 import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
+import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
+import CardContextMenu from '@/components/moodboard/CardContextMenu';
+
+// Status badge helper
+const STATUS_STYLES = {
+    'Specified': { dot: 'bg-green-400', label: 'text-green-600' },
+    'Considering': { dot: 'bg-gray-500', label: 'text-gray-600' },
+    'Excluded': { dot: 'bg-pink-400', label: 'text-pink-500' },
+};
+function StatusDot({ status = 'Considering' }) {
+    const s = STATUS_STYLES[status] || STATUS_STYLES['Considering'];
+    return (
+        <span
+            className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-white shadow ${s.dot}`}
+            title={status}
+        />
+    );
+}
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -51,7 +69,15 @@ export default function MoodboardDetailPage() {
     const [brandFilterOpen, setBrandFilterOpen] = useState(false);
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [addCardOpen, setAddCardOpen] = useState(false);
-    const photoInputRef = useRef(null);
+
+    // Photo upload modal
+    const [photoModalOpen, setPhotoModalOpen] = useState(false);
+    // Custom photos: [{ id, title, description, previewUrl, status }]
+    const [customPhotos, setCustomPhotos] = useState([]);
+    // Per-product status map: { [productId]: 'Considering' | 'Specified' | 'Excluded' }
+    const [productStatuses, setProductStatuses] = useState({});
+    // Right-click context menu
+    const [contextMenu, setContextMenu] = useState(null); // { x, y, itemId, isPhoto }
 
     // Canvas state (Design Desk)
     const [boardItems, setBoardItems] = useState([]);
@@ -87,6 +113,10 @@ export default function MoodboardDetailPage() {
             if (!isDataLoaded.current) {
                 const state = Array.isArray(moodboard.canvasState) ? moodboard.canvasState : [];
                 setBoardItems(state);
+                // Restore custom photos (title/description/status but not blob URLs which are ephemeral)
+                if (Array.isArray(moodboard.customPhotos)) setCustomPhotos(moodboard.customPhotos);
+                // Restore product statuses
+                if (moodboard.productMetadata) setProductStatuses(moodboard.productMetadata);
                 isDataLoaded.current = true;
             }
         }
@@ -209,6 +239,105 @@ export default function MoodboardDetailPage() {
         }
         toast.success(`${getProductName(product)} added to cart!`);
     };
+
+    /* ── Photo Upload Handler ──────────────────── */
+    const handlePhotoAdd = useCallback(({ file, previewUrl, title, description }) => {
+        const photoId = 'photo_' + Date.now();
+        const newPhoto = {
+            id: photoId,
+            title,
+            description,
+            previewUrl, // Base64 now
+            status: 'Considering',
+        };
+        setCustomPhotos(prev => {
+            const next = [...prev, newPhoto];
+            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
+            return next;
+        });
+
+        // Also add to Canvas
+        const pseudoMaterial = {
+            _id: photoId,
+            name: title,
+            isCustomPhoto: true,
+            photoUrl: previewUrl,
+            images: [previewUrl],
+            category: 'My Photo',
+            brand: 'Custom Upload',
+        };
+        // Add to boardItems so it shows on Design Desk canvas
+        handleDrop(pseudoMaterial, 400, 300);
+
+        toast.success(`"${title}" added to Overview and Canvas!`);
+    }, [moodboardId, updateMoodboard, handleDrop]);
+
+    /* ── Status Handlers ───────────────────────── */
+    const handlePhotoStatusChange = useCallback((photoId, status) => {
+        setCustomPhotos(prev => {
+            const next = prev.map(p => p.id === photoId ? { ...p, status } : p);
+            const toSave = next.map(({ previewUrl: _url, ...rest }) => rest);
+            updateMoodboard({ id: moodboardId, data: { customPhotos: toSave } });
+            return next;
+        });
+    }, [moodboardId, updateMoodboard]);
+
+    const handleProductStatusChange = useCallback((productId, status) => {
+        setProductStatuses(prev => {
+            const next = { ...prev, [productId]: status };
+            updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
+            return next;
+        });
+    }, [moodboardId, updateMoodboard]);
+
+    const handleRemovePhoto = useCallback((photoId) => {
+        // Remove from Overview customPhotos
+        setCustomPhotos(prev => {
+            const next = prev.filter(p => p.id !== photoId);
+            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
+            return next;
+        });
+        // Remove from Canvas boardItems
+        setBoardItems(prev => {
+            const next = prev.filter(item => item.material?._id !== photoId);
+            saveToBackend(next);
+            return next;
+        });
+        toast.success('Photo removed from board');
+    }, [moodboardId, updateMoodboard, saveToBackend]);
+
+    const handleRemoveProduct = useCallback((productId) => {
+        // 1. Remove from EstimatedCost (Overview Tab)
+        if (estimation?._id && products.length > 0) {
+            const newProductIds = products
+                .filter(p => p._id !== productId)
+                .map(p => p._id);
+
+            updateEstimationMutation.mutate({
+                id: estimation._id,
+                data: { productIds: newProductIds }
+            }, {
+                onSuccess: () => {
+                    queryClient.invalidateQueries(['moodboard', moodboardId]);
+                }
+            });
+        }
+
+        // 2. Remove from Canvas boardItems (Design Desk)
+        setBoardItems(prev => {
+            const next = prev.filter(item => item.material?._id !== productId);
+            saveToBackend(next);
+            return next;
+        });
+        toast.success('Product removed from board');
+    }, [estimation, products, updateEstimationMutation, moodboardId, queryClient, saveToBackend]);
+
+    /* ── Context Menu ──────────────────────────── */
+    const openContextMenu = useCallback((e, itemId, isPhoto) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, itemId, isPhoto });
+    }, []);
 
     /* ── CSV Export ─────────────────────────────── */
     const exportAsCSV = () => {
@@ -378,8 +507,8 @@ export default function MoodboardDetailPage() {
                                 <button
                                     onClick={() => { setBrandFilterOpen(o => !o); }}
                                     className={`px-4 py-2 border rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${selectedBrands.length > 0
-                                            ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
-                                            : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                        ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                                         }`}
                                 >
                                     Brands {selectedBrands.length > 0 && <span className="bg-white/20 text-white text-[10px] font-black rounded-full px-1.5">{selectedBrands.length}</span>}
@@ -440,43 +569,68 @@ export default function MoodboardDetailPage() {
                             )}
                         </div>
 
-                        {/* Hidden photo input */}
-                        <input
-                            ref={photoInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    toast.success(`Photo "${file.name}" added to board. Open Design Desk to see it.`);
-                                    // Navigate to design desk and add photo
-                                    setActiveTab('designDesk');
-                                }
-                                e.target.value = '';
-                            }}
+                        {/* Photo upload modal (no hidden input needed) */}
+                        <PhotoUploadModal
+                            isOpen={photoModalOpen}
+                            onClose={() => setPhotoModalOpen(false)}
+                            onAdd={handlePhotoAdd}
                         />
 
-                        {products.length === 0 ? (
+                        {/* Context menu (rendered at root level so it escapes overflow) */}
+                        {contextMenu && (
+                            <CardContextMenu
+                                x={contextMenu.x}
+                                y={contextMenu.y}
+                                isPhoto={contextMenu.isPhoto}
+                                currentStatus={
+                                    contextMenu.isPhoto
+                                        ? customPhotos.find(p => p.id === contextMenu.itemId)?.status ?? 'Considering'
+                                        : productStatuses[contextMenu.itemId] ?? 'Considering'
+                                }
+                                onStatusChange={(status) => {
+                                    if (contextMenu.isPhoto) handlePhotoStatusChange(contextMenu.itemId, status);
+                                    else handleProductStatusChange(contextMenu.itemId, status);
+                                }}
+                                onRemove={() => {
+                                    if (contextMenu.isPhoto) handleRemovePhoto(contextMenu.itemId);
+                                    else handleRemoveProduct(contextMenu.itemId);
+                                }}
+                                onEditTitle={contextMenu.isPhoto ? () => {
+                                    // Simple: re-open modal pre-filled (future enhancement)
+                                    toast.info('Edit via the product list');
+                                } : null}
+                                onClose={() => setContextMenu(null)}
+                            />
+                        )}
+
+                        {products.length === 0 && customPhotos.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-gray-200 rounded-3xl text-center">
                                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
                                     <ShoppingCart className="w-7 h-7 text-gray-300" />
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-600 mb-2">No materials yet</h3>
-                                <p className="text-sm text-gray-400 mb-6 max-w-sm">Add products from the catalog to start building your moodboard.</p>
-                                <button
-                                    onClick={() => {
-                                        useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
-                                        router.push('/productlist');
-                                    }}
-                                    className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" /> Add Products
-                                </button>
+                                <p className="text-sm text-gray-400 mb-6 max-w-sm">Add products from the catalog or upload custom images.</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => {
+                                            useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
+                                            router.push('/productlist');
+                                        }}
+                                        className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add Products
+                                    </button>
+                                    <button
+                                        onClick={() => setPhotoModalOpen(true)}
+                                        className="px-6 py-3 border border-[#d9a88a] text-[#d9a88a] font-bold rounded-2xl hover:bg-[#fef7f2] transition-colors flex items-center gap-2"
+                                    >
+                                        <ImagePlus className="w-4 h-4" /> Upload Image
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                                {/* + Add Card with popup */}
+                                {/* + Add Card */}
                                 <div className="relative">
                                     <button
                                         onClick={() => setAddCardOpen(o => !o)}
@@ -503,7 +657,7 @@ export default function MoodboardDetailPage() {
                                                 Browse Product List
                                             </button>
                                             <button
-                                                onClick={() => { setAddCardOpen(false); photoInputRef.current?.click(); }}
+                                                onClick={() => { setAddCardOpen(false); setPhotoModalOpen(true); }}
                                                 className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
                                             >
                                                 <div className="w-7 h-7 bg-[#d9a88a] rounded-lg flex items-center justify-center shrink-0">
@@ -515,6 +669,34 @@ export default function MoodboardDetailPage() {
                                     )}
                                 </div>
 
+                                {/* Custom uploaded photos */}
+                                {customPhotos.map((photo) => (
+                                    <div
+                                        key={photo.id}
+                                        onContextMenu={(e) => openContextMenu(e, photo.id, true)}
+                                        className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
+                                    >
+                                        <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                                            {photo.previewUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={photo.previewUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                                    <ImagePlus className="w-8 h-8 text-gray-300" />
+                                                </div>
+                                            )}
+                                            {/* Status dot */}
+                                            <StatusDot status={photo.status} />
+                                        </div>
+                                        <div className="p-3 flex flex-col gap-0.5 flex-1">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Uploaded Image</p>
+                                            <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{photo.title}</p>
+                                            {photo.description && <p className="text-xs text-gray-400 truncate">{photo.description}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Product cards */}
                                 {products
                                     .filter(p => selectedBrands.length === 0 || selectedBrands.includes(getProductBrand(p)))
                                     .map((product, i) => {
@@ -523,9 +705,15 @@ export default function MoodboardDetailPage() {
                                         const brand = getProductBrand(product);
                                         const category = getProductCategory(product);
                                         const hasVariants = (typeof product.productId === 'object' ? product.productId?.variants?.length : 0) || 0;
+                                        const productId = product._id;
+                                        const status = productStatuses[productId] ?? 'Considering';
 
                                         return (
-                                            <div key={`${product._id || 'p'}-${i}`} className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group">
+                                            <div
+                                                key={`${productId || 'p'}-${i}`}
+                                                onContextMenu={(e) => openContextMenu(e, productId, false)}
+                                                className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
+                                            >
                                                 <div className="relative aspect-square bg-gray-50 overflow-hidden">
                                                     {imgUrl && imgUrl !== '/Icons/arcmatlogo.svg' ? (
                                                         // eslint-disable-next-line @next/next/no-img-element
@@ -535,9 +723,11 @@ export default function MoodboardDetailPage() {
                                                             <Building2 className="w-8 h-8 text-gray-300" />
                                                         </div>
                                                     )}
+                                                    {/* Status dot */}
+                                                    <StatusDot status={status} />
                                                 </div>
                                                 <div className="p-3 flex flex-col gap-1 flex-1">
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{category}</p>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
                                                     <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{brand}</p>
                                                     <p className="text-xs text-gray-400 truncate">{name}</p>
                                                     <div className="mt-auto pt-2">
@@ -562,6 +752,7 @@ export default function MoodboardDetailPage() {
                         )}
                     </div>
                 )}
+
 
                 {/* DESIGN DESK */}
                 {activeTab === 'designDesk' && isMounted && (
@@ -671,17 +862,15 @@ export default function MoodboardDetailPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3.5">
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                                <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" /> Specified
-                                                            </span>
-                                                            <span className="flex items-center gap-1.5 text-xs text-gray-800 font-semibold">
-                                                                <span className="w-2 h-2 rounded-full bg-gray-700 shrink-0" /> Considering
-                                                            </span>
-                                                            <span className="flex items-center gap-1.5 text-xs text-gray-400">
-                                                                <span className="w-2 h-2 rounded-full bg-red-300 shrink-0" /> Excluded
-                                                            </span>
-                                                        </div>
+                                                        {(() => {
+                                                            const st = productStatuses[p?._id] ?? 'Considering';
+                                                            const sty = STATUS_STYLES[st] || STATUS_STYLES['Considering'];
+                                                            return (
+                                                                <span className={`flex items-center gap-1.5 text-xs font-semibold ${sty.label}`}>
+                                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${sty.dot}`} />{st}
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </td>
                                                     <td className="px-4 py-3.5 text-gray-600 font-medium">{project?.projectName || 'ArcMat'}</td>
                                                     <td className="px-4 py-3.5">
