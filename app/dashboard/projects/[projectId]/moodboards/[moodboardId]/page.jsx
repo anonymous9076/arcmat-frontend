@@ -37,6 +37,7 @@ import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
 import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
 import CardContextMenu from '@/components/moodboard/CardContextMenu';
+import Container from '@/components/ui/Container';
 
 // Status badge helper
 const STATUS_STYLES = {
@@ -561,113 +562,115 @@ export default function MoodboardDetailPage() {
     return (
         <div className="flex flex-col h-screen bg-white overflow-hidden">
             {/* ── Header ───────────────────────────────── */}
-            <div className="px-8 pt-6 pb-0 border-b border-gray-100 bg-white">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1 min-w-0">
-                        {isEditing ? (
-                            <div className="flex items-center gap-3 mb-1">
-                                <input
-                                    autoFocus
-                                    value={editName}
-                                    onChange={e => setEditName(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditing(false); }}
-                                    className="text-3xl font-black text-[#1a1a2e] bg-transparent border-b-2 border-[#d9a88a] focus:outline-none w-full max-w-sm pb-1"
-                                />
-                                <button onClick={handleSaveName} disabled={isUpdatingName} className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all">
-                                    <Check className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => { setEditName(moodboard?.moodboard_name || ''); setIsEditing(false); }} className="p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-all">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-3 mb-1 group/title w-fit">
-                                <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-                        <p className="text-sm text-gray-400 font-medium">
-                            {moodboard?.description || 'Enter a description for the board'}
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                        <div className="relative">
-                            <button
-                                onClick={() => setMenuOpen(o => !o)}
-                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
-                            >
-                                <MoreHorizontal className="w-5 h-5" />
-                            </button>
-                            {menuOpen && (
-                                <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                    <button
-                                        onClick={() => { setIsEditing(true); setMenuOpen(false); }}
-                                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                    >
-                                        <Edit2 className="w-4 h-4" /> Rename
+            <div className="border-b border-gray-100 bg-white">
+                <Container className="pt-6 pb-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                        <div className="flex-1 min-w-0">
+                            {isEditing ? (
+                                <div className="flex items-center gap-3 mb-1">
+                                    <input
+                                        autoFocus
+                                        value={editName}
+                                        onChange={e => setEditName(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditing(false); }}
+                                        className="text-3xl font-black text-[#1a1a2e] bg-transparent border-b-2 border-[#d9a88a] focus:outline-none w-full max-w-sm pb-1"
+                                    />
+                                    <button onClick={handleSaveName} disabled={isUpdatingName} className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all">
+                                        <Check className="w-4 h-4" />
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            setMenuOpen(false);
-                                            if (window.confirm('Delete this space?')) {
-                                                deleteMutation.mutate(moodboardId, {
-                                                    onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
-                                                });
-                                            }
-                                        }}
-                                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
-                                    >
-                                        <Trash2 className="w-4 h-4" /> Delete
+                                    <button onClick={() => { setEditName(moodboard?.moodboard_name || ''); setIsEditing(false); }} className="p-2 bg-gray-50 text-gray-400 rounded-xl hover:bg-gray-100 transition-all">
+                                        <X className="w-4 h-4" />
                                     </button>
-                                    {siblingBoards.length > 0 && (
-                                        <>
-                                            <div className="border-t border-gray-100 my-1" />
-                                            <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Spaces</p>
-                                            {siblingBoards.map(b => (
-                                                <button
-                                                    key={b._id}
-                                                    onClick={() => { setMenuOpen(false); router.push(`/dashboard/projects/${projectId}/moodboards/${b._id}`); }}
-                                                    className="w-full text-left px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 truncate"
-                                                >
-                                                    <List className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                                    <span className="truncate">{b.moodboard_name}</span>
-                                                </button>
-                                            ))}
-                                        </>
-                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 mb-1 group/title w-fit">
+                                    <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                             )}
+                            <p className="text-sm text-gray-400 font-medium mt-1">
+                                {moodboard?.description || 'Enter a description for the board'}
+                            </p>
                         </div>
-                        <Link
-                            href={`/dashboard/projects/${projectId}/moodboards`}
-                            className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#d9a88a] transition-colors"
-                        >
-                            Project Space
-                        </Link>
-                    </div>
-                </div>
 
-                {/* ── Tab Navigation ─── */}
-                <div className="flex items-center gap-0">
-                    {TABS.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === tab.id
-                                ? 'border-[#1a1a2e] text-[#1a1a2e]'
-                                : 'border-transparent text-gray-400 hover:text-gray-600'
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+                        <div className="flex items-center justify-between sm:justify-start gap-3 shrink-0">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setMenuOpen(o => !o)}
+                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                                >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </button>
+                                {menuOpen && (
+                                    <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
+                                        <button
+                                            onClick={() => { setIsEditing(true); setMenuOpen(false); }}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            <Edit2 className="w-4 h-4" /> Rename
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                if (window.confirm('Delete this space?')) {
+                                                    deleteMutation.mutate(moodboardId, {
+                                                        onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
+                                                    });
+                                                }
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" /> Delete
+                                        </button>
+                                        {siblingBoards.length > 0 && (
+                                            <>
+                                                <div className="border-t border-gray-100 my-1" />
+                                                <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Spaces</p>
+                                                {siblingBoards.map(b => (
+                                                    <button
+                                                        key={b._id}
+                                                        onClick={() => { setMenuOpen(false); router.push(`/dashboard/projects/${projectId}/moodboards/${b._id}`); }}
+                                                        className="w-full text-left px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 truncate"
+                                                    >
+                                                        <List className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                                                        <span className="truncate">{b.moodboard_name}</span>
+                                                    </button>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <Link
+                                href={`/dashboard/projects/${projectId}/moodboards`}
+                                className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#d9a88a] transition-colors"
+                            >
+                                Project Space
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* ── Tab Navigation ─── */}
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+                        {TABS.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`whitespace-nowrap flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all flex-1 sm:flex-none ${activeTab === tab.id
+                                    ? 'border-[#1a1a2e] text-[#1a1a2e]'
+                                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </Container>
             </div>
 
             {/* ── Tab Content ─────────────────────────── */}

@@ -125,11 +125,11 @@ export default function BrandInventoryPage() {
                 </div>
             </div>
 
-            {/* Product Grid */}
+            {/* Product Table */}
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="bg-white rounded-3xl border border-gray-100 overflow-hidden animate-pulse h-96" />
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 space-y-4">
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="h-24 w-full bg-gray-50 rounded-xl animate-pulse" />
                     ))}
                 </div>
             ) : products.length === 0 ? (
@@ -139,64 +139,86 @@ export default function BrandInventoryPage() {
                     <p className="text-gray-500 mt-2">This brand doesn&apos;t have any active products for selection yet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map(product => (
-                        <div key={product._id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col overflow-hidden group">
-                            <div className="relative h-56 bg-gray-50 overflow-hidden">
-                                <img
-                                    src={getProductImageUrl(product.product_images?.[0])}
-                                    alt={product.product_name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
-                                <div className="absolute top-3 right-3">
-                                    <span className="px-2 py-1 bg-white/90 backdrop-blur-sm text-[10px] font-black uppercase tracking-tight rounded-lg border border-gray-100 text-gray-600">
-                                        {product.categoryId?.name}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="p-5 flex-1 flex flex-col">
-                                <h3 className="font-bold text-gray-900 line-clamp-1">{product.product_name}</h3>
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-2 min-h-[32px]">
-                                    {product.sort_description || 'No description available.'}
-                                </p>
-
-                                <div className="mt-4 space-y-2 flex-1">
-                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1">
-                                        <Info className="w-3 h-3" />
-                                        Available Variants
-                                    </p>
-                                    <div className="space-y-2">
-                                        {product.variants?.map(variant => (
-                                            <div key={variant._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-50 hover:border-[#e09a74]/30 hover:bg-white transition-all group/variant">
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-gray-700 truncate">
-                                                        {variant.variant_name || 'Standard Variant'}
-                                                    </p>
-                                                    <p className="text-[10px] text-gray-400 font-mono">
-                                                        SKU: {variant.skucode || 'N/A'} · ₹{variant.selling_price?.toLocaleString() || '0'}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => openModal(product, variant)}
-                                                    disabled={upsertOverride.isPending || variant.isAdded}
-                                                    className={clsx(
-                                                        "p-2 rounded-lg border transition-all disabled:opacity-50",
-                                                        variant.isAdded
-                                                            ? "bg-green-50 text-green-600 border-green-100 cursor-not-allowed"
-                                                            : "bg-white text-[#e09a74] border-gray-100 shadow-sm hover:bg-[#e09a74] hover:text-white"
-                                                    )}
-                                                    title={variant.isAdded ? "Already in Inventory" : "Add to My Inventory"}
-                                                >
-                                                    {variant.isAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                                                </button>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100 text-[10px] text-gray-400 uppercase tracking-widest font-black">
+                                <th className="px-6 py-4 font-bold min-w-[300px]">Product Info</th>
+                                <th className="px-6 py-4 font-bold min-w-[350px]">Available Variants & Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {products.map(product => (
+                                <tr key={product._id} className="hover:bg-gray-50/50 transition-colors group">
+                                    <td className="px-6 py-4 align-top">
+                                        <div className="flex gap-4 items-start">
+                                            <div className="w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 relative">
+                                                {getProductImageUrl(product.product_images?.[0]) ? (
+                                                    <img
+                                                        src={getProductImageUrl(product.product_images?.[0])}
+                                                        alt={product.product_name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <Package className="w-6 h-6 text-gray-200" />
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-bold text-gray-900 line-clamp-1">{product.product_name}</h3>
+                                                    {product.categoryId?.name && (
+                                                        <span className="shrink-0 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[9px] font-bold tracking-wider uppercase">
+                                                            {product.categoryId?.name}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                                    {product.sort_description || 'No description available.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 align-top">
+                                        <div className="space-y-2">
+                                            {product.variants?.map(variant => (
+                                                <div key={variant._id} className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:border-[#e09a74]/30 transition-all gap-4">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-gray-900 truncate">
+                                                            {variant.variant_name || 'Standard Variant'}
+                                                        </p>
+                                                        <div className="text-[10px] text-gray-500 font-mono mt-0.5 flex items-center gap-2">
+                                                            <span>SKU: {variant.skucode || 'N/A'}</span>
+                                                            <span className="text-gray-300">•</span>
+                                                            <span className="text-gray-900 font-bold">₹{variant.selling_price?.toLocaleString() || '0'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => openModal(product, variant)}
+                                                        disabled={upsertOverride.isPending || variant.isAdded}
+                                                        className={clsx(
+                                                            "px-3 py-1.5 rounded-lg border transition-all disabled:opacity-50 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider shrink-0",
+                                                            variant.isAdded
+                                                                ? "bg-green-50 text-green-600 border-green-100 cursor-not-allowed"
+                                                                : "bg-white text-[#e09a74] border-gray-200 shadow-sm hover:bg-[#e09a74] hover:text-white hover:border-[#e09a74]"
+                                                        )}
+                                                        title={variant.isAdded ? "Already in Inventory" : "Add to My Inventory"}
+                                                    >
+                                                        {variant.isAdded ? (
+                                                            <><Check className="w-3.5 h-3.5" /> Added</>
+                                                        ) : (
+                                                            <><Plus className="w-3.5 h-3.5" /> Add</>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
@@ -215,7 +237,7 @@ export default function BrandInventoryPage() {
 
             {/* Add to Inventory Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-6">
@@ -232,7 +254,7 @@ export default function BrandInventoryPage() {
                             </div>
 
                             <div className="bg-gray-50 p-4 rounded-2xl mb-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden flex-shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden shrink-0">
                                     <img
                                         src={getProductImageUrl(selectedItem?.product?.product_images?.[0])}
                                         alt=""

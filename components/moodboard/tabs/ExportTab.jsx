@@ -120,16 +120,16 @@ export default function ExportTab({
     }, [products, customPhotos, productStatuses, filteredItems]);
 
     return (
-        <div className="h-full overflow-y-auto p-8">
+        <div className="h-full overflow-y-auto p-4 md:p-8">
             {/* Header Summary */}
-            <div className="flex items-end justify-between mb-8 pb-6 border-b border-gray-100">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
                 <div>
                     <h2 className="text-2xl font-black text-[#1a1a2e] mb-1">Export Summary</h2>
                     <p className="text-sm text-gray-500 font-medium">Manage and export your project materials</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left md:text-right">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Estimation</p>
-                    <div className="flex items-baseline gap-2 justify-end">
+                    <div className="flex items-baseline gap-2 justify-start md:justify-end">
                         {(searchTerm || selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 && (
                             <span className="text-sm font-bold text-[#d9a88a]">
                                 Filtered: ₹{filteredTotal.toLocaleString('en-IN')} /
@@ -143,8 +143,8 @@ export default function ExportTab({
             </div>
 
             {/* Toolbar */}
-            <div className="flex justify-between items-center gap-4 mb-6">
-                <div className="flex items-center gap-3 flex-1 max-w-md">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto flex-1 max-w-full lg:max-w-md">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -157,7 +157,7 @@ export default function ExportTab({
                     </div>
                     <button
                         onClick={() => setShowFiltersModal(true)}
-                        className={`flex items-center gap-2 px-5 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${(selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex items-center justify-center gap-2 px-5 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${(selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
                     >
                         <Filter className="w-4 h-4" />
                         Filters
@@ -169,17 +169,17 @@ export default function ExportTab({
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-3 border border-gray-100 bg-white rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-                        <Edit2 className="w-4 h-4" /> Choose template
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-3 border border-gray-100 bg-white rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                        <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Choose template</span><span className="sm:hidden">Template</span>
                     </button>
                     <button
                         onClick={exportAsCSV}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
+                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
                     >
                         <Download className="w-4 h-4" /> Export
                     </button>
-                    <button className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm">
+                    <button className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm shrink-0">
                         <MoreHorizontal className="w-5 h-5" />
                     </button>
                 </div>
@@ -187,7 +187,7 @@ export default function ExportTab({
 
             {/* Filters Modal */}
             {showFiltersModal && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-300 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#1a1a2e]/40 backdrop-blur-sm" onClick={() => setShowFiltersModal(false)} />
                     <div className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-gray-50">
@@ -287,13 +287,13 @@ export default function ExportTab({
             )}
 
             {/* Table */}
-            <div className="border border-gray-100 rounded-[28px] overflow-hidden shadow-sm bg-white">
-                <table className="w-full text-sm border-collapse">
+            <div className={`border border-gray-100 rounded-[28px] overflow-hidden shadow-sm bg-white overflow-x-auto transition-all duration-300 ${statusDropdown ? 'pb-[180px]' : ''}`}>
+                <table className="w-full text-sm border-collapse min-w-[1000px]">
                     <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Name</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Spec Status</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Tags</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[250px] md:sticky md:left-0 md:z-10 md:bg-gray-50/90 md:backdrop-blur-sm">Name</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[150px]">Spec Status</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[180px]">Tags</th>
                             <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Brand</th>
                             <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">SKU</th>
                             <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Quantity</th>
@@ -301,7 +301,7 @@ export default function ExportTab({
                             <th className="text-right px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Total (₹)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-50 bg-white">
                         {filteredItems.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className="py-24 text-center text-gray-400 text-sm font-medium">
@@ -343,51 +343,56 @@ export default function ExportTab({
 
                                 return (
                                     <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-6 py-5">
+                                        <td className="px-6 py-5 md:sticky md:left-0 md:z-10 bg-white group-hover:bg-gray-50/50 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105">
                                                     <img src={thumb} alt={name} className="w-full h-full object-cover" />
                                                 </div>
-                                                <div>
-                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight">{name}</p>
-                                                    <p className="text-[10px] text-[#d9a88a] font-bold uppercase tracking-wider">{projectName || 'ArcMat'}</p>
+                                                <div className="min-w-0 pr-4">
+                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate max-w-[180px] xl:max-w-xs">{name}</p>
+                                                    <p className="text-[10px] text-[#d9a88a] font-bold uppercase tracking-wider truncate max-w-[180px] xl:max-w-xs">{projectName || 'ArcMat'}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 relative">
-                                            <button
-                                                onClick={() => setStatusDropdown(statusDropdown === id ? null : id)}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-wider uppercase transition-all border ${st === 'Specified' ? 'bg-green-50 text-green-700 border-green-100 hover:border-green-200 shadow-sm shadow-green-100' :
-                                                    st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200 shadow-sm shadow-pink-100' :
-                                                        'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
-                                                    }`}
-                                            >
-                                                <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[st]?.dot || 'bg-gray-500'}`} />
-                                                {st}
-                                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${statusDropdown === id ? 'rotate-180' : ''}`} />
-                                            </button>
+                                        <td className="px-6 py-5">
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setStatusDropdown(statusDropdown === id ? null : id)}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-wider uppercase transition-all border ${st === 'Specified' ? 'bg-green-50 text-green-700 border-green-100 hover:border-green-200 shadow-sm shadow-green-100' :
+                                                        st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200 shadow-sm shadow-pink-100' :
+                                                            'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
+                                                        }`}
+                                                >
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[st]?.dot || 'bg-gray-500'}`} />
+                                                    {st}
+                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${statusDropdown === id ? 'rotate-180' : ''}`} />
+                                                </button>
 
-                                            {statusDropdown === id && (
-                                                <>
-                                                    <div className="fixed inset-0 z-40" onClick={() => setStatusDropdown(null)} />
-                                                    <div className="absolute top-full left-6 mt-2 w-44 bg-white border border-gray-50 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                        {Object.keys(STATUS_STYLES).map(status => (
-                                                            <button
-                                                                key={status}
-                                                                onClick={() => {
-                                                                    if (isPhoto) handlePhotoStatusChange(id, status);
-                                                                    else handleProductStatusChange(id, status);
-                                                                    setStatusDropdown(null);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-[11px] font-black uppercase tracking-wider text-gray-700 flex items-center gap-3 transition-colors"
-                                                            >
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[status].dot}`} />
-                                                                {status}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </>
-                                            )}
+                                                {statusDropdown === id && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setStatusDropdown(null)} />
+                                                        <div
+                                                            className={`absolute ${i >= filteredItems.length - 2 && filteredItems.length > 2 ? 'bottom-full mb-2 slide-in-from-bottom-2' : 'top-full mt-2 slide-in-from-top-2'} left-0 w-44 bg-white border border-gray-100 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] py-2 z-50 animate-in fade-in duration-200`}
+                                                            onClick={e => e.stopPropagation()}
+                                                        >
+                                                            {Object.keys(STATUS_STYLES).map(status => (
+                                                                <button
+                                                                    key={status}
+                                                                    onClick={() => {
+                                                                        if (isPhoto) handlePhotoStatusChange(id, status);
+                                                                        else handleProductStatusChange(id, status);
+                                                                        setStatusDropdown(null);
+                                                                    }}
+                                                                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-[11px] font-black uppercase tracking-wider text-gray-700 flex items-center gap-3 transition-colors"
+                                                                >
+                                                                    <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[status].dot}`} />
+                                                                    {status}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex flex-wrap gap-1.5 mb-2">

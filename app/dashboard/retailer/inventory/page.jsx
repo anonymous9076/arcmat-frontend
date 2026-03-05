@@ -101,11 +101,11 @@ export default function RetailerProductsPage() {
                 </span>
             </div>
 
-            {/* Grid */}
+            {/* Table */}
             {isLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} className="bg-white rounded-2xl border border-gray-100 animate-pulse overflow-hidden h-80" />
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-16 w-full bg-gray-50 rounded-xl animate-pulse" />
                     ))}
                 </div>
             ) : retailerProducts.length === 0 ? (
@@ -115,84 +115,93 @@ export default function RetailerProductsPage() {
                     <p className="text-gray-400 text-sm mt-1">Visit your partnered brands to add items.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {retailerProducts.map(item => {
-                        const product = item.product || {};
-                        const variant = item.variant || {};
-                        const imageUrl = getProductImageUrl(product.product_images?.[0]);
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100 text-[10px] text-gray-400 uppercase tracking-widest font-black">
+                                <th className="px-6 py-4 font-bold">Product</th>
+                                <th className="px-6 py-4 font-bold">Variant</th>
+                                <th className="px-6 py-4 font-bold">Price</th>
+                                <th className="px-6 py-4 font-bold">Stock</th>
+                                <th className="px-6 py-4 font-bold">Status</th>
+                                <th className="px-6 py-4 font-bold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {retailerProducts.map(item => {
+                                const product = item.product || {};
+                                const variant = item.variant || {};
+                                const imageUrl = getProductImageUrl(product.product_images?.[0]);
 
-                        return (
-                            <div
-                                key={item._id}
-                                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
-                            >
-                                <div className="relative h-48 bg-gray-50 overflow-hidden">
-                                    {imageUrl ? (
-                                        <img
-                                            src={imageUrl}
-                                            alt={product.product_name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <Package className="w-12 h-12 text-gray-100" />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-2 right-2">
-                                        <span className={clsx(
-                                            "px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
-                                            item.isActive ? "bg-green-50 text-green-600 border-green-100" : "bg-gray-100 text-gray-400 border-gray-200"
-                                        )}>
-                                            {item.isActive ? 'Live' : 'Hidden'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-4 flex-1 flex flex-col">
-                                    <h3 className="text-sm font-bold text-gray-900 line-clamp-1">
-                                        {product.product_name}
-                                    </h3>
-                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-tight">
-                                        {variant.variant_name || 'Standard Variant'}
-                                    </p>
-
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Your Price</p>
-                                            <p className="text-sm font-black text-gray-900">
-                                                ₹{item.selling_price?.toLocaleString() || '0'}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[9px] text-gray-400 uppercase font-bold tracking-wider mb-1">Stock</p>
-                                            <p className={clsx(
+                                return (
+                                    <tr key={item._id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-4 align-middle">
+                                            <div className="flex gap-4 items-center min-w-[250px]">
+                                                <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                                                    {imageUrl ? (
+                                                        <img src={imageUrl} alt={product.product_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            <Package className="w-5 h-5 text-gray-200" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#e09a74] transition-colors truncate">{product.product_name}</h3>
+                                                    <p className="text-xs text-gray-400 font-medium mt-0.5 truncate max-w-[200px]">{product.sort_description || 'No description available'}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className="inline-flex items-center px-2 py-1 bg-gray-50 border border-gray-100 text-gray-600 rounded-lg text-[10px] font-bold tracking-wider uppercase">
+                                                {variant.variant_name || 'Standard'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-sm font-black text-gray-900">₹{item.selling_price?.toLocaleString() || '0'}</span>
+                                                <span className="text-[10px] font-bold text-gray-400 tracking-wider">MRP: <span className="line-through">₹{item.mrp_price?.toLocaleString() || '0'}</span></span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className={clsx(
                                                 "text-sm font-black",
                                                 item.stock <= 5 ? "text-red-500" : "text-gray-900"
                                             )}>
-                                                {item.stock}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-auto pt-4 border-t border-gray-50 flex items-center gap-2">
-                                        <button
-                                            onClick={() => setEditingItem(item)}
-                                            className="flex-1 py-2 bg-gray-50 text-gray-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-gray-900 hover:text-white transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Edit2 className="w-3 h-3" />
-                                            Manage
-                                        </button>
-                                        <button
-                                            onClick={() => setDeletingItem(item)}
-                                            className="px-3 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center"
-                                            title="Remove from inventory"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                                                {item.stock} <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">in stock</span>
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className={clsx(
+                                                "inline-flex items-center px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border",
+                                                item.isActive ? "bg-green-50 text-green-600 border-green-100" : "bg-gray-100 text-gray-400 border-gray-200"
+                                            )}>
+                                                {item.isActive ? 'Live' : 'Hidden'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => setEditingItem(item)}
+                                                    className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all border border-transparent hover:border-gray-200 shadow-sm hover:shadow"
+                                                    title="Manage Inventory"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeletingItem(item)}
+                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-xl transition-all border border-transparent hover:border-red-100 shadow-sm hover:shadow"
+                                                    title="Remove from inventory"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
