@@ -19,7 +19,8 @@ import {
     MoreHorizontal, ArrowLeft, Loader2, Edit2, Check, X, Plus,
     Download, FileOutput, ShoppingCart, Tag, Building2, Hash,
     LayoutDashboard, Paintbrush2, TableProperties, FolderDown,
-    Trash2, ChevronRight, Minus, ImagePlus, Search, List, ChevronDown
+    Trash2, ChevronRight, Minus, ImagePlus, Search, List, ChevronDown,
+    IndianRupee, CreditCard
 } from 'lucide-react';
 import {
     getProductImageUrl, getProductName, getProductCategory,
@@ -258,7 +259,7 @@ export default function MoodboardDetailPage() {
     };
 
     /* ── Photo Upload Handler ──────────────────── */
-    const handlePhotoAdd = useCallback(({ file, previewUrl, title, description }) => {
+    const handlePhotoAdd = useCallback(({ file, previewUrl, title, description, price, quantity }) => {
         const photoId = 'photo_' + Date.now();
         const newPhoto = {
             id: photoId,
@@ -266,6 +267,8 @@ export default function MoodboardDetailPage() {
             description,
             previewUrl, // Base64 now
             status: 'Considering',
+            price: price || 0,
+            quantity: quantity || 1
         };
         setCustomPhotos(prev => {
             const next = [...prev, newPhoto];
@@ -293,18 +296,41 @@ export default function MoodboardDetailPage() {
     const handlePhotoStatusChange = useCallback((photoId, status) => {
         setCustomPhotos(prev => {
             const next = prev.map(p => p.id === photoId ? { ...p, status } : p);
-            const toSave = next.map(({ previewUrl: _url, ...rest }) => rest);
-            updateMoodboard({ id: moodboardId, data: { customPhotos: toSave } });
+            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
             return next;
         });
     }, [moodboardId, updateMoodboard]);
 
     const handleProductStatusChange = useCallback((productId, status) => {
         setProductStatuses(prev => {
-            const next = { ...prev, [productId]: status };
+            const current = prev[productId];
+            const next = {
+                ...prev,
+                [productId]: typeof current === 'object' ? { ...current, status } : { status }
+            };
             updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
             return next;
         });
+    }, [moodboardId, updateMoodboard]);
+
+    const handlePriceQtyUpdate = useCallback((id, updates, isPhoto) => {
+        if (isPhoto) {
+            setCustomPhotos(prev => {
+                const next = prev.map(p => p.id === id ? { ...p, ...updates } : p);
+                updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
+                return next;
+            });
+        } else {
+            setProductStatuses(prev => {
+                const current = prev[id];
+                const next = {
+                    ...prev,
+                    [id]: typeof current === 'object' ? { ...current, ...updates } : { status: current || 'Considering', ...updates }
+                };
+                updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
+                return next;
+            });
+        }
     }, [moodboardId, updateMoodboard]);
 
     const handleRemovePhoto = useCallback((photoId) => {
@@ -370,25 +396,40 @@ export default function MoodboardDetailPage() {
 
         const source = allOverviewItems.map(({ isPhoto, data }) => {
             const id = isPhoto ? data.id : data._id;
-            // Check if this item is on the canvas to get quantity and price
-            const canvasInstances = matsOnBoard.filter(i => i.material?._id === id);
-            const totalQty = canvasInstances.length > 0 ? canvasInstances.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0) : 1;
-            const price = canvasInstances.length > 0 ? canvasInstances[0].price : 0; // Using first instance price if applicable
+            const meta = isPhoto ? data : (productStatuses[id] || {});
+            const st = isPhoto ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
+
+            const qty = Number(meta.quantity) || 1;
+
+            let price = 0;
+            if (isPhoto) {
+                price = Number(meta.price) || 0;
+            } else {
+                if (typeof meta === 'object' && meta.price !== undefined) {
+                    price = Number(meta.price);
+                } else {
+                    const { price: defaultPrice } = resolvePricing(data);
+                    price = defaultPrice;
+                }
+            }
+            const total = qty * price;
 
             return {
                 name: isPhoto ? data.title : getProductName(data),
                 category: isPhoto ? 'Uploaded Image' : getProductCategory(data),
                 brand: isPhoto ? 'Custom Upload' : getProductBrand(data),
                 sku: isPhoto ? '—' : (data?.skucode || data?.productId?.skucode || ''),
-                qty: totalQty,
-                price: price || 0,
-                status: isPhoto ? (data.status || 'Considering') : (productStatuses[id] || 'Considering')
+                qty: qty,
+                price: price,
+                total: total,
+                status: st
             };
         });
 
-        const headers = ['Name', 'Spec Status', 'Project Name', 'Tags', 'Brand', 'Manufacturer SKU'];
-        const rows = source.map(r => [r.name, r.status, project?.projectName || 'ArcMat', 'Add tag', r.brand, r.sku]
-            .map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        const headers = ['Name', 'Spec Status', 'Project Name', 'Brand', 'Manufacturer SKU', 'Quantity', 'Unit Price', 'Total Cost'];
+        const rows = source.map(r => [
+            r.name, r.status, project?.projectName || 'ArcMat', r.brand, r.sku, r.qty, r.price, r.total
+        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -537,6 +578,7 @@ export default function MoodboardDetailPage() {
                         handlePhotoAdd={handlePhotoAdd}
                         handlePhotoStatusChange={handlePhotoStatusChange}
                         handleProductStatusChange={handleProductStatusChange}
+                        handlePriceQtyUpdate={handlePriceQtyUpdate}
                         handleRemovePhoto={handleRemovePhoto}
                         handleRemoveProduct={handleRemoveProduct}
                         handleAddToCart={handleAddToCart}
@@ -584,17 +626,18 @@ export default function MoodboardDetailPage() {
                 )}
 
                 {/* EXPORT */}
-                {activeTab === 'export' && (
-                    <ExportTab
-                        products={products}
-                        customPhotos={customPhotos}
-                        boardItems={boardItems}
-                        productStatuses={productStatuses}
-                        projectName={project?.projectName}
-                        exportAsCSV={exportAsCSV}
-                        handleAddToCart={handleAddToCart}
-                    />
-                )}
+                <ExportTab
+                    products={products}
+                    customPhotos={customPhotos}
+                    boardItems={boardItems}
+                    productStatuses={productStatuses}
+                    projectName={project?.projectName}
+                    exportAsCSV={exportAsCSV}
+                    handleAddToCart={handleAddToCart}
+                    handlePriceQtyUpdate={handlePriceQtyUpdate}
+                    handlePhotoStatusChange={handlePhotoStatusChange}
+                    handleProductStatusChange={handleProductStatusChange}
+                />
 
                 {/* DOWNLOAD */}
                 {activeTab === 'download' && (

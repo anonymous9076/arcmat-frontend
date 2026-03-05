@@ -35,6 +35,7 @@ export default function OverviewTab({
     handlePhotoAdd,
     handlePhotoStatusChange,
     handleProductStatusChange,
+    handlePriceQtyUpdate,
     handleRemovePhoto,
     handleRemoveProduct,
     handleAddToCart,
@@ -45,6 +46,16 @@ export default function OverviewTab({
     const [addCardOpen, setAddCardOpen] = useState(false);
     const [photoModalOpen, setPhotoModalOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
+
+    // Calculate total estimation
+    const totalEstimation = products.reduce((sum, p) => {
+        const meta = productStatuses[p._id] || {};
+        const price = typeof meta === 'object' ? (Number(meta.price) || 0) : 0;
+        const qty = typeof meta === 'object' ? (Number(meta.quantity) || 1) : 1;
+        return sum + (price * qty);
+    }, 0) + customPhotos.reduce((sum, p) => {
+        return sum + ((Number(p.price) || 0) * (Number(p.quantity) || 1));
+    }, 0);
 
     const openContextMenu = useCallback((e, itemId, isPhoto) => {
         e.preventDefault();
@@ -58,6 +69,8 @@ export default function OverviewTab({
 
     return (
         <div className="h-full overflow-y-auto p-8">
+
+
             {/* Filter Bar */}
             <div className="flex items-center gap-3 mb-6 relative">
                 {/* Brand Filter */}
@@ -231,7 +244,7 @@ export default function OverviewTab({
                         <div
                             key={photo.id}
                             onContextMenu={(e) => openContextMenu(e, photo.id, true)}
-                            className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
+                            className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
                         >
                             <div className="relative aspect-square bg-gray-100 overflow-hidden">
                                 {photo.previewUrl ? (
@@ -243,10 +256,13 @@ export default function OverviewTab({
                                 )}
                                 <StatusDot status={photo.status} />
                             </div>
-                            <div className="p-3 flex flex-col gap-0.5 flex-1">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Uploaded Image</p>
-                                <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{photo.title}</p>
-                                {photo.description && <p className="text-xs text-gray-400 truncate">{photo.description}</p>}
+                            <div className="p-3 flex flex-col gap-2 flex-1">
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Uploaded Image</p>
+                                    <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1">{photo.title}</p>
+                                </div>
+
+                                {/* Removed Qty/Price inputs from card */}
                             </div>
                         </div>
                     ))}
@@ -258,15 +274,18 @@ export default function OverviewTab({
                             const imgUrl = getProductThumbnail(product);
                             const name = getProductName(product);
                             const brand = getProductBrand(product);
-                            const hasVariants = (typeof product.productId === 'object' ? product.productId?.variants?.length : 0) || 0;
                             const productId = product._id;
-                            const status = productStatuses[productId] ?? 'Considering';
+                            const hasVariants = (typeof product.productId === 'object' ? product.productId?.variants?.length : 0) || 0;
+                            const statusData = productStatuses[productId] ?? 'Considering';
+                            const status = typeof statusData === 'object' ? statusData.status : statusData;
+                            const price = typeof statusData === 'object' ? (statusData.price || 0) : 0;
+                            const qty = typeof statusData === 'object' ? (statusData.quantity || 1) : 1;
 
                             return (
                                 <div
                                     key={`${productId || 'p'}-${i}`}
                                     onContextMenu={(e) => openContextMenu(e, productId, false)}
-                                    className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
+                                    className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
                                 >
                                     <div className="relative aspect-square bg-gray-50 overflow-hidden">
                                         {imgUrl && imgUrl !== '/Icons/arcmatlogo.svg' ? (
@@ -278,24 +297,16 @@ export default function OverviewTab({
                                         )}
                                         <StatusDot status={status} />
                                     </div>
-                                    <div className="p-3 flex flex-col gap-1 flex-1">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
-                                        <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{brand}</p>
-                                        <p className="text-xs text-gray-400 truncate">{name}</p>
-                                        <div className="mt-auto pt-2">
-                                            {hasVariants > 0 ? (
-                                                <button className="w-full py-2 border border-gray-200 text-xs font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    Sample Finishes
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleAddToCart(product)}
-                                                    className="w-full py-2 bg-[#1a1a2e] text-white text-xs font-bold rounded-xl hover:bg-[#2d2d4a] transition-colors flex items-center justify-center gap-1"
-                                                >
-                                                    <ShoppingCart className="w-3 h-3" /> Add to Cart
-                                                </button>
-                                            )}
+                                    <div className="p-3 flex flex-col gap-2 flex-1">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
+                                            <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1">{brand}</p>
+                                            <p className="text-[10px] text-gray-400 truncate">{name}</p>
                                         </div>
+
+                                        {/* Removed Qty/Price inputs from card */}
+
+                                        {/* Removed Add to Cart button */}
                                     </div>
                                 </div>
                             );

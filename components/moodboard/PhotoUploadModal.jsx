@@ -8,6 +8,8 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [price, setPrice] = useState(0);
+    const [quantity, setQuantity] = useState(1);
     const [dragging, setDragging] = useState(false);
     const inputRef = useRef(null);
 
@@ -16,6 +18,8 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
         setPreviewUrl(null);
         setTitle('');
         setDescription('');
+        setPrice(0);
+        setQuantity(1);
     };
 
     const handleClose = () => { reset(); onClose(); };
@@ -75,8 +79,15 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
             // Compress to base64 webp so it can be saved persistently in MongoDB
             const base64Url = await compressImage(file);
 
-            // onAdd expects { file: null, previewUrl: <persistent url>, title, description }
-            onAdd({ file: null, previewUrl: base64Url, title: title.trim(), description: description.trim() });
+            // onAdd expects { file: null, previewUrl: <persistent url>, title, description, price, quantity }
+            onAdd({
+                file: null,
+                previewUrl: base64Url,
+                title: title.trim(),
+                description: description.trim(),
+                price: Number(price) || 0,
+                quantity: Number(quantity) || 1
+            });
             reset();
             onClose();
         } catch (error) {
@@ -155,6 +166,30 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
                             placeholder="Optional note…"
                             className="w-full text-sm text-gray-600 bg-transparent focus:outline-none placeholder:text-gray-300"
                         />
+                    </div>
+
+                    {/* Price & Quantity */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="border-b border-gray-100 pb-3">
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Quantity</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={quantity}
+                                onChange={(e) => setQuantity(e.target.value)}
+                                className="w-full text-sm text-gray-800 font-medium bg-transparent focus:outline-none"
+                            />
+                        </div>
+                        <div className="border-b border-gray-100 pb-3">
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Price (₹)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                className="w-full text-sm text-gray-800 font-medium bg-transparent focus:outline-none"
+                            />
+                        </div>
                     </div>
                 </div>
 
