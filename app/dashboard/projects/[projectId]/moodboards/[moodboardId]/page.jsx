@@ -77,7 +77,7 @@ export default function MoodboardDetailPage() {
     const [customPhotos, setCustomPhotos] = useState([]);
     // Per-product status map: { [productId]: 'Considering' | 'Specified' | 'Excluded' }
     const [productStatuses, setProductStatuses] = useState({});
-    // Right-click context menu
+    const [isPanelOpen, setIsPanelOpen] = useState(true);
 
     // Canvas state (Design Desk)
     const [boardItems, setBoardItems] = useState([]);
@@ -617,14 +617,27 @@ export default function MoodboardDetailPage() {
 
                 {/* DESIGN DESK */}
                 {activeTab === 'designDesk' && isMounted && (
-                    <div className="flex h-full">
+                    <div className="flex h-full relative">
+                        {/* Collapse Toggle Handle */}
+                        {!isPanelOpen && (
+                            <button
+                                onClick={() => setIsPanelOpen(true)}
+                                className="absolute left-0 top-1/2 -translate-y-1/2 z-[60] bg-white border border-l-0 border-gray-200 p-1.5 rounded-r-xl shadow-md hover:bg-gray-50 transition-all group"
+                                title="Open Materials"
+                            >
+                                <ChevronDown className="w-5 h-5 -rotate-90 text-gray-400 group-hover:text-[#d9a88a]" />
+                            </button>
+                        )}
+
                         {/* Left Material Panel */}
-                        <div className="w-[220px] shrink-0 border-r border-gray-200 bg-white overflow-hidden">
+                        <div className={`shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[260px]' : 'w-0'}`}>
                             <MaterialPanel
                                 materials={materials}
                                 selectedMaterial={selectedMaterial}
                                 stagedMaterial={stagedMaterial}
                                 onSelect={handleMaterialSelect}
+                                isOpen={isPanelOpen}
+                                onToggle={() => setIsPanelOpen(!isPanelOpen)}
                             />
                         </div>
 
