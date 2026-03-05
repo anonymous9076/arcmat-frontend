@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 export default function DownloadTab({
     boardItems,
     exportAsCSV,
-    setActiveTab
+    setActiveTab,
+    downloadCanvas
 }) {
     return (
         <div className="h-full overflow-y-auto p-8">
@@ -20,8 +21,12 @@ export default function DownloadTab({
                     label="Download JPEG"
                     onClick={() => {
                         if (boardItems.length === 0) { toast.error('Canvas is empty. Add items first.'); return; }
-                        setActiveTab('designDesk');
-                        setTimeout(() => toast.info('Use the Download button in the canvas toolbar'), 500);
+                        const success = downloadCanvas?.();
+                        if (success) {
+                            toast.success('Downloading canvas...');
+                        } else {
+                            toast.error('Failed to download canvas. Ensure it is not empty.');
+                        }
                     }}
                     color="orange"
                 />

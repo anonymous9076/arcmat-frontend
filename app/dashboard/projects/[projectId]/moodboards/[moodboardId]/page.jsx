@@ -79,6 +79,7 @@ export default function MoodboardDetailPage() {
     // Per-product status map: { [productId]: 'Considering' | 'Specified' | 'Excluded' }
     const [productStatuses, setProductStatuses] = useState({});
     const [isPanelOpen, setIsPanelOpen] = useState(true);
+    const canvasRef = useRef(null);
 
     // Canvas state (Design Desk)
     const [boardItems, setBoardItems] = useState([]);
@@ -693,57 +694,59 @@ export default function MoodboardDetailPage() {
                     />
                 )}
 
-
                 {/* DESIGN DESK */}
-                {activeTab === 'designDesk' && isMounted && (
-                    <div className="flex h-full relative">
-                        {/* Collapse Toggle Handle */}
-                        {!isPanelOpen && (
-                            <button
-                                onClick={() => setIsPanelOpen(true)}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 z-[60] bg-white border border-l-0 border-gray-200 p-1.5 rounded-r-xl shadow-md hover:bg-gray-50 transition-all group"
-                                title="Open Materials"
-                            >
-                                <ChevronDown className="w-5 h-5 -rotate-90 text-gray-400 group-hover:text-[#d9a88a]" />
-                            </button>
-                        )}
+                <div className={`h-full relative ${activeTab === 'designDesk' ? '' : 'hidden'}`}>
+                    {isMounted && (
+                        <div className="flex h-full relative">
+                            {/* Collapse Toggle Handle */}
+                            {!isPanelOpen && (
+                                <button
+                                    onClick={() => setIsPanelOpen(true)}
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-[60] bg-white border border-l-0 border-gray-200 p-1.5 rounded-r-xl shadow-md hover:bg-gray-50 transition-all group"
+                                    title="Open Materials"
+                                >
+                                    <ChevronDown className="w-5 h-5 -rotate-90 text-gray-400 group-hover:text-[#d9a88a]" />
+                                </button>
+                            )}
 
-                        {/* Left Material Panel */}
-                        <div className={`shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[260px]' : 'w-0'}`}>
-                            <MaterialPanel
-                                materials={materials}
-                                selectedMaterial={selectedMaterial}
-                                stagedMaterial={stagedMaterial}
-                                onSelect={handleMaterialSelect}
-                                isOpen={isPanelOpen}
-                                onToggle={() => setIsPanelOpen(!isPanelOpen)}
-                            />
-                        </div>
+                            {/* Left Material Panel */}
+                            <div className={`shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[260px]' : 'w-0'}`}>
+                                <MaterialPanel
+                                    materials={materials}
+                                    selectedMaterial={selectedMaterial}
+                                    stagedMaterial={stagedMaterial}
+                                    onSelect={handleMaterialSelect}
+                                    isOpen={isPanelOpen}
+                                    onToggle={() => setIsPanelOpen(!isPanelOpen)}
+                                />
+                            </div>
 
-                        {/* Canvas */}
-                        <div className="flex-1 flex flex-col min-w-0">
-                            <CanvasPreview
-                                projectName={project?.projectName}
-                                roomName={moodboard?.moodboard_name}
-                                boardItems={boardItems}
-                                canvasBg={canvasBg}
-                                onBgChange={setCanvasBg}
-                                autoSaving={isSaving}
-                                stagedMaterial={stagedMaterial}
-                                onStagedPlace={handleStagedPlace}
-                                onClearStaged={() => setStagedMaterial(null)}
-                                onDrop={handleDrop}
-                                onAddText={handleAddText}
-                                onReposition={handleReposition}
-                                onUpdateItem={handleUpdateItem}
-                                onRemoveItem={handleRemoveItem}
-                                onClear={handleClearBoard}
-                                onSave={handleSave}
-                                onMaterialSelect={setSelectedMaterial}
-                            />
+                            {/* Canvas */}
+                            <div className="flex-1 flex flex-col min-w-0">
+                                <CanvasPreview
+                                    ref={canvasRef}
+                                    projectName={project?.projectName}
+                                    roomName={moodboard?.moodboard_name}
+                                    boardItems={boardItems}
+                                    canvasBg={canvasBg}
+                                    onBgChange={setCanvasBg}
+                                    autoSaving={isSaving}
+                                    stagedMaterial={stagedMaterial}
+                                    onStagedPlace={handleStagedPlace}
+                                    onClearStaged={() => setStagedMaterial(null)}
+                                    onDrop={handleDrop}
+                                    onAddText={handleAddText}
+                                    onReposition={handleReposition}
+                                    onUpdateItem={handleUpdateItem}
+                                    onRemoveItem={handleRemoveItem}
+                                    onClear={handleClearBoard}
+                                    onSave={handleSave}
+                                    onMaterialSelect={setSelectedMaterial}
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* EXPORT */}
                 {activeTab === 'export' && (
@@ -767,6 +770,7 @@ export default function MoodboardDetailPage() {
                         boardItems={boardItems}
                         exportAsCSV={exportAsCSV}
                         setActiveTab={setActiveTab}
+                        downloadCanvas={() => canvasRef.current?.download('jpeg')}
                     />
                 )}
             </div>

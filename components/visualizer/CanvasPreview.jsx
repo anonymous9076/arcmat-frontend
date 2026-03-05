@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
     Lock, LockOpen, Trash, Trash2, Save, Download, Move, CornerUpLeft,
     Type, ImagePlus, ArrowUpToLine, ArrowDownToLine, Focus,
@@ -11,7 +11,7 @@ import { useFabricCanvas } from './useFabricCanvas';
 
 const TOOLBAR_W = 44;
 
-export default function CanvasPreview(props) {
+const CanvasPreview = forwardRef((props, ref) => {
     const {
         onMaterialSelect,
         boardItems,
@@ -68,6 +68,14 @@ export default function CanvasPreview(props) {
         initialHeight: containerRef.current.height,
         canvasBg: props.canvasBg
     });
+
+    useImperativeHandle(ref, () => ({
+        download: (format = 'jpeg') => {
+            if (boardItems.length === 0) return false;
+            exportHighRes(projectName, format);
+            return true;
+        }
+    }));
 
     const filledCount = boardItems.length;
 
@@ -355,7 +363,9 @@ export default function CanvasPreview(props) {
             </div>
         </div>
     );
-}
+});
+
+export default CanvasPreview;
 
 function BottomBtn({ onClick, title, children, active, disabled }) {
     return (
