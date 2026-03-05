@@ -121,11 +121,20 @@ export default function MoodboardDetailPage() {
         }
     }, [moodboard]);
 
-    // Materials from estimation for Material Panel
+    // Materials from estimation + custom photos for Material Panel
     const materials = useMemo(() => {
-        if (!moodboard?.estimatedCostId?.productIds) return [];
-        return moodboard.estimatedCostId.productIds;
-    }, [moodboard]);
+        const base = moodboard?.estimatedCostId?.productIds || [];
+        const photos = customPhotos.map(p => ({
+            _id: p.id,
+            name: p.title,
+            isCustomPhoto: true,
+            photoUrl: p.previewUrl,
+            images: [p.previewUrl],
+            category: 'My Photo',
+            brand: 'Custom Upload',
+        }));
+        return [...base, ...photos];
+    }, [moodboard, customPhotos]);
 
     // Budget
     const totalBudget = useMemo(() => {

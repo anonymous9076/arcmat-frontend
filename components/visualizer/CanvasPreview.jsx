@@ -75,16 +75,21 @@ export default function CanvasPreview({
     const handlePhotoUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const url = URL.createObjectURL(file);
-        const pseudoMaterial = {
-            _id: 'photo_' + Date.now(),
-            name: file.name.replace(/\.[^.]+$/, ''),
-            isCustomPhoto: true,
-            photoUrl: url,
-            images: [url],
-            category: 'My Photo',
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64 = event.target.result;
+            const pseudoMaterial = {
+                _id: 'photo_' + Date.now(),
+                name: file.name.replace(/\.[^.]+$/, ''),
+                isCustomPhoto: true,
+                photoUrl: base64,
+                images: [base64],
+                category: 'My Photo',
+            };
+            onDrop(pseudoMaterial, containerRef.current.width / 2, containerRef.current.height / 2);
         };
-        onDrop(pseudoMaterial, containerRef.current.width / 2, containerRef.current.height / 2);
+        reader.readAsDataURL(file);
         e.target.value = '';
     };
 

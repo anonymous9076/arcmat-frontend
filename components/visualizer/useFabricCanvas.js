@@ -249,7 +249,7 @@ export function useFabricCanvas({
                         // --- FIXED SCALE: fit inside card safely ---
                         const scaleX = targetW / img.width;
                         const scaleY = targetH / img.height;
-                        const scaleMath = Math.min(scaleX, scaleY) * 0.85;
+                        const scaleMath = Math.min(scaleX, scaleY) * 1.0;
 
                         img.set({
                             originX: 'center',
@@ -268,12 +268,9 @@ export function useFabricCanvas({
                             top: 0,
                             width: targetW,
                             height: targetH,
-                            fill: 'white',
-                            rx: 16,
-                            ry: 16,
-                            shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 20, offsetY: 10 }),
-                            stroke: '#fff',
-                            strokeWidth: 2
+                            fill: 'transparent',
+                            rx: 10,
+                            ry: 10,
                         });
 
                         const group = new fabric.Group([bgRect, img], {
@@ -386,11 +383,21 @@ export function useFabricCanvas({
     const resetZoom = useCallback(() => { if (!fabricRef.current) return; fabricRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]); setZoom(1); }, []);
 
     // --- Export High-Res ---
-    const exportHighRes = useCallback((fileName = 'moodboard', format = 'png') => {
+    const exportHighRes = useCallback((fileName = 'moodboard', format = 'jpeg') => {
         if (!fabricRef.current) return;
         const canvas = fabricRef.current;
         const objects = canvas.getObjects();
         if (!objects.length) return;
+
+        // Save current state
+        const originalVPT = [...canvas.viewportTransform];
+        const originalSelection = canvas.selection;
+
+        // Temporarily reset to identity for accurate world-space bounding box
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        canvas.discardActiveObject();
+        canvas.selection = false;
+        canvas.renderAll();
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         objects.forEach(obj => {
@@ -401,26 +408,42 @@ export function useFabricCanvas({
             if (br.top + br.height > maxY) maxY = br.top + br.height;
         });
 
-        const pad = 50;
-        minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-        const width = maxX - minX;
-        const height = maxY - minY;
-        const multiplier = 300 / 72;
+        // Add padding if finite, else use current dimensions
+        let padding = 60;
+        let left = isFinite(minX) ? minX - padding : 0;
+        let top = isFinite(minY) ? minY - padding : 0;
+        let width = isFinite(maxX) && isFinite(minX) ? (maxX - minX) + (padding * 2) : canvas.width;
+        let height = isFinite(maxY) && isFinite(minY) ? (maxY - minY) + (padding * 2) : canvas.height;
 
-        canvas.discardActiveObject();
-        canvas.renderAll();
+        // High resolution multiplier (300 DPI approx)
+        const multiplier = 2;
 
         try {
-            const dataURL = canvas.toDataURL({ format, quality: 1, multiplier, left: minX, top: minY, width, height, enableRetinaScaling: true });
+            const dataURL = canvas.toDataURL({
+                format,
+                quality: 1.0,
+                multiplier,
+                left,
+                top,
+                width,
+                height,
+                enableRetinaScaling: true
+            });
+
             const link = document.createElement('a');
-            link.download = `${fileName}-highres.${format}`;
+            link.download = `${fileName}-design.${format}`;
             link.href = dataURL;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         } catch (err) {
             console.error("Export failed:", err);
-            alert("High-Res export failed (possibly due to CORS images).");
+            alert("High-Res export failed (possibly due to CORS images). Please try again.");
+        } finally {
+            // Restore original view and state
+            canvas.viewportTransform = originalVPT;
+            canvas.selection = originalSelection;
+            canvas.renderAll();
         }
     }, []);
 
