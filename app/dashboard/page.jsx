@@ -505,11 +505,12 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-2 gap-4">
                             {recentBoards.map((board) => {
                                 const thumb = getBoardThumbnail(board);
+                                const projId = board.projectId?._id || board.projectId;
                                 return (
                                     <Link
                                         key={board._id}
-                                        href="/dashboard/visualizer"
-                                        onClick={() => useProjectStore.getState().setActiveMoodboard(board._id, board.moodboard_name, board.projectId?._id, board.projectId?.projectName)}
+                                        href={`/dashboard/projects/${projId}/moodboards/${board._id}`}
+                                        onClick={() => useProjectStore.getState().setActiveMoodboard(board._id, board.moodboard_name, projId, board.projectId?.projectName)}
                                         className="group"
                                     >
                                         {/* Board Thumbnail Image */}

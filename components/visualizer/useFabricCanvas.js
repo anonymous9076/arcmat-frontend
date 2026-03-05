@@ -53,6 +53,7 @@ const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.1;
 
 export function useFabricCanvas({
+    canvasContainerRef,
     boardItems,
     onUpdateItem,
     onRemoveItem,
@@ -239,17 +240,26 @@ export function useFabricCanvas({
 
         // --- Responsive resize ---
         const handleResize = () => {
-            const wrapper = canvasRef.current?.parentElement;
-            if (wrapper) {
+            const wrapper = canvasContainerRef?.current || canvas.wrapperEl?.parentElement || canvasRef.current?.parentElement;
+            if (wrapper && wrapper.clientWidth > 0 && wrapper.clientHeight > 0) {
                 canvas.setDimensions({ width: wrapper.clientWidth, height: wrapper.clientHeight });
             }
         };
+
+        const resizeObserver = new ResizeObserver(handleResize);
+        if (canvasContainerRef?.current) {
+            resizeObserver.observe(canvasContainerRef.current);
+        } else if (canvas.wrapperEl?.parentElement) {
+            resizeObserver.observe(canvas.wrapperEl.parentElement);
+        }
+
         window.addEventListener('resize', handleResize);
         handleResize();
 
         setCanvasReady(true);
 
         return () => {
+            resizeObserver.disconnect();
             window.removeEventListener('resize', handleResize);
             canvas.dispose();
             fabricRef.current = null;

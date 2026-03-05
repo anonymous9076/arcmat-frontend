@@ -325,19 +325,21 @@ export default function ExportTab({
                                 // Pricing logic
                                 let unitPrice = 0;
                                 if (isPhoto) {
-                                    unitPrice = Number(data.price) || 0;
+                                    unitPrice = data.price !== undefined ? data.price : 0;
                                 } else {
                                     const meta = productStatuses[id];
                                     if (typeof meta === 'object' && meta.price !== undefined) {
-                                        unitPrice = Number(meta.price);
+                                        unitPrice = meta.price;
                                     } else {
                                         const { price } = resolvePricing(data);
                                         unitPrice = price;
                                     }
                                 }
 
-                                const qty = isPhoto ? (Number(data.quantity) || 1) : (Number(productStatuses[id]?.quantity) || 1);
-                                const total = qty * unitPrice;
+                                let qty = isPhoto ? data.quantity : productStatuses[id]?.quantity;
+                                if (qty === undefined || qty === null) qty = 1;
+
+                                const total = (Number(qty) || 0) * (Number(unitPrice) || 0);
 
                                 return (
                                     <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50/50 transition-colors group">
@@ -356,8 +358,8 @@ export default function ExportTab({
                                             <button
                                                 onClick={() => setStatusDropdown(statusDropdown === id ? null : id)}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-wider uppercase transition-all border ${st === 'Specified' ? 'bg-green-50 text-green-700 border-green-100 hover:border-green-200 shadow-sm shadow-green-100' :
-                                                        st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200 shadow-sm shadow-pink-100' :
-                                                            'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
+                                                    st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200 shadow-sm shadow-pink-100' :
+                                                        'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
                                                     }`}
                                             >
                                                 <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[st]?.dot || 'bg-gray-500'}`} />
@@ -443,6 +445,7 @@ export default function ExportTab({
                                                     type="text"
                                                     inputMode="numeric"
                                                     value={qty || ''}
+                                                    onFocus={(e) => e.target.select()}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         if (val === '' || /^\d+$/.test(val)) {
@@ -466,6 +469,7 @@ export default function ExportTab({
                                                         type="number"
                                                         min="0"
                                                         value={unitPrice}
+                                                        onFocus={(e) => e.target.select()}
                                                         onChange={(e) => handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto)}
                                                         className="w-32 text-sm font-black bg-transparent outline-none text-[#1a1a2e]"
                                                     />

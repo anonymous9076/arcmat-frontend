@@ -59,6 +59,7 @@ const CanvasPreview = forwardRef((props, ref) => {
         bgProgress,
         activeMenuConfig
     } = useFabricCanvas({
+        canvasContainerRef,
         boardItems,
         onUpdateItem,
         onRemoveItem,
