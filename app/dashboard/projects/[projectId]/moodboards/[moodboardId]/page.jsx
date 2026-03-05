@@ -27,6 +27,10 @@ import {
 } from '@/lib/productUtils';
 
 // Visualizer components
+import OverviewTab from '@/components/moodboard/tabs/OverviewTab';
+import ExportTab from '@/components/moodboard/tabs/ExportTab';
+import DownloadTab from '@/components/moodboard/tabs/DownloadTab';
+
 import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
 import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
@@ -66,18 +70,13 @@ export default function MoodboardDetailPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
-    const [brandFilterOpen, setBrandFilterOpen] = useState(false);
-    const [selectedBrands, setSelectedBrands] = useState([]);
-    const [addCardOpen, setAddCardOpen] = useState(false);
 
     // Photo upload modal
-    const [photoModalOpen, setPhotoModalOpen] = useState(false);
     // Custom photos: [{ id, title, description, previewUrl, status }]
     const [customPhotos, setCustomPhotos] = useState([]);
     // Per-product status map: { [productId]: 'Considering' | 'Specified' | 'Excluded' }
     const [productStatuses, setProductStatuses] = useState({});
     // Right-click context menu
-    const [contextMenu, setContextMenu] = useState(null); // { x, y, itemId, isPhoto }
 
     // Canvas state (Design Desk)
     const [boardItems, setBoardItems] = useState([]);
@@ -509,258 +508,22 @@ export default function MoodboardDetailPage() {
 
                 {/* OVERVIEW */}
                 {activeTab === 'overview' && (
-                    <div className="h-full overflow-y-auto p-8">
-                        {/* Filter Bar */}
-                        <div className="flex items-center gap-3 mb-6 relative">
-                            {/* Brand Filter */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => { setBrandFilterOpen(o => !o); }}
-                                    className={`px-4 py-2 border rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${selectedBrands.length > 0
-                                        ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
-                                        }`}
-                                >
-                                    Brands {selectedBrands.length > 0 && <span className="bg-white/20 text-white text-[10px] font-black rounded-full px-1.5">{selectedBrands.length}</span>}
-                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${brandFilterOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {brandFilterOpen && (
-                                    <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                        <div className="px-3 pb-2">
-                                            <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
-                                                <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search brands"
-                                                    className="bg-transparent text-sm text-gray-700 outline-none w-full placeholder:text-gray-400"
-                                                    onChange={() => { }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="max-h-48 overflow-y-auto">
-                                            {[...new Set(products.map(p => getProductBrand(p)).filter(Boolean))].map(brand => (
-                                                <label key={brand} className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedBrands.includes(brand)}
-                                                        onChange={() => setSelectedBrands(prev =>
-                                                            prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
-                                                        )}
-                                                        className="w-4 h-4 rounded border-gray-300 accent-[#1a1a2e]"
-                                                    />
-                                                    <span className="text-sm text-gray-700 font-medium truncate">{brand}</span>
-                                                </label>
-                                            ))}
-                                            {products.length > 0 && [...new Set(products.map(p => getProductBrand(p)).filter(Boolean))].length === 0 && (
-                                                <p className="px-4 py-3 text-xs text-gray-400">No brands found</p>
-                                            )}
-                                        </div>
-                                        {selectedBrands.length > 0 && (
-                                            <div className="border-t border-gray-100 px-4 pt-2 pb-1">
-                                                <button
-                                                    onClick={() => setSelectedBrands([])}
-                                                    className="text-sm text-[#d9a88a] font-semibold hover:underline"
-                                                >
-                                                    Clear all
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <button className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-semibold text-gray-600 hover:border-gray-300 transition-colors flex items-center gap-1.5">
-                                <Tag className="w-3.5 h-3.5" /> Tags
-                            </button>
-
-                            {/* Close dropdowns on outside click */}
-                            {(brandFilterOpen || addCardOpen) && (
-                                <div className="fixed inset-0 z-40" onClick={() => { setBrandFilterOpen(false); setAddCardOpen(false); }} />
-                            )}
-                        </div>
-
-                        {/* Photo upload modal (no hidden input needed) */}
-                        <PhotoUploadModal
-                            isOpen={photoModalOpen}
-                            onClose={() => setPhotoModalOpen(false)}
-                            onAdd={handlePhotoAdd}
-                        />
-
-                        {/* Context menu (rendered at root level so it escapes overflow) */}
-                        {contextMenu && (
-                            <CardContextMenu
-                                x={contextMenu.x}
-                                y={contextMenu.y}
-                                isPhoto={contextMenu.isPhoto}
-                                currentStatus={
-                                    contextMenu.isPhoto
-                                        ? customPhotos.find(p => p.id === contextMenu.itemId)?.status ?? 'Considering'
-                                        : productStatuses[contextMenu.itemId] ?? 'Considering'
-                                }
-                                onStatusChange={(status) => {
-                                    if (contextMenu.isPhoto) handlePhotoStatusChange(contextMenu.itemId, status);
-                                    else handleProductStatusChange(contextMenu.itemId, status);
-                                }}
-                                onRemove={() => {
-                                    if (contextMenu.isPhoto) handleRemovePhoto(contextMenu.itemId);
-                                    else handleRemoveProduct(contextMenu.itemId);
-                                }}
-                                onEditTitle={contextMenu.isPhoto ? () => {
-                                    // Simple: re-open modal pre-filled (future enhancement)
-                                    toast.info('Edit via the product list');
-                                } : null}
-                                onClose={() => setContextMenu(null)}
-                            />
-                        )}
-
-                        {products.length === 0 && customPhotos.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-gray-200 rounded-3xl text-center">
-                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
-                                    <ShoppingCart className="w-7 h-7 text-gray-300" />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-600 mb-2">No materials yet</h3>
-                                <p className="text-sm text-gray-400 mb-6 max-w-sm">Add products from the catalog or upload custom images.</p>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => {
-                                            useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
-                                            router.push('/productlist');
-                                        }}
-                                        className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
-                                    >
-                                        <Plus className="w-4 h-4" /> Add Products
-                                    </button>
-                                    <button
-                                        onClick={() => setPhotoModalOpen(true)}
-                                        className="px-6 py-3 border border-[#d9a88a] text-[#d9a88a] font-bold rounded-2xl hover:bg-[#fef7f2] transition-colors flex items-center gap-2"
-                                    >
-                                        <ImagePlus className="w-4 h-4" /> Upload Image
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                                {/* + Add Card */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setAddCardOpen(o => !o)}
-                                        className="w-full border-2 border-dashed border-[#d9a88a]/40 rounded-2xl flex flex-col items-center justify-center gap-2 min-h-[220px] cursor-pointer hover:border-[#d9a88a] hover:bg-[#fef7f2] transition-all group bg-[#fef7f2]/50"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-[#d9a88a]/10 flex items-center justify-center">
-                                            <Plus className="w-5 h-5 text-[#d9a88a]" />
-                                        </div>
-                                        <span className="text-xs font-semibold text-[#d9a88a] text-center px-2">Images, Video &amp; Pinterest</span>
-                                    </button>
-                                    {addCardOpen && (
-                                        <div className="absolute top-2 left-full ml-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                            <button
-                                                onClick={() => {
-                                                    setAddCardOpen(false);
-                                                    useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
-                                                    router.push('/productlist');
-                                                }}
-                                                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                                            >
-                                                <div className="w-7 h-7 bg-[#1a1a2e] rounded-lg flex items-center justify-center shrink-0">
-                                                    <List className="w-4 h-4 text-white" />
-                                                </div>
-                                                Browse Product List
-                                            </button>
-                                            <button
-                                                onClick={() => { setAddCardOpen(false); setPhotoModalOpen(true); }}
-                                                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                                            >
-                                                <div className="w-7 h-7 bg-[#d9a88a] rounded-lg flex items-center justify-center shrink-0">
-                                                    <ImagePlus className="w-4 h-4 text-white" />
-                                                </div>
-                                                Upload Photo
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Custom uploaded photos */}
-                                {customPhotos.map((photo) => (
-                                    <div
-                                        key={photo.id}
-                                        onContextMenu={(e) => openContextMenu(e, photo.id, true)}
-                                        className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
-                                    >
-                                        <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                                            {photo.previewUrl ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={photo.previewUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                                                    <ImagePlus className="w-8 h-8 text-gray-300" />
-                                                </div>
-                                            )}
-                                            {/* Status dot */}
-                                            <StatusDot status={photo.status} />
-                                        </div>
-                                        <div className="p-3 flex flex-col gap-0.5 flex-1">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Uploaded Image</p>
-                                            <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{photo.title}</p>
-                                            {photo.description && <p className="text-xs text-gray-400 truncate">{photo.description}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* Product cards */}
-                                {products
-                                    .filter(p => selectedBrands.length === 0 || selectedBrands.includes(getProductBrand(p)))
-                                    .map((product, i) => {
-                                        const imgUrl = getProductThumbnail(product);
-                                        const name = getProductName(product);
-                                        const brand = getProductBrand(product);
-                                        const category = getProductCategory(product);
-                                        const hasVariants = (typeof product.productId === 'object' ? product.productId?.variants?.length : 0) || 0;
-                                        const productId = product._id;
-                                        const status = productStatuses[productId] ?? 'Considering';
-
-                                        return (
-                                            <div
-                                                key={`${productId || 'p'}-${i}`}
-                                                onContextMenu={(e) => openContextMenu(e, productId, false)}
-                                                className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu"
-                                            >
-                                                <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                                                    {imgUrl && imgUrl !== '/Icons/arcmatlogo.svg' ? (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                                        <img src={imgUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                                            <Building2 className="w-8 h-8 text-gray-300" />
-                                                        </div>
-                                                    )}
-                                                    {/* Status dot */}
-                                                    <StatusDot status={status} />
-                                                </div>
-                                                <div className="p-3 flex flex-col gap-1 flex-1">
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
-                                                    <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-2">{brand}</p>
-                                                    <p className="text-xs text-gray-400 truncate">{name}</p>
-                                                    <div className="mt-auto pt-2">
-                                                        {hasVariants > 0 ? (
-                                                            <button className="w-full py-2 border border-gray-200 text-xs font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
-                                                                Sample Finishes
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => handleAddToCart(product)}
-                                                                className="w-full py-2 bg-[#1a1a2e] text-white text-xs font-bold rounded-xl hover:bg-[#2d2d4a] transition-colors flex items-center justify-center gap-1"
-                                                            >
-                                                                <ShoppingCart className="w-3 h-3" /> Add to Cart
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                            </div>
-                        )}
-                    </div>
+                    <OverviewTab
+                        products={products}
+                        customPhotos={customPhotos}
+                        productStatuses={productStatuses}
+                        projectId={projectId}
+                        projectName={project?.projectName}
+                        moodboardId={moodboardId}
+                        moodboardName={moodboard?.moodboard_name}
+                        handlePhotoAdd={handlePhotoAdd}
+                        handlePhotoStatusChange={handlePhotoStatusChange}
+                        handleProductStatusChange={handleProductStatusChange}
+                        handleRemovePhoto={handleRemovePhoto}
+                        handleRemoveProduct={handleRemoveProduct}
+                        handleAddToCart={handleAddToCart}
+                        router={router}
+                    />
                 )}
 
 
@@ -802,179 +565,26 @@ export default function MoodboardDetailPage() {
 
                 {/* EXPORT */}
                 {activeTab === 'export' && (
-                    <div className="h-full overflow-y-auto p-8">
-                        {/* Toolbar */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-                                    Filter
-                                </button>
-                                <button className="p-2 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-                                    <Edit2 className="w-4 h-4" /> Choose template
-                                </button>
-                                <button
-                                    onClick={exportAsCSV}
-                                    className="flex items-center gap-2 px-5 py-2 bg-[#1a1a2e] text-white rounded-xl text-sm font-bold hover:bg-[#2d2d4a] transition-colors"
-                                >
-                                    <Download className="w-4 h-4" /> Export
-                                </button>
-                                <button className="p-2 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Table */}
-                        <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Spec Status</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Project Name</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Tags</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Brand</th>
-                                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Manufacturer SKU</th>
-                                        <th className="px-4 py-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">
-                                    {(products.length === 0 && customPhotos.length === 0) ? (
-                                        <tr>
-                                            <td colSpan={7} className="py-16 text-center text-gray-400 text-sm font-medium">
-                                                No materials to export. Add products or images first.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        [
-                                            ...products.map(p => ({ isPhoto: false, data: p })),
-                                            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
-                                        ].map(({ isPhoto, data }, i) => {
-                                            const id = isPhoto ? data.id : data._id;
-                                            const thumb = isPhoto ? (data.previewUrl || '/Icons/arcmatlogo.svg') : getProductThumbnail(data);
-                                            const name = isPhoto ? data.title : getProductName(data);
-                                            const brand = isPhoto ? 'Custom Upload' : getProductBrand(data);
-                                            const sku = isPhoto ? '—' : (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '—');
-                                            const st = isPhoto ? (data.status || 'Considering') : (productStatuses[id] || 'Considering');
-
-                                            // Optional: calculate quantity based on canvas if we wanted to show it in the table
-                                            // const onCanvasCount = boardItems.filter(ci => ci.material?._id === id && ci.type !== 'text').length;
-
-                                            return (
-                                                <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50 transition-colors group">
-                                                    <td className="px-4 py-3.5">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
-                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                <img src={thumb} alt={name} className="w-full h-full object-cover" />
-                                                            </div>
-                                                            <span className="font-semibold text-[#1a1a2e] truncate max-w-[180px]">{name}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3.5">
-                                                        {(() => {
-                                                            const sty = STATUS_STYLES[st] || STATUS_STYLES['Considering'];
-                                                            return (
-                                                                <span className={`flex items-center gap-1.5 text-xs font-semibold ${sty.label}`}>
-                                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${sty.dot}`} />{st}
-                                                                </span>
-                                                            );
-                                                        })()}
-                                                    </td>
-                                                    <td className="px-4 py-3.5 text-gray-600 font-medium">{project?.projectName || 'ArcMat'}</td>
-                                                    <td className="px-4 py-3.5">
-                                                        <button className="text-xs text-gray-400 hover:text-[#d9a88a] font-medium transition-colors">Add tag</button>
-                                                    </td>
-                                                    <td className="px-4 py-3.5 text-gray-700 font-medium">{brand || '—'}</td>
-                                                    <td className="px-4 py-3.5 text-gray-500 font-mono text-xs">{sku}</td>
-                                                    <td className="px-4 py-3.5">
-                                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400" title="Email"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg></button>
-                                                            {!isPhoto && (
-                                                                <button
-                                                                    onClick={() => handleAddToCart(data)}
-                                                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"
-                                                                    title="Add to Cart"
-                                                                >
-                                                                    <ShoppingCart className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                            <button className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400" title="More"><MoreHorizontal className="w-4 h-4" /></button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <ExportTab
+                        products={products}
+                        customPhotos={customPhotos}
+                        boardItems={boardItems}
+                        productStatuses={productStatuses}
+                        projectName={project?.projectName}
+                        exportAsCSV={exportAsCSV}
+                        handleAddToCart={handleAddToCart}
+                    />
                 )}
 
                 {/* DOWNLOAD */}
                 {activeTab === 'download' && (
-                    <div className="h-full overflow-y-auto p-8">
-                        <h2 className="text-xl font-black text-[#1a1a2e] mb-2">Download Your Board</h2>
-                        <p className="text-sm text-gray-400 mb-8">Export the canvas as an image or download a material spec sheet.</p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
-                            <DownloadCard
-                                title="Canvas Image"
-                                description="Download the design desk canvas as a high-res JPEG"
-                                icon={<svg className="w-7 h-7 text-[#d9a88a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                                label="Download JPEG"
-                                onClick={() => {
-                                    if (boardItems.length === 0) { toast.error('Canvas is empty. Add items first.'); return; }
-                                    setActiveTab('designDesk');
-                                    setTimeout(() => toast.info('Use the Download button in the canvas toolbar'), 500);
-                                }}
-                                color="orange"
-                            />
-                            <DownloadCard
-                                title="Material CSV"
-                                description="Export all materials as a spreadsheet with specs and pricing"
-                                icon={<FileOutput className="w-7 h-7 text-green-500" />}
-                                label="Download CSV"
-                                onClick={exportAsCSV}
-                                color="green"
-                            />
-                        </div>
-                    </div>
+                    <DownloadTab
+                        boardItems={boardItems}
+                        exportAsCSV={exportAsCSV}
+                        setActiveTab={setActiveTab}
+                    />
                 )}
             </div>
-        </div>
-    );
-}
-
-function DownloadCard({ title, description, icon, label, onClick, color }) {
-    const colors = {
-        orange: 'border-[#d9a88a]/20 hover:border-[#d9a88a] bg-[#fef7f2]/50 hover:bg-[#fef7f2]',
-        green: 'border-green-200 hover:border-green-400 bg-green-50/50 hover:bg-green-50',
-    };
-    const btnColors = {
-        orange: 'bg-[#d9a88a] hover:bg-[#c59678] text-white',
-        green: 'bg-green-600 hover:bg-green-700 text-white',
-    };
-    return (
-        <div className={`flex flex-col gap-4 p-6 border-2 rounded-3xl transition-all ${colors[color]}`}>
-            <div className="w-14 h-14 bg-white rounded-2xl shadow-sm flex items-center justify-center">{icon}</div>
-            <div>
-                <h3 className="font-black text-[#1a1a2e] text-base mb-1">{title}</h3>
-                <p className="text-xs text-gray-400 font-medium leading-relaxed">{description}</p>
-            </div>
-            <button
-                onClick={onClick}
-                className={`mt-auto w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-colors ${btnColors[color]}`}
-            >
-                <Download className="w-4 h-4" /> {label}
-            </button>
         </div>
     );
 }
