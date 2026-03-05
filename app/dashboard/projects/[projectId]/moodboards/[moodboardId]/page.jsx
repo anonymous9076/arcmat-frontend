@@ -22,6 +22,7 @@ import {
     Trash2, ChevronRight, Minus, ImagePlus, Search, List, ChevronDown,
     IndianRupee, CreditCard
 } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import {
     getProductImageUrl, getProductName, getProductCategory,
     getProductBrand, getProductThumbnail
@@ -410,11 +411,8 @@ export default function MoodboardDetailPage() {
         setContextMenu({ x: e.clientX, y: e.clientY, itemId, isPhoto });
     }, []);
 
-    /* ── CSV Export ─────────────────────────────── */
-    const exportAsCSV = () => {
-        const matsOnBoard = boardItems.filter(i => i.type !== 'text');
-
-        // Unify all overview items (products + custom photos)
+    /* ── Excel Export ─────────────────────────────── */
+    const exportAsCSV = async () => {
         const allOverviewItems = [
             ...products.map(p => ({ isPhoto: false, data: p })),
             ...customPhotos.map(p => ({ isPhoto: true, data: p }))
@@ -422,56 +420,132 @@ export default function MoodboardDetailPage() {
 
         if (allOverviewItems.length === 0) { toast.error('No materials to export'); return; }
 
-        const source = allOverviewItems.map(({ isPhoto, data }) => {
-            const id = isPhoto ? data.id : data._id;
-            const meta = isPhoto ? data : (productStatuses[id] || {});
-            const st = isPhoto ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Materials Export');
 
-            const qty = Number(meta.quantity) || 1;
+        // Setup Headers
+        const headerRow = [
+            'Product Image',
+            'Name',
+            'Spec Status',
+            'Project Name',
+            'Brand',
+            'Manufacturer SKU',
+            'Quantity',
+            'Unit Price',
+            'Total Cost'
+        ];
 
-            let price = 0;
-            if (isPhoto) {
-                price = Number(meta.price) || 0;
-            } else {
-                if (typeof meta === 'object' && meta.price !== undefined) {
-                    price = Number(meta.price);
+        worksheet.getRow(1).values = headerRow;
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).height = 30;
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Set column widths
+        worksheet.columns = [
+            { width: 25 }, // Image
+            { width: 30 }, // Name
+            { width: 15 }, // Status
+            { width: 20 }, // Project
+            { width: 20 }, // Brand
+            { width: 20 }, // SKU
+            { width: 10 }, // Qty
+            { width: 15 }, // Price
+            { width: 15 }  // Total
+        ];
+
+        let totalSum = 0;
+
+        toast.loading('Preparing excel export with images...', { id: 'export-toast' });
+
+        try {
+            for (let i = 0; i < allOverviewItems.length; i++) {
+                const { isPhoto, data } = allOverviewItems[i];
+                const id = isPhoto ? data.id : data._id;
+                const meta = isPhoto ? data : (productStatuses[id] || {});
+                const st = isPhoto ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
+                const qty = Number(meta.quantity) || 1;
+
+                let price = 0;
+                if (isPhoto) {
+                    price = Number(meta.price) || 0;
                 } else {
-                    const { price: defaultPrice } = resolvePricing(data);
-                    price = defaultPrice;
+                    if (typeof meta === 'object' && meta.price !== undefined) {
+                        price = Number(meta.price);
+                    } else {
+                        const { price: defaultPrice } = resolvePricing(data);
+                        price = defaultPrice;
+                    }
+                }
+                const total = qty * price;
+                totalSum += total;
+
+                const currentRow = i + 2;
+                const row = worksheet.getRow(currentRow);
+
+                // Set text values
+                row.getCell(2).value = isPhoto ? data.title : getProductName(data);
+                row.getCell(3).value = st;
+                row.getCell(4).value = project?.projectName || 'ArcMat';
+                row.getCell(5).value = isPhoto ? 'Custom Upload' : getProductBrand(data);
+                row.getCell(6).value = isPhoto ? '—' : (data?.skucode || data?.productId?.skucode || '');
+                row.getCell(7).value = qty;
+                row.getCell(8).value = price;
+                row.getCell(9).value = total;
+
+                row.height = 100; // Set height for image
+                row.alignment = { vertical: 'middle', horizontal: 'center' };
+
+                // Handle Image
+                const thumbUrl = isPhoto ? (data.previewUrl || '') : getProductThumbnail(data);
+                if (thumbUrl) {
+                    try {
+                        const response = await fetch(thumbUrl);
+                        const buffer = await response.arrayBuffer();
+                        const extension = thumbUrl.split('.').pop().split('?')[0].toLowerCase() || 'png';
+
+                        const imageId = workbook.addImage({
+                            buffer: buffer,
+                            extension: extension === 'jpg' ? 'jpeg' : extension,
+                        });
+
+                        worksheet.addImage(imageId, {
+                            tl: { col: 0, row: currentRow - 1 },
+                            ext: { width: 120, height: 120 },
+                            editAs: 'oneCell'
+                        });
+                    } catch (err) {
+                        console.error('Failed to load image for row', i, err);
+                        row.getCell(1).value = '(Image Failed)';
+                    }
                 }
             }
-            const total = qty * price;
 
-            return {
-                name: isPhoto ? data.title : getProductName(data),
-                category: isPhoto ? 'Uploaded Image' : getProductCategory(data),
-                brand: isPhoto ? 'Custom Upload' : getProductBrand(data),
-                sku: isPhoto ? '—' : (data?.skucode || data?.productId?.skucode || ''),
-                qty: qty,
-                price: price,
-                total: total,
-                status: st,
-                image: isPhoto ? (data.previewUrl || '') : getProductThumbnail(data)
-            };
-        });
+            // Add Grand Total Row
+            const totalRowIndex = allOverviewItems.length + 2;
+            const totalRow = worksheet.getRow(totalRowIndex);
+            totalRow.getCell(8).value = 'GRAND TOTAL';
+            totalRow.getCell(8).font = { bold: true };
+            totalRow.getCell(9).value = totalSum;
+            totalRow.getCell(9).font = { bold: true };
+            totalRow.height = 30;
+            totalRow.alignment = { vertical: 'middle' };
 
-        const headers = ['Name', 'Spec Status', 'Project Name', 'Brand', 'Manufacturer SKU', 'Quantity', 'Unit Price', 'Total Cost', 'Image URL'];
-        const rows = source.map(r => [
-            r.name, r.status, project?.projectName || 'ArcMat', r.brand, r.sku, r.qty, r.price, r.total, r.image
-        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+            // Generate and Download
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${(moodboard?.moodboard_name || 'moodboard').replace(/\s+/g, '-')}-export.xlsx`;
+            link.click();
+            URL.revokeObjectURL(url);
 
-        const totalSum = source.reduce((sum, r) => sum + r.total, 0);
-        const totalRow = ['', '', '', '', '', '', 'GRAND TOTAL', totalSum, ''].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
-
-        const csvContent = [headers.join(','), ...rows, totalRow].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${(moodboard?.moodboard_name || 'moodboard').replace(/\s+/g, '-')}-export.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success('CSV exported!');
+            toast.success('Excel exported successfully!', { id: 'export-toast' });
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export Excel', { id: 'export-toast' });
+        }
     };
 
     if (isLoading || !isMounted) {
