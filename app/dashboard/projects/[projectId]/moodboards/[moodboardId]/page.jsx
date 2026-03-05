@@ -270,13 +270,7 @@ export default function MoodboardDetailPage() {
             price: price || 0,
             quantity: quantity || 1
         };
-        setCustomPhotos(prev => {
-            const next = [...prev, newPhoto];
-            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
-            return next;
-        });
-
-        // Also add to Canvas
+        // Create pseudo-material for Design Desk
         const pseudoMaterial = {
             _id: photoId,
             name: title,
@@ -286,11 +280,45 @@ export default function MoodboardDetailPage() {
             category: 'My Photo',
             brand: 'Custom Upload',
         };
-        // Add to boardItems so it shows on Design Desk canvas
-        handleDrop(pseudoMaterial, 400, 300);
+
+        const { price: defaultPrice } = resolvePricing(pseudoMaterial);
+        const itemPrice = price || defaultPrice;
+
+        setCustomPhotos(prev => {
+            const nextPhotos = [...prev, newPhoto];
+
+            setBoardItems(prevItems => {
+                const newItem = {
+                    id: Date.now() + Math.random(),
+                    type: 'material',
+                    material: pseudoMaterial,
+                    x: 400,
+                    y: 300,
+                    scale: 1,
+                    rotation: 0,
+                    quantity: quantity || 1,
+                    price: itemPrice
+                };
+                const nextItems = [...prevItems, newItem];
+
+                // Single update to backend
+                updateMoodboard({
+                    id: moodboardId,
+                    data: {
+                        customPhotos: nextPhotos,
+                        canvasState: nextItems,
+                        totalBudget: nextItems.filter(i => i.type !== 'text').reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0)
+                    }
+                });
+
+                return nextItems;
+            });
+
+            return nextPhotos;
+        });
 
         toast.success(`"${title}" added to Overview and Canvas!`);
-    }, [moodboardId, updateMoodboard, handleDrop]);
+    }, [moodboardId, updateMoodboard]);
 
     /* ── Status Handlers ───────────────────────── */
     const handlePhotoStatusChange = useCallback((photoId, status) => {
@@ -626,18 +654,20 @@ export default function MoodboardDetailPage() {
                 )}
 
                 {/* EXPORT */}
-                <ExportTab
-                    products={products}
-                    customPhotos={customPhotos}
-                    boardItems={boardItems}
-                    productStatuses={productStatuses}
-                    projectName={project?.projectName}
-                    exportAsCSV={exportAsCSV}
-                    handleAddToCart={handleAddToCart}
-                    handlePriceQtyUpdate={handlePriceQtyUpdate}
-                    handlePhotoStatusChange={handlePhotoStatusChange}
-                    handleProductStatusChange={handleProductStatusChange}
-                />
+                {activeTab === 'export' && (
+                    <ExportTab
+                        products={products}
+                        customPhotos={customPhotos}
+                        boardItems={boardItems}
+                        productStatuses={productStatuses}
+                        projectName={project?.projectName}
+                        exportAsCSV={exportAsCSV}
+                        handleAddToCart={handleAddToCart}
+                        handlePriceQtyUpdate={handlePriceQtyUpdate}
+                        handlePhotoStatusChange={handlePhotoStatusChange}
+                        handleProductStatusChange={handleProductStatusChange}
+                    />
+                )}
 
                 {/* DOWNLOAD */}
                 {activeTab === 'download' && (

@@ -19,7 +19,9 @@ export default function ExportTab({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [selectedTags, setSelectedTags] = useState([]);
-    const [showFilters, setShowFilters] = useState(false);
+    const [selectedSpecStatuses, setSelectedSpecStatuses] = useState([]);
+    const [selectedProjectStatus, setSelectedProjectStatus] = useState(null);
+    const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [statusDropdown, setStatusDropdown] = useState(null);
 
     const project = { projectName: projectName };
@@ -41,6 +43,8 @@ export default function ExportTab({
         customPhotos.forEach(p => (p.tags || []).forEach(t => tags.add(t)));
         return Array.from(tags);
     }, [products, customPhotos, productStatuses]);
+
+    const specStatuses = Object.keys(STATUS_STYLES);
 
     // Filtered items
     const filteredItems = useMemo(() => {
@@ -72,8 +76,17 @@ export default function ExportTab({
             });
         }
 
+        if (selectedSpecStatuses.length > 0) {
+            items = items.filter(({ isPhoto, data }) => {
+                const id = isPhoto ? data.id : data._id;
+                const statusData = isPhoto ? data.status : productStatuses[id];
+                const st = (typeof statusData === 'object' ? statusData.status : statusData) || 'Considering';
+                return selectedSpecStatuses.includes(st);
+            });
+        }
+
         return items;
-    }, [products, customPhotos, searchTerm, selectedBrands, selectedTags, productStatuses]);
+    }, [products, customPhotos, searchTerm, selectedBrands, selectedTags, selectedSpecStatuses, productStatuses]);
 
     // Calculate totals
     const { grandTotal, filteredTotal } = useMemo(() => {
@@ -117,7 +130,7 @@ export default function ExportTab({
                 <div className="text-right">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Estimation</p>
                     <div className="flex items-baseline gap-2 justify-end">
-                        {(searchTerm || selectedBrands.length || selectedTags.length) > 0 && (
+                        {(searchTerm || selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 && (
                             <span className="text-sm font-bold text-[#d9a88a]">
                                 Filtered: ₹{filteredTotal.toLocaleString('en-IN')} /
                             </span>
@@ -130,112 +143,172 @@ export default function ExportTab({
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col gap-4 mb-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 max-w-md">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search by name or brand..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#1a1a2e]/5 transition-all"
-                            />
-                        </div>
-                        <button
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-semibold transition-all ${showFilters ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                        >
-                            <Filter className="w-4 h-4" />
-                            Filters
-                            {(selectedBrands.length + selectedTags.length) > 0 && (
-                                <span className="ml-1 bg-[#d9a88a] text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                                    {selectedBrands.length + selectedTags.length}
-                                </span>
-                            )}
-                        </button>
+            <div className="flex justify-between items-center gap-4 mb-6">
+                <div className="flex items-center gap-3 flex-1 max-w-md">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search materials..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-gray-100 transition-all font-medium placeholder:text-gray-400 shadow-sm"
+                        />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
-                            <Edit2 className="w-4 h-4" /> Choose template
-                        </button>
-                        <button
-                            onClick={exportAsCSV}
-                            className="flex items-center gap-2 px-5 py-2 bg-[#1a1a2e] text-white rounded-xl text-sm font-bold hover:bg-[#2d2d4a] transition-colors"
-                        >
-                            <Download className="w-4 h-4" /> Export
-                        </button>
-                        <button className="p-2 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition-colors">
-                            <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowFiltersModal(true)}
+                        className={`flex items-center gap-2 px-5 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${(selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        <Filter className="w-4 h-4" />
+                        Filters
+                        {(selectedBrands.length + selectedTags.length + selectedSpecStatuses.length) > 0 && (
+                            <span className="ml-1 bg-[#d9a88a] text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                                {selectedBrands.length + selectedTags.length + selectedSpecStatuses.length}
+                            </span>
+                        )}
+                    </button>
                 </div>
 
-                {showFilters && (
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl animate-in slide-in-from-top-1 duration-200">
-                        <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center gap-3">
+                    <button className="flex items-center gap-2 px-5 py-3 border border-gray-100 bg-white rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                        <Edit2 className="w-4 h-4" /> Choose template
+                    </button>
+                    <button
+                        onClick={exportAsCSV}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
+                    >
+                        <Download className="w-4 h-4" /> Export
+                    </button>
+                    <button className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm">
+                        <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Filters Modal */}
+            {showFiltersModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#1a1a2e]/40 backdrop-blur-sm" onClick={() => setShowFiltersModal(false)} />
+                    <div className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-50">
+                            <h3 className="text-xl font-black text-[#1a1a2e] w-full text-center">Filters</h3>
+                            <button onClick={() => setShowFiltersModal(false)} className="absolute right-6 p-2 h-10 w-10 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 max-h-[70vh] overflow-y-auto space-y-8">
+                            {/* Spec Status */}
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Brands</p>
+                                <p className="text-sm font-black text-[#1a1a2e] mb-4">Spec Status</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {specStatuses.map(status => (
+                                        <button
+                                            key={status}
+                                            onClick={() => setSelectedSpecStatuses(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status])}
+                                            className={`px-5 py-2.5 rounded-full text-sm font-bold border transition-all flex items-center gap-2 ${selectedSpecStatuses.includes(status) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'}`}
+                                        >
+                                            <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[status].dot}`} />
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Brands */}
+                            <div>
+                                <p className="text-sm font-black text-[#1a1a2e] mb-4">Brands</p>
                                 <div className="flex flex-wrap gap-2">
                                     {allBrands.map(brand => (
                                         <button
                                             key={brand}
                                             onClick={() => setSelectedBrands(prev => prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand])}
-                                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedBrands.includes(brand) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                            className={`px-5 py-2.5 rounded-full text-sm font-bold border transition-all ${selectedBrands.includes(brand) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'}`}
                                         >
-                                            {brand}
+                                            {brand || 'Unbranded'}
                                         </button>
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Tags */}
                             <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Tags</p>
+                                <p className="text-sm font-black text-[#1a1a2e] mb-4">Tags</p>
+                                {allTags.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {allTags.map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                                                className={`px-5 py-2.5 rounded-full text-sm font-bold border transition-all ${selectedTags.includes(tag) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'}`}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-400 italic">No tags available</p>
+                                )}
+                            </div>
+
+                            {/* Project Status */}
+                            <div>
+                                <p className="text-sm font-black text-[#1a1a2e] mb-4">Project Status</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {allTags.map(tag => (
+                                    {['In Progress', 'Completed', 'On Hold'].map(status => (
                                         <button
-                                            key={tag}
-                                            onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                                            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${selectedTags.includes(tag) ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                            key={status}
+                                            onClick={() => setSelectedProjectStatus(selectedProjectStatus === status ? null : status)}
+                                            className={`px-5 py-2.5 rounded-full text-sm font-bold border transition-all ${selectedProjectStatus === status ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'}`}
                                         >
-                                            {tag}
+                                            {status}
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         </div>
-                        {(selectedBrands.length > 0 || selectedTags.length > 0) && (
+
+                        <div className="p-6 border-t border-gray-50 flex items-center justify-between bg-white">
                             <button
-                                onClick={() => { setSelectedBrands([]); setSelectedTags([]); }}
-                                className="mt-4 text-xs font-bold text-[#d9a88a] hover:underline"
+                                onClick={() => { setSelectedBrands([]); setSelectedTags([]); setSelectedSpecStatuses([]); setSelectedProjectStatus(null); }}
+                                className="text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
                             >
-                                Clear all filters
+                                Reset all
                             </button>
-                        )}
+                            <button
+                                onClick={() => setShowFiltersModal(false)}
+                                className="bg-[#1a1a2e] text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-lg active:scale-95 shadow-[#1a1a2e]/20"
+                            >
+                                Show {filteredItems.length} items
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Table */}
-            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+            <div className="border border-gray-100 rounded-[28px] overflow-hidden shadow-sm bg-white">
+                <table className="w-full text-sm border-collapse">
+                    <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Spec Status</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tags</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Brand</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">SKU</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
-                            <th className="text-left px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Unit Price</th>
-                            <th className="text-right px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total (₹)</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Name</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Spec Status</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Tags</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Brand</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">SKU</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Quantity</th>
+                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Unit Price</th>
+                            <th className="text-right px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Total (₹)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
+                    <tbody className="divide-y divide-gray-50">
                         {filteredItems.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="py-16 text-center text-gray-400 text-sm font-medium">
-                                    {searchTerm || selectedBrands.length || selectedTags.length ? 'No items match your search' : 'No materials to export.'}
+                                <td colSpan={8} className="py-24 text-center text-gray-400 text-sm font-medium">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Search className="w-8 h-8 text-gray-200" />
+                                        <p>{searchTerm || selectedBrands.length || selectedTags.length ? 'No materials match your search' : 'No materials to export.'}</p>
+                                    </div>
                                 </td>
                             </tr>
                         ) : (
@@ -268,34 +341,34 @@ export default function ExportTab({
 
                                 return (
                                     <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm">
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105">
                                                     <img src={thumb} alt={name} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-[#1a1a2e] mb-0.5">{name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-medium">{project?.projectName || 'ArcMat'}</p>
+                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight">{name}</p>
+                                                    <p className="text-[10px] text-[#d9a88a] font-bold uppercase tracking-wider">{projectName || 'ArcMat'}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 relative">
+                                        <td className="px-6 py-5 relative">
                                             <button
                                                 onClick={() => setStatusDropdown(statusDropdown === id ? null : id)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${st === 'Specified' ? 'bg-green-50 text-green-700 border-green-100 hover:border-green-200' :
-                                                    st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200' :
-                                                        'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-wider uppercase transition-all border ${st === 'Specified' ? 'bg-green-50 text-green-700 border-green-100 hover:border-green-200 shadow-sm shadow-green-100' :
+                                                        st === 'Excluded' ? 'bg-pink-50 text-pink-700 border-pink-100 hover:border-pink-200 shadow-sm shadow-pink-100' :
+                                                            'bg-gray-50 text-gray-700 border-gray-100 hover:border-gray-200'
                                                     }`}
                                             >
-                                                <div className={`w-2 h-2 rounded-full ${STATUS_STYLES[st]?.dot || 'bg-gray-500'}`} />
+                                                <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[st]?.dot || 'bg-gray-500'}`} />
                                                 {st}
-                                                <ChevronDown className={`w-3 h-3 transition-transform ${statusDropdown === id ? 'rotate-180' : ''}`} />
+                                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${statusDropdown === id ? 'rotate-180' : ''}`} />
                                             </button>
 
                                             {statusDropdown === id && (
                                                 <>
                                                     <div className="fixed inset-0 z-40" onClick={() => setStatusDropdown(null)} />
-                                                    <div className="absolute top-full left-4 mt-1 w-36 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                                    <div className="absolute top-full left-6 mt-2 w-44 bg-white border border-gray-50 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
                                                         {Object.keys(STATUS_STYLES).map(status => (
                                                             <button
                                                                 key={status}
@@ -304,7 +377,7 @@ export default function ExportTab({
                                                                     else handleProductStatusChange(id, status);
                                                                     setStatusDropdown(null);
                                                                 }}
-                                                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-xs font-bold text-gray-700 flex items-center gap-2"
+                                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-[11px] font-black uppercase tracking-wider text-gray-700 flex items-center gap-3 transition-colors"
                                                             >
                                                                 <div className={`w-1.5 h-1.5 rounded-full ${STATUS_STYLES[status].dot}`} />
                                                                 {status}
@@ -314,12 +387,12 @@ export default function ExportTab({
                                                 </>
                                             )}
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex flex-wrap gap-1 mb-1.5">
+                                        <td className="px-6 py-5">
+                                            <div className="flex flex-wrap gap-1.5 mb-2">
                                                 {(isPhoto ? data.tags : (productStatuses[id]?.tags))?.map((tag, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="group/tag px-2 py-0.5 bg-gray-50 text-[#1a1a2e] border border-gray-100 rounded-md text-[10px] font-bold flex items-center gap-1 hover:border-gray-200"
+                                                        className="group/tag px-3 py-1 bg-gray-50 text-[#1a1a2e] border border-gray-100 rounded-xl text-[10px] font-black flex items-center gap-1.5 hover:bg-white hover:border-[#d9a88a] transition-all"
                                                     >
                                                         <span
                                                             className="cursor-pointer"
@@ -339,17 +412,17 @@ export default function ExportTab({
                                                                 const currentTags = (isPhoto ? data.tags : productStatuses[id]?.tags) || [];
                                                                 handlePriceQtyUpdate(id, { tags: currentTags.filter(t => t !== tag) }, isPhoto);
                                                             }}
-                                                            className="text-gray-300 hover:text-red-500"
+                                                            className="text-gray-300 hover:text-red-500 transition-colors"
                                                         >
-                                                            <X className="w-2.5 h-2.5" />
+                                                            <X className="w-3 h-3" />
                                                         </button>
                                                     </span>
                                                 ))}
                                             </div>
                                             <input
                                                 type="text"
-                                                placeholder="+ Tag"
-                                                className="text-[10px] w-full bg-transparent border-none outline-none text-gray-400 hover:text-[#d9a88a] font-bold placeholder:text-gray-300 transition-colors px-1"
+                                                placeholder="+ Add label"
+                                                className="text-[10px] w-full bg-transparent border-none outline-none text-[#d9a88a] hover:text-[#c48d6d] font-black uppercase tracking-widest placeholder:text-gray-200 transition-colors px-1"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && e.target.value.trim()) {
                                                         const newTag = e.target.value.trim();
@@ -362,10 +435,10 @@ export default function ExportTab({
                                                 }}
                                             />
                                         </td>
-                                        <td className="px-4 py-4 text-gray-700 font-semibold">{brand || '—'}</td>
-                                        <td className="px-4 py-4 text-gray-400 font-mono text-[10px] tracking-tighter">{sku}</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] transition-all w-20">
+                                        <td className="px-6 py-5 text-[#1a1a2e] font-bold text-sm">{brand || '—'}</td>
+                                        <td className="px-6 py-5 text-gray-400 font-mono text-[10px] tracking-tight">{sku}</td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-xl px-2 py-2 focus-within:border-[#d9a88a] focus-within:bg-white transition-all w-24 group-hover:bg-white">
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
@@ -381,30 +454,34 @@ export default function ExportTab({
                                                             handlePriceQtyUpdate(id, { quantity: 1 }, isPhoto);
                                                         }
                                                     }}
-                                                    className="w-full text-sm font-bold bg-transparent outline-none text-center"
+                                                    className="w-full text-sm font-black bg-transparent outline-none text-center text-[#1a1a2e]"
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-gray-700 font-medium">
+                                        <td className="px-6 py-5 text-gray-700 font-medium">
                                             {isPhoto ? (
-                                                <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] transition-all">
-                                                    <span className="text-[10px] text-gray-400 font-bold">₹</span>
+                                                <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-xl px-3 py-2 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white">
+                                                    <span className="text-[11px] text-[#d9a88a] font-black">₹</span>
                                                     <input
                                                         type="number"
                                                         min="0"
                                                         value={unitPrice}
                                                         onChange={(e) => handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto)}
-                                                        className="w-20 text-sm font-bold bg-transparent outline-none"
+                                                        className="w-32 text-sm font-black bg-transparent outline-none text-[#1a1a2e]"
                                                     />
                                                 </div>
                                             ) : (
-                                                <span className="font-bold">₹{unitPrice.toLocaleString('en-IN')}</span>
+                                                <div className="font-black text-[#1a1a2e] text-sm">
+                                                    <span className="text-[#d9a88a] mr-1">₹</span>
+                                                    {unitPrice.toLocaleString('en-IN')}
+                                                </div>
                                             )}
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="text-sm font-black text-[#1a1a2e]">
-                                                ₹{total.toLocaleString('en-IN')}
-                                            </span>
+                                        <td className="px-6 py-5 text-right">
+                                            <div className="text-lg font-black text-[#1a1a2e]">
+                                                <span className="text-[#d9a88a] mr-1.5 text-xs">₹</span>
+                                                {total.toLocaleString('en-IN')}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
