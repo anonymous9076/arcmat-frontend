@@ -80,6 +80,7 @@ export default function MoodboardDetailPage() {
 
     // Canvas state (Design Desk)
     const [boardItems, setBoardItems] = useState([]);
+    const [canvasBg, setCanvasBg] = useState('#f0eee9');
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     const [stagedMaterial, setStagedMaterial] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -112,6 +113,7 @@ export default function MoodboardDetailPage() {
             if (!isDataLoaded.current) {
                 const state = Array.isArray(moodboard.canvasState) ? moodboard.canvasState : [];
                 setBoardItems(state);
+                if (moodboard.canvasBackgroundColor) setCanvasBg(moodboard.canvasBackgroundColor);
                 // Restore custom photos (title/description/status but not blob URLs which are ephemeral)
                 if (Array.isArray(moodboard.customPhotos)) setCustomPhotos(moodboard.customPhotos);
                 // Restore product statuses
@@ -144,22 +146,29 @@ export default function MoodboardDetailPage() {
     }, [boardItems]);
 
     /* ── Backend save ───────────────────────────── */
-    const saveToBackend = useCallback((items) => {
+    const saveToBackend = useCallback((items, bg = canvasBg) => {
         if (!moodboardId || !isDataLoaded.current) return;
         setIsSaving(true);
         const budget = items.filter(i => i.type !== 'text').reduce((sum, item) => {
             return sum + (Number(item.price) || 0) * (Number(item.quantity) || 1);
         }, 0);
-        updateMoodboard({ id: moodboardId, data: { canvasState: items, totalBudget: budget } }, {
+        updateMoodboard({
+            id: moodboardId,
+            data: {
+                canvasState: items,
+                totalBudget: budget,
+                canvasBackgroundColor: bg
+            }
+        }, {
             onSettled: () => setTimeout(() => setIsSaving(false), 2000)
         });
-    }, [moodboardId, updateMoodboard]);
+    }, [moodboardId, updateMoodboard, canvasBg]);
 
     useEffect(() => {
         if (!isDataLoaded.current) return;
-        const timer = setTimeout(() => saveToBackend(boardItems), 1000);
+        const timer = setTimeout(() => saveToBackend(boardItems, canvasBg), 1000);
         return () => clearTimeout(timer);
-    }, [boardItems, saveToBackend]);
+    }, [boardItems, canvasBg, saveToBackend]);
 
     /* ── Board handlers ─────────────────────────── */
     const handleDrop = useCallback((material, x, y) => {
@@ -555,6 +564,8 @@ export default function MoodboardDetailPage() {
                                 projectName={project?.projectName}
                                 roomName={moodboard?.moodboard_name}
                                 boardItems={boardItems}
+                                canvasBg={canvasBg}
+                                onBgChange={setCanvasBg}
                                 autoSaving={isSaving}
                                 stagedMaterial={stagedMaterial}
                                 onStagedPlace={handleStagedPlace}

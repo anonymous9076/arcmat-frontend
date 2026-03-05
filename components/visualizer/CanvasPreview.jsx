@@ -2,30 +2,30 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-    Lock, LockOpen, RotateCcw, SlidersHorizontal, Trash, Trash2,
-    ZoomIn, ZoomOut, Move, CornerUpLeft, ImagePlus,
-    Type, Download, Save, Minus, Plus, FileOutput, Focus,
-    ArrowUpToLine, ArrowDownToLine
+    Lock, LockOpen, Trash, Trash2, Save, Download, Move, CornerUpLeft,
+    Type, ImagePlus, ArrowUpToLine, ArrowDownToLine, Focus,
+    Plus, Minus, Wand2, Loader2, FileOutput
 } from 'lucide-react';
 import { getProductName, getProductCategory } from '@/lib/productUtils';
 import { useFabricCanvas } from './useFabricCanvas';
 
 const TOOLBAR_W = 44;
 
-export default function CanvasPreview({
-    onMaterialSelect,
-    boardItems,
-    onDrop,
-    onReposition,
-    onUpdateItem,
-    onAddText,
-    onClear,
-    onRemoveItem,
-    onSave,
-    autoSaving = false,
-    projectName = 'My Project',
-    roomName = 'Living Room',
-}) {
+export default function CanvasPreview(props) {
+    const {
+        onMaterialSelect,
+        boardItems,
+        onDrop,
+        onReposition,
+        onUpdateItem,
+        onAddText,
+        onClear,
+        onRemoveItem,
+        onSave,
+        autoSaving = false,
+        projectName = 'My Project',
+        roomName = 'Living Room',
+    } = props;
     const photoInputRef = useRef(null);
     const canvasContainerRef = useRef(null);
     const containerRef = useRef({ width: window.innerWidth, height: window.innerHeight });
@@ -54,6 +54,8 @@ export default function CanvasPreview({
         sendBackward,
         exportHighRes,
         updateFabricObject,
+        removeSelectedBackground,
+        isProcessingBg,
         activeMenuConfig
     } = useFabricCanvas({
         boardItems,
@@ -62,7 +64,8 @@ export default function CanvasPreview({
         onReposition,
         onMaterialSelect,
         initialWidth: containerRef.current.width,
-        initialHeight: containerRef.current.height
+        initialHeight: containerRef.current.height,
+        canvasBg: props.canvasBg
     });
 
     const filledCount = boardItems.length;
@@ -223,7 +226,7 @@ export default function CanvasPreview({
             </div>
 
             {/* Canvas */}
-            <div ref={canvasContainerRef} className={`flex-1 relative overflow-hidden select-none ${panMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'bg-[#e09a74]/5 ring-2 ring-inset ring-[#e09a74]/30' : 'bg-[#f0eee9]'}`} onDragOver={handleDragOver} onDragLeave={() => setIsDragOver(false)} onDrop={handleDropEvent}>
+            <div ref={canvasContainerRef} className={`flex-1 relative overflow-hidden select-none ${panMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragOver ? 'bg-[#e09a74]/5 ring-2 ring-inset ring-[#e09a74]/30' : 'bg-[#f0eee9]'}`} onDragOver={handleDragOver} onDragLeave={() => setIsDragOver(false)} onDrop={handleDropEvent} style={{ backgroundColor: props.canvasBg }}>
                 {filledCount === 0 && !isDragOver && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none text-gray-400 z-0">
                         <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -251,6 +254,22 @@ export default function CanvasPreview({
                                 <ArrowDownToLine className="w-4 h-4" />
                             </MenuBtn>
                             <div className="w-px h-4 bg-gray-200 mx-1" />
+
+                            {/* Background Remover Button */}
+                            <MenuBtn
+                                onClick={removeSelectedBackground}
+                                title="Remove Background (AI)"
+                                disabled={isProcessingBg}
+                                active={isProcessingBg}
+                            >
+                                {isProcessingBg ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#e09a74]" />
+                                ) : (
+                                    <Wand2 className="w-4 h-4" />
+                                )}
+                            </MenuBtn>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
+
                             <MenuBtn
                                 onClick={toggleLock}
                                 title={lockedIds.has(activeMenuConfig.id) ? "Unlock Position" : "Lock Position"}
@@ -288,6 +307,30 @@ export default function CanvasPreview({
                     <BottomBtn onClick={handleAddTextAtCenter} title="Add Text"><Type className="w-4 h-4" /></BottomBtn>
                     <BottomBtn onClick={() => photoInputRef.current?.click()} title="Add Photo"><ImagePlus className="w-4 h-4" /></BottomBtn>
                     <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+
+                    <div className="w-px h-5 bg-gray-200 mx-1" />
+
+                    {/* Canvas Background Color Picker */}
+                    <div className="relative group/bg">
+                        <BottomBtn
+                            onClick={() => document.getElementById('canvas-bg-picker').click()}
+                            title="Canvas Background"
+                        >
+                            <div
+                                className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                                style={{ backgroundColor: props.canvasBg }}
+                            />
+                        </BottomBtn>
+                        <input
+                            id="canvas-bg-picker"
+                            type="color"
+                            className="absolute -top-10 left-0 opacity-0 pointer-events-none"
+                            value={props.canvasBg}
+                            onChange={(e) => props.onBgChange(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="w-px h-5 bg-gray-200 mx-1" />
 
                     <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden ml-2">
                         <button onClick={zoomOut} className="px-1 py-1 hover:bg-gray-100"><Minus className="w-3 h-3" /></button>

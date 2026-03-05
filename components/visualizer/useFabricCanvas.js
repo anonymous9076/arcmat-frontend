@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
+import { removeBackground } from '@imgly/background-removal';
 import { getProductImageUrl, getVariantImageUrl, getProductName, getProductCategory } from '@/lib/productUtils';
 
 const DEFAULT_CARD_W = 148;
@@ -17,10 +18,19 @@ export function useFabricCanvas({
     onReposition,
     onMaterialSelect,
     initialWidth,
-    initialHeight
+    initialHeight,
+    canvasBg = '#f0eee9'
 }) {
     const canvasRef = useRef(null);
     const fabricRef = useRef(null);
+
+    // Update background color when canvasBg changes
+    useEffect(() => {
+        if (fabricRef.current) {
+            fabricRef.current.set({ backgroundColor: canvasBg });
+            fabricRef.current.requestRenderAll();
+        }
+    }, [canvasBg]);
     const [zoom, setZoom] = useState(1);
     const [panMode, setPanMode] = useState(false);
     const panModeRef = useRef(panMode);
@@ -458,9 +468,91 @@ export function useFabricCanvas({
         onUpdateItem(id, props);
     }, [onUpdateItem]);
 
+    const [isProcessingBg, setIsProcessingBg] = useState(false);
+
+    const removeSelectedBackground = async () => {
+        const activeObj = fabricRef.current?.getActiveObject();
+        if (!activeObj || isProcessingBg) return;
+
+        // Find the image inside the group or if it's a direct image
+        let imgObj = null;
+        if (activeObj.type === 'group') {
+            imgObj = activeObj._objects.find(o => o.type === 'image' || o.constructor.name.includes('Image'));
+        } else if (activeObj.type === 'image' || activeObj.constructor.name.includes('Image')) {
+            imgObj = activeObj;
+        }
+
+        if (!imgObj || !imgObj.getSrc) return;
+
+        try {
+            setIsProcessingBg(true);
+            const src = imgObj.getSrc();
+
+            // 1. Remove background
+            const blob = await removeBackground(src, {
+                progress: (key, current, total) => {
+                    console.log(`Background removal progress [${key}]: ${Math.round((current / total) * 100)}%`);
+                },
+                model: 'medium' // Balance between quality and speed
+            });
+
+            // 2. Convert result to DataURL
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dataUrl = e.target.result;
+
+                // 3. Update the image source
+                const newImg = await fabric.Image.fromURL(dataUrl, { crossOrigin: 'anonymous' });
+
+                // Keep same scale/flip properties but reset filter-related ones
+                newImg.set({
+                    scaleX: imgObj.scaleX,
+                    scaleY: imgObj.scaleY,
+                    flipX: imgObj.flipX,
+                    flipY: imgObj.flipY,
+                    originX: 'center',
+                    originY: 'center',
+                    left: imgObj.left,
+                    top: imgObj.top
+                });
+
+                if (activeObj.type === 'group') {
+                    // Update image inside group
+                    const idx = activeObj._objects.indexOf(imgObj);
+                    if (idx > -1) {
+                        activeObj.removeWithUpdate(imgObj);
+                        activeObj.insertAt(newImg, idx);
+                        fabricRef.current.requestRenderAll();
+                    }
+                } else {
+                    // Replace direct image
+                    fabricRef.current.remove(imgObj);
+                    fabricRef.current.add(newImg);
+                    fabricRef.current.setActiveObject(newImg);
+                }
+
+                // Trigger persistent save
+                const objId = activeObj.id || imgObj.id;
+                if (objId) {
+                    onUpdateItem(objId, { material: { ...activeObj.material || imgObj.material, photoUrl: dataUrl, images: [dataUrl] } });
+                }
+
+                fabricRef.current.requestRenderAll();
+                setIsProcessingBg(false);
+            };
+            reader.readAsDataURL(blob);
+
+        } catch (error) {
+            console.error("Background removal failed:", error);
+            setIsProcessingBg(false);
+            alert("Background removal failed. Please try again with a simpler image.");
+        }
+    };
+
     return {
         canvasRef,
         zoom,
+        setZoom,
         panMode,
         setPanMode,
         lockedIds,
@@ -470,12 +562,14 @@ export function useFabricCanvas({
         resetZoom,
         deleteSelection,
         toggleLock,
-        bringForward,
-        sendBackward,
         groupSelection,
         ungroupSelection,
+        bringForward,
+        sendBackward,
         exportHighRes,
         updateFabricObject,
+        removeSelectedBackground,
+        isProcessingBg,
         activeMenuConfig
     };
 }
