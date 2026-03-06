@@ -14,13 +14,17 @@ const nextConfig = {
         remotePatterns: [
             {
                 protocol: 'https',
-                hostname: 'images.unsplash.com',
+                hostname: '**',
             },
             {
                 protocol: 'http',
                 hostname: 'localhost',
                 port: '8000',
                 pathname: '/api/public/uploads/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'arcmat-api.vercel.app',
             },
             {
                 protocol: 'https',
