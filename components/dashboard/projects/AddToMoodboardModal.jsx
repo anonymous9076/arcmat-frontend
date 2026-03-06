@@ -119,7 +119,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                 <div className="p-8 pb-4 flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-black text-[#2d3142]">
-                            Add to Moodboard
+                            Add to Spaces
                         </h2>
                     </div>
                     <button

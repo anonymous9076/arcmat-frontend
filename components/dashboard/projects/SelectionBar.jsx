@@ -33,7 +33,7 @@ export default function SelectionBar() {
                             className="bg-[#d9a88a] hover:bg-white text-[#2d3142] hover:text-[#d9a88a] px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 whitespace-nowrap"
                         >
                             <LayoutTemplate className="w-4 h-4" />
-                            Add to Moodboard
+                            Add to Spaces
                         </button>
                         <button
                             onClick={clearSelection}

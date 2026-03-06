@@ -324,6 +324,17 @@ export default function MoodboardDetailPage() {
         toast.success(`"${title}" added to Overview and Canvas!`);
     }, [moodboardId, updateMoodboard]);
 
+    const handleAddCustomRow = useCallback(() => {
+        handlePhotoAdd({
+            file: null,
+            previewUrl: '/Icons/arcmatlogo.svg',
+            title: 'New Custom Item',
+            description: 'Custom item added manually',
+            price: 0,
+            quantity: 1
+        });
+    }, [handlePhotoAdd]);
+
     /* ── Status Handlers ───────────────────────── */
     const handlePhotoStatusChange = useCallback((photoId, status) => {
         setCustomPhotos(prev => {
@@ -777,6 +788,7 @@ export default function MoodboardDetailPage() {
                         handlePriceQtyUpdate={handlePriceQtyUpdate}
                         handlePhotoStatusChange={handlePhotoStatusChange}
                         handleProductStatusChange={handleProductStatusChange}
+                        handleAddCustomRow={handleAddCustomRow}
                     />
                 )}
 

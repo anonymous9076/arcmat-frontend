@@ -14,7 +14,8 @@ export default function ExportTab({
     handleAddToCart,
     handlePriceQtyUpdate,
     handlePhotoStatusChange,
-    handleProductStatusChange
+    handleProductStatusChange,
+    handleAddCustomRow
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBrands, setSelectedBrands] = useState([]);
@@ -23,6 +24,7 @@ export default function ExportTab({
     const [selectedProjectStatus, setSelectedProjectStatus] = useState(null);
     const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [statusDropdown, setStatusDropdown] = useState(null);
+    const [showMoreMenu, setShowMoreMenu] = useState(false);
 
     const project = { projectName: projectName };
 
@@ -179,9 +181,30 @@ export default function ExportTab({
                     >
                         <Download className="w-4 h-4" /> Export
                     </button>
-                    <button className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm shrink-0">
-                        <MoreHorizontal className="w-5 h-5" />
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowMoreMenu(!showMoreMenu)}
+                            className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm shrink-0 h-[46px] w-[46px] flex items-center justify-center" // Ensure button size matches others
+                        >
+                            <MoreHorizontal className="w-5 h-5" />
+                        </button>
+                        {showMoreMenu && (
+                            <>
+                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowMoreMenu(false)} />
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] py-2 z-50 animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => {
+                                            handleAddCustomRow?.();
+                                            setShowMoreMenu(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors"
+                                    >
+                                        Add custom row
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -349,7 +372,16 @@ export default function ExportTab({
                                                     <img src={thumb} alt={name} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="min-w-0 pr-2">
-                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] whitespace-nowrap overflow-hidden text-ellipsis">{name}</p>
+                                                    {isPhoto ? (
+                                                        <input
+                                                            type="text"
+                                                            value={name}
+                                                            onChange={(e) => handlePriceQtyUpdate(id, { title: e.target.value }, true)}
+                                                            className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -mx-1 transition-all"
+                                                        />
+                                                    ) : (
+                                                        <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] whitespace-nowrap overflow-hidden text-ellipsis">{name}</p>
+                                                    )}
                                                     <p className="text-[9px] text-[#d9a88a] font-bold uppercase tracking-wider truncate overflow-hidden text-ellipsis">{projectName || 'ArcMat'}</p>
                                                 </div>
                                             </div>

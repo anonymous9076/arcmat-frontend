@@ -30,7 +30,7 @@ const ProductCard = ({ product }) => {
 
     const name = rootProduct.product_name || rootProduct.name;
     const brand = rootProduct.brand;
-    const subtitle = rootProduct.sort_description || rootProduct.subtitle;
+    const subtitle = rootProduct.sort_description || rootProduct.subtitle || (rootProduct.description ? rootProduct.description.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : '');
     const id = rootProduct._id || rootProduct.id;
 
     const variants = rootProduct.variants || [];
@@ -104,7 +104,7 @@ const ProductCard = ({ product }) => {
         ? "In Moodboard"
         : activeMoodboardName
             ? `Add to ${activeMoodboardName}`
-            : "Add to Moodboard";
+            : "Add to Spaces";
 
     const isArchitect = user?.role === 'architect';
 

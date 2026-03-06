@@ -50,7 +50,6 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
   const [formData, setFormData] = useState({
     product_name: '',
     product_url: '',
-    sort_description: '',
     description: '',
     skucode: '',
     meta_title: '',
@@ -73,7 +72,6 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
       setFormData({
         product_name: initialData.product_name || initialData.name || '',
         product_url: initialData.product_url || initialData.url || '',
-        sort_description: initialData.sort_description || '',
         description: initialData.description || '',
         status: initialData.status || (initialData.isActive ? 'Active' : 'Inactive'),
         skucode: initialData.skucode || '',
@@ -278,10 +276,6 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
               <div className="col-span-1">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">SKU Code *</label>
                 <input name="skucode" value={formData.skucode} onChange={handleChange} className={clsx("w-full px-4 py-2 border rounded-lg outline-none", errors.skucode ? "border-red-500" : "border-gray-200")} />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Short Description</label>
-                <textarea name="sort_description" value={formData.sort_description} onChange={handleChange} rows={2} className={clsx("w-full px-4 py-2 border rounded-lg outline-none", errors.sort_description ? "border-red-500" : "border-gray-200")} />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>

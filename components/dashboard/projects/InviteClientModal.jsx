@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Mail, Loader2, X, Send } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import axios from 'axios';
+import api from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function InviteClientModal({ isOpen, onClose, projectId, projectName }) {
@@ -18,15 +18,9 @@ export default function InviteClientModal({ isOpen, onClose, projectId, projectN
 
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/project/${projectId}/invite-client`,
-                { email },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
+            const response = await api.post(
+                `/project/${projectId}/invite-client`,
+                { email }
             );
 
             if (response.data.status === 'successful') {

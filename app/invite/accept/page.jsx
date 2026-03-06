@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import axios from 'axios';
+import api from '@/lib/api';
 import { toast } from 'sonner';
 import Container from '@/components/ui/Container';
 
@@ -30,8 +30,8 @@ function AcceptInviteContent() {
                 // Introduce a small delay for a smoother premium feel
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
-                const response = await axios.patch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/project/accept-invite`,
+                const response = await api.patch(
+                    `/project/accept-invite`,
                     { projectId, email }
                 );
 
