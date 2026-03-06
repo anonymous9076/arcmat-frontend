@@ -10,7 +10,7 @@ import { getProductImageUrl } from '@/lib/productUtils';
 import { toast } from 'sonner';
 import CoverSelectionModal from './CoverSelectionModal';
 
-export default function MoodboardCard({ moodboard, projectId, onDelete }) {
+export default function MoodboardCard({ moodboard, projectId, onDelete, isArchitect }) {
     const { _id, moodboard_name, estimatedCostId } = moodboard;
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(moodboard_name);
@@ -85,13 +85,15 @@ export default function MoodboardCard({ moodboard, projectId, onDelete }) {
         <div className="bg-white rounded-[32px] border border-gray-100 p-5 shadow-sm hover:shadow-xl hover:shadow-orange-50/20 transition-all duration-500 group relative flex flex-col h-full">
             {/* Action Buttons (Top Right Overlay) */}
             <div className="absolute top-4 right-4 flex gap-1 opaque group-hover:opacity-100 transition-opacity z-20">
-                <button
-                    onClick={(e) => { e.preventDefault(); onDelete(_id); }}
-                    className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                    title="Delete space"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                {isArchitect && (
+                    <button
+                        onClick={(e) => { e.preventDefault(); onDelete(_id); }}
+                        className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-red-500 rounded-xl transition-all"
+                        title="Delete space"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
             {/* Image Grid Preview */}

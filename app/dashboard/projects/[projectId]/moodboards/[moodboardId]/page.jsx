@@ -66,7 +66,8 @@ export default function MoodboardDetailPage() {
     const { projectId, moodboardId } = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { isAuthenticated } = useAuth();
+    const { user, isAuthenticated } = useAuth();
+    const isArchitect = user?.role === 'architect';
 
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -151,7 +152,7 @@ export default function MoodboardDetailPage() {
 
     /* ── Backend save ───────────────────────────── */
     const saveToBackend = useCallback((items, bg = canvasBg) => {
-        if (!moodboardId || !isDataLoaded.current) return;
+        if (!moodboardId || !isDataLoaded.current || !isArchitect) return;
         setIsSaving(true);
         const budget = items.filter(i => i.type !== 'text').reduce((sum, item) => {
             return sum + (Number(item.price) || 0) * (Number(item.quantity) || 1);
@@ -169,10 +170,10 @@ export default function MoodboardDetailPage() {
     }, [moodboardId, updateMoodboard, canvasBg]);
 
     useEffect(() => {
-        if (!isDataLoaded.current) return;
+        if (!isDataLoaded.current || !isArchitect) return;
         const timer = setTimeout(() => saveToBackend(boardItems, canvasBg), 1000);
         return () => clearTimeout(timer);
-    }, [boardItems, canvasBg, saveToBackend]);
+    }, [boardItems, canvasBg, saveToBackend, isArchitect]);
 
     /* ── Board handlers ─────────────────────────── */
     const handleDrop = useCallback((material, x, y) => {
@@ -342,7 +343,7 @@ export default function MoodboardDetailPage() {
             updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
             return next;
         });
-    }, [moodboardId, updateMoodboard]);
+    }, [moodboardId, updateMoodboard, isArchitect]);
 
     const handlePriceQtyUpdate = useCallback((id, updates, isPhoto) => {
         if (isPhoto) {
@@ -585,12 +586,14 @@ export default function MoodboardDetailPage() {
                             ) : (
                                 <div className="flex items-center gap-3 mb-1 group/title w-fit">
                                     <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
+                                    {isArchitect && (
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             )}
                             <p className="text-sm text-gray-400 font-medium mt-1">
@@ -600,12 +603,14 @@ export default function MoodboardDetailPage() {
 
                         <div className="flex items-center justify-between sm:justify-start gap-3 shrink-0">
                             <div className="relative">
-                                <button
-                                    onClick={() => setMenuOpen(o => !o)}
-                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
-                                >
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </button>
+                                {isArchitect && (
+                                    <button
+                                        onClick={() => setMenuOpen(o => !o)}
+                                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                                    >
+                                        <MoreHorizontal className="w-5 h-5" />
+                                    </button>
+                                )}
                                 {menuOpen && (
                                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
                                         <button
@@ -694,6 +699,7 @@ export default function MoodboardDetailPage() {
                         handleRemoveProduct={handleRemoveProduct}
                         handleAddToCart={handleAddToCart}
                         router={router}
+                        isArchitect={isArchitect}
                     />
                 )}
 

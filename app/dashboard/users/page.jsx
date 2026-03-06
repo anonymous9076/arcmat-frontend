@@ -13,7 +13,8 @@ import {
     Unlock,
     ShieldCheck,
     ShieldAlert,
-    PackageSearch
+    PackageSearch,
+    HardHat
 } from 'lucide-react';
 import { useAuth, useGetUsers, useDeleteUser, useUpdateUser } from '@/hooks/useAuth';
 import Container from '@/components/ui/Container';
@@ -231,6 +232,15 @@ export default function UsersPage() {
                                                         title="View Product List"
                                                     >
                                                         <PackageSearch className="w-4 h-4" />
+                                                    </Link>
+                                                )}
+                                                {u.role === 'architect' && (
+                                                    <Link
+                                                        href={`/dashboard/users/architects/${u._id}/projects`}
+                                                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                        title="View Projects"
+                                                    >
+                                                        <HardHat className="w-4 h-4" />
                                                     </Link>
                                                 )}
                                                 {u.role === 'retailer' && (

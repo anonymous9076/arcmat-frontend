@@ -24,6 +24,7 @@ const Header = ({ variant = 'default' }) => {
     const [showResults, setShowResults] = useState(false)
     const [isOpen, setIsOpen] = React.useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [projectsOpen, setProjectsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const { toggleMobileSidebar } = useSidebarStore();
@@ -68,7 +69,13 @@ const Header = ({ variant = 'default' }) => {
                 mobileProfileRef.current.contains(event.target)
             ) return;
 
+            if (
+                projectsRef.current &&
+                projectsRef.current.contains(event.target)
+            ) return;
+
             setProfileOpen(false);
+            setProjectsOpen(false);
         };
 
         document.addEventListener("mousedown", handleClickOutside);
@@ -92,6 +99,7 @@ const Header = ({ variant = 'default' }) => {
 
     const desktopProfileRef = useRef(null);
     const mobileProfileRef = useRef(null);
+    const projectsRef = useRef(null);
 
     return (
         <header className='w-full border-b border-gray-200 bg-white sticky top-0 z-50'>
@@ -217,6 +225,45 @@ const Header = ({ variant = 'default' }) => {
                                 <Image src="/Icons/ai_icon.png" alt="AI Tools" width={28} height={28} />
                             </button>
 
+                            {isAuthenticated && user?.invitedProjects?.length > 0 && (
+                                <div ref={projectsRef} className="relative">
+                                    <button
+                                        onClick={() => setProjectsOpen(!projectsOpen)}
+                                        className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'
+                                    >
+                                        <Folder size={22} className={`${projectsOpen ? 'text-[#e09a74]' : 'text-gray-600'} transition-colors`} />
+                                    </button>
+
+                                    {projectsOpen && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-100 overflow-hidden animate-fade-in">
+                                            <div className="px-4 py-2 border-b border-gray-50 bg-gray-50/50">
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Projects</p>
+                                            </div>
+                                            <div className="max-h-[300px] overflow-y-auto">
+                                                {user.invitedProjects.map((project, idx) => {
+                                                    const projectId = project._id || project.id || project;
+                                                    const projectName = project.projectName || `Project ${idx + 1}`;
+
+                                                    return (
+                                                        <Link
+                                                            key={projectId}
+                                                            href={`/dashboard/projects/${projectId}/moodboards`}
+                                                            onClick={() => setProjectsOpen(false)}
+                                                            className="flex flex-col gap-0.5 px-4 py-3 hover:bg-[#fcf6f3] transition-colors border-b border-gray-50 last:border-none group"
+                                                        >
+                                                            <span className="text-sm font-semibold text-[#4D4E58] group-hover:text-[#e09a74] transition-colors">
+                                                                {projectName}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400 uppercase tracking-tight">View Moodboards</span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className='h-6 w-px bg-gray-200 hidden sm:block'></div>
                         </>
                     )}
@@ -234,9 +281,6 @@ const Header = ({ variant = 'default' }) => {
                                         )}
                                     </button>
                                 </Link>
-                                <button className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden lg:block'>
-                                    <Folder size={22} className="text-gray-600" />
-                                </button>
                             </>
                         )}
                         {(!user || user.role !== 'brand') && (

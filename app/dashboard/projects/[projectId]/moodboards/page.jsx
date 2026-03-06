@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetMoodboardsByProject, useDeleteMoodboard } from '@/hooks/useMoodboard';
 import { useGetProject } from '@/hooks/useProject';
+import { useAuth } from '@/hooks/useAuth';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import CreateMoodboardModal from '@/components/dashboard/projects/CreateMoodboardModal';
+import InviteClientModal from '@/components/dashboard/projects/InviteClientModal';
 import { Loader2, Plus, ArrowLeft, Layout, Search, ChevronDown, Filter } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -15,18 +17,22 @@ export default function MoodboardsPage() {
     const { projectId } = useParams();
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [moodboardToDelete, setMoodboardToDelete] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('newest');
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
+    const { user } = useAuth();
+    const isArchitect = user?.role === 'architect';
+
     const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
     const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);
     const deleteMutation = useDeleteMoodboard();
 
     const moodboards = moodboardsData?.data || [];
-    const project = projectData?.data;
+    const project = projectData?.data || (moodboards.length > 0 ? moodboards[0].projectId : null);
 
     const handleDeleteClick = (id) => {
         setMoodboardToDelete(id);
@@ -68,15 +74,23 @@ export default function MoodboardsPage() {
                     Back to Projects
                 </button>
 
-                <div className="flex items-center gap-4">
-                    <Button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95 text-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Space
-                    </Button>
-                </div>
+                {isArchitect && (
+                    <div className="flex items-center gap-4">
+                        <Button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            className="bg-[#2d3142] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"
+                        >
+                            Invite Client
+                        </Button>
+                        <Button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95 text-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Space
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -144,6 +158,7 @@ export default function MoodboardsPage() {
                             moodboard={mb}
                             projectId={projectId}
                             onDelete={handleDeleteClick}
+                            isArchitect={isArchitect}
                         />
                     ))}
                 </div>
@@ -158,7 +173,7 @@ export default function MoodboardsPage() {
                     <p className="text-gray-400 font-medium max-w-sm mx-auto mb-10">
                         {searchQuery ? `We couldn't find any spaces matching "${searchQuery}"` : 'Start by creating your first space to organize your design ideas and costs.'}
                     </p>
-                    {!searchQuery && (
+                    {!searchQuery && isArchitect && (
                         <Button
                             onClick={() => setIsModalOpen(true)}
                             className="bg-[#d9a88a] text-white px-10 py-4 rounded-2xl font-black"
@@ -173,6 +188,13 @@ export default function MoodboardsPage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 projectId={projectId}
+            />
+
+            <InviteClientModal
+                isOpen={isInviteModalOpen}
+                onClose={() => setIsInviteModalOpen(false)}
+                projectId={projectId}
+                projectName={project?.projectName}
             />
 
             <ConfirmationModal

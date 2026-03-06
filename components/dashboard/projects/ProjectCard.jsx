@@ -9,7 +9,7 @@ import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 
-export default function ProjectCard({ project, onEdit, onDelete }) {
+export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const {
         _id,
         projectName,
@@ -149,7 +149,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
             {/* Left Section */}
             <div className="flex-[1.2] flex flex-col min-w-0 p-2">
                 <Link
-                    href={`/dashboard/projects/${project._id}/moodboards`}
+                    href={href || `/dashboard/projects/${project._id}/moodboards`}
                     onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
                     className="flex items-center gap-2 group/title mb-6 w-max"
                 >

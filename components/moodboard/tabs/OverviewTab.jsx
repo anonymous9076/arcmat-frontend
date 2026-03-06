@@ -39,7 +39,8 @@ export default function OverviewTab({
     handleRemovePhoto,
     handleRemoveProduct,
     handleAddToCart,
-    router
+    router,
+    isArchitect
 }) {
     const [brandFilterOpen, setBrandFilterOpen] = useState(false);
     const [selectedBrands, setSelectedBrands] = useState([]);
@@ -166,10 +167,11 @@ export default function OverviewTab({
                         if (contextMenu.isPhoto) handleRemovePhoto(contextMenu.itemId);
                         else handleRemoveProduct(contextMenu.itemId);
                     }}
-                    onEditTitle={contextMenu.isPhoto ? () => {
+                    onEditTitle={isArchitect && contextMenu.isPhoto ? () => {
                         toast.info('Edit via the product list');
                     } : null}
                     onClose={() => setContextMenu(null)}
+                    disabled={!isArchitect}
                 />
             )}
 
@@ -180,64 +182,68 @@ export default function OverviewTab({
                     </div>
                     <h3 className="text-lg font-bold text-gray-600 mb-2">No materials yet</h3>
                     <p className="text-sm text-gray-400 mb-6 max-w-sm">Add products from the catalog or upload custom images.</p>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => {
-                                useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
-                                router.push('/productlist');
-                            }}
-                            className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
-                        >
-                            <Plus className="w-4 h-4" /> Add Products
-                        </button>
-                        <button
-                            onClick={() => setPhotoModalOpen(true)}
-                            className="px-6 py-3 border border-[#d9a88a] text-[#d9a88a] font-bold rounded-2xl hover:bg-[#fef7f2] transition-colors flex items-center gap-2"
-                        >
-                            <ImagePlus className="w-4 h-4" /> Upload Image
-                        </button>
-                    </div>
+                    {isArchitect && (
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
+                                    router.push('/productlist');
+                                }}
+                                className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> Add Products
+                            </button>
+                            <button
+                                onClick={() => setPhotoModalOpen(true)}
+                                className="px-6 py-3 border border-[#d9a88a] text-[#d9a88a] font-bold rounded-2xl hover:bg-[#fef7f2] transition-colors flex items-center gap-2"
+                            >
+                                <ImagePlus className="w-4 h-4" /> Upload Image
+                            </button>
+                        </div>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {/* + Add Card */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setAddCardOpen(o => !o)}
-                            className="w-full border-2 border-dashed border-[#d9a88a]/40 rounded-2xl flex flex-col items-center justify-center gap-2 min-h-[220px] cursor-pointer hover:border-[#d9a88a] hover:bg-[#fef7f2] transition-all group bg-[#fef7f2]/50"
-                        >
-                            <div className="w-10 h-10 rounded-full bg-[#d9a88a]/10 flex items-center justify-center">
-                                <Plus className="w-5 h-5 text-[#d9a88a]" />
-                            </div>
-                            <span className="text-xs font-semibold text-[#d9a88a] text-center px-2">Images, Video &amp; Pinterest</span>
-                        </button>
-                        {addCardOpen && (
-                            <div className="absolute top-2 left-full ml-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                <button
-                                    onClick={() => {
-                                        setAddCardOpen(false);
-                                        useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
-                                        router.push('/productlist');
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                                >
-                                    <div className="w-7 h-7 bg-[#1a1a2e] rounded-lg flex items-center justify-center shrink-0">
-                                        <List className="w-4 h-4 text-white" />
-                                    </div>
-                                    Browse Product List
-                                </button>
-                                <button
-                                    onClick={() => { setAddCardOpen(false); setPhotoModalOpen(true); }}
-                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
-                                >
-                                    <div className="w-7 h-7 bg-[#d9a88a] rounded-lg flex items-center justify-center shrink-0">
-                                        <ImagePlus className="w-4 h-4 text-white" />
-                                    </div>
-                                    Upload Photo
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {isArchitect && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setAddCardOpen(o => !o)}
+                                className="w-full border-2 border-dashed border-[#d9a88a]/40 rounded-2xl flex flex-col items-center justify-center gap-2 min-h-[220px] cursor-pointer hover:border-[#d9a88a] hover:bg-[#fef7f2] transition-all group bg-[#fef7f2]/50"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-[#d9a88a]/10 flex items-center justify-center">
+                                    <Plus className="w-5 h-5 text-[#d9a88a]" />
+                                </div>
+                                <span className="text-xs font-semibold text-[#d9a88a] text-center px-2">Images, Video &amp; Pinterest</span>
+                            </button>
+                            {addCardOpen && (
+                                <div className="absolute top-2 left-full ml-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
+                                    <button
+                                        onClick={() => {
+                                            setAddCardOpen(false);
+                                            useProjectStore.getState().setActiveMoodboard(moodboardId, moodboard?.moodboard_name, projectId, project?.projectName || '');
+                                            router.push('/productlist');
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                        <div className="w-7 h-7 bg-[#1a1a2e] rounded-lg flex items-center justify-center shrink-0">
+                                            <List className="w-4 h-4 text-white" />
+                                        </div>
+                                        Browse Product List
+                                    </button>
+                                    <button
+                                        onClick={() => { setAddCardOpen(false); setPhotoModalOpen(true); }}
+                                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                        <div className="w-7 h-7 bg-[#d9a88a] rounded-lg flex items-center justify-center shrink-0">
+                                            <ImagePlus className="w-4 h-4 text-white" />
+                                        </div>
+                                        Upload Photo
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Custom uploaded photos */}
                     {customPhotos.map((photo) => (
