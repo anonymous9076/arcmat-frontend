@@ -59,16 +59,16 @@ export default function AllBoardsPage() {
     return (
         <Container className="py-8">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8 md:mb-10 text-center md:text-left">
                 <div>
-                    <h1 className="text-3xl font-black text-[#2d3142] tracking-tight">All Spaces</h1>
-                    <p className="text-gray-500 mt-1 font-medium">Manage and view your visual inspirations across all projects.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-[#2d3142] tracking-tight">All Spaces</h1>
+                    <p className="text-sm md:text-base text-gray-500 mt-1 font-medium">Manage and view your visual inspirations across all projects.</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center md:justify-start gap-3">
                     <Link
                         href="/dashboard/projects"
-                        className="px-6 py-3 bg-[#fef7f2] text-[#d9a88a] rounded-2xl text-sm font-bold hover:bg-[#d9a88a] hover:text-white transition-all shadow-sm flex items-center gap-2"
+                        className="w-full sm:w-auto justify-center px-6 py-3 bg-[#fef7f2] text-[#d9a88a] rounded-2xl text-sm font-bold hover:bg-[#d9a88a] hover:text-white transition-all shadow-sm flex items-center gap-2"
                     >
                         <FolderOpen className="w-4 h-4" />
                         Projects
@@ -77,9 +77,9 @@ export default function AllBoardsPage() {
             </div>
 
             {/* Controls Bar */}
-            <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4">
+            <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
                 {/* Search */}
-                <div className="relative flex-1">
+                <div className="relative w-full md:flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
@@ -91,7 +91,7 @@ export default function AllBoardsPage() {
                 </div>
 
                 {/* Project Filter */}
-                <div className="relative min-w-[240px]">
+                <div className="relative w-full md:min-w-[240px] md:w-auto">
                     <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <select
                         value={selectedProject}
@@ -118,7 +118,7 @@ export default function AllBoardsPage() {
                     <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Fetching your spaces...</p>
                 </div>
             ) : filteredBoards.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                     {filteredBoards.map((board) => (
                         <MoodboardCard
                             key={board._id}
@@ -129,12 +129,12 @@ export default function AllBoardsPage() {
                     ))}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-24 bg-white rounded-4xl border border-dashed border-gray-200">
-                    <div className="w-20 h-20 bg-[#fef7f2] rounded-3xl flex items-center justify-center mb-6">
-                        <Layout className="w-10 h-10 text-[#d9a88a]" />
+                <div className="flex flex-col items-center justify-center py-16 md:py-24 px-4 bg-white rounded-4xl border border-dashed border-gray-200">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-[#fef7f2] rounded-3xl flex items-center justify-center mb-6">
+                        <Layout className="w-8 h-8 md:w-10 md:h-10 text-[#d9a88a]" />
                     </div>
-                    <h3 className="text-xl font-bold text-[#2d3142] mb-2">No spaces found</h3>
-                    <p className="text-gray-400 font-medium max-w-xs text-center">
+                    <h3 className="text-lg md:text-xl font-bold text-[#2d3142] mb-2 text-center">No spaces found</h3>
+                    <p className="text-sm md:text-base text-gray-400 font-medium max-w-xs text-center">
                         {searchQuery || selectedProject !== 'all'
                             ? "Try adjusting your filters or search query to find what you're looking for."
                             : "Start by creating your first space within a project."}
@@ -142,7 +142,7 @@ export default function AllBoardsPage() {
                     {(searchQuery || selectedProject !== 'all') && (
                         <button
                             onClick={() => { setSearchQuery(''); setSelectedProject('all'); }}
-                            className="mt-6 text-sm font-bold text-[#d9a88a] hover:underline uppercase tracking-widest"
+                            className="mt-6 text-xs md:text-sm font-bold text-[#d9a88a] hover:underline uppercase tracking-widest"
                         >
                             Clear All Filters
                         </button>
