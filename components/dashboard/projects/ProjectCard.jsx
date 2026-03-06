@@ -127,7 +127,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
     };
 
     return (
-        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full max-w-[500px] mx-auto lg:mx-0">
+        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full mx-auto md:mx-0">
             {/* Absolute Action Buttons (Hover) */}
             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button
@@ -229,7 +229,7 @@ export default function ProjectCard({ project, onEdit, onDelete }) {
                             className="p-1.5 bg-white shadow-sm rounded-lg text-gray-400 hover:text-[#d9a88a] transition-colors"
                             title="Change Project Cover"
                         >
-                            <Camera className="w-3.5 h-3.5" />
+                            {/* <Camera className="w-3.5 h-3.5" /> */}
                         </button>
                     </div>
 

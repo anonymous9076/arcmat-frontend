@@ -160,7 +160,7 @@ export default function AllProjectsPage() {
                     <p className="text-gray-400 font-bold text-lg">Loading your projects...</p>
                 </div>
             ) : filteredProjects.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-8 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(400px,1fr))] gap-4 sm:gap-6 w-full">
                     {filteredProjects.map(project => (
                         <ProjectCard
                             key={project._id}
