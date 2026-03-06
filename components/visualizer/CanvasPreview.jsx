@@ -357,7 +357,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                 </div>
 
                 {/* Bottom CSV Button */}
-                <button onClick={exportAsCSV} disabled={filledCount === 0} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50 ml-4">
+                <button onClick={exportAsCSV} disabled={filledCount === 0} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50 ml-4 shrink-0">
                     <FileOutput className="w-4 h-4 text-[#e09a74]" />
                     <span className="hidden sm:inline">Download CSV</span>
                 </button>

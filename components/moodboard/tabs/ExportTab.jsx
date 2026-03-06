@@ -120,9 +120,9 @@ export default function ExportTab({
     }, [products, customPhotos, productStatuses, filteredItems]);
 
     return (
-        <div className="h-full overflow-y-auto p-4 md:p-8">
+        <div className="h-full flex flex-col p-4 md:p-8 min-h-0 overflow-hidden">
             {/* Header Summary */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
+            <div className="shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
                 <div>
                     <h2 className="text-2xl font-black text-[#1a1a2e] mb-1">Export Summary</h2>
                     <p className="text-sm text-gray-500 font-medium">Manage and export your project materials</p>
@@ -143,7 +143,7 @@ export default function ExportTab({
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div className="shrink-0 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto flex-1 max-w-full lg:max-w-md">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -287,18 +287,18 @@ export default function ExportTab({
             )}
 
             {/* Table */}
-            <div className={`border border-gray-100 rounded-[28px] overflow-hidden shadow-sm bg-white overflow-x-auto transition-all duration-300 ${statusDropdown ? 'pb-[180px]' : ''}`}>
-                <table className="w-full text-sm border-collapse min-w-[1000px]">
-                    <thead className="bg-gray-50/50">
+            <div className={`flex-1 border border-gray-100 rounded-[28px] overflow-auto shadow-sm bg-white transition-all duration-300 relative ${statusDropdown ? 'pb-[180px]' : ''}`}>
+                <table className="w-full text-sm border-separate border-spacing-0 min-w-[1000px]">
+                    <thead className="bg-gray-50/95 sticky top-0 z-20 backdrop-blur-sm shadow-[0_1px_0_0_#f3f4f6]">
                         <tr>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[250px] md:sticky md:left-0 md:z-10 md:bg-gray-50/90 md:backdrop-blur-sm">Name</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[150px]">Spec Status</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 min-w-[180px]">Tags</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Brand</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">SKU</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Quantity</th>
-                            <th className="text-left px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Unit Price</th>
-                            <th className="text-right px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Total (₹)</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[200px] md:sticky md:left-0 md:z-30 bg-gray-50/95 shadow-[1px_0_0_0_#f3f4f6]">Name</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[140px]">Spec Status</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Tags</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Brand</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">SKU</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Quantity</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Unit Price</th>
+                            <th className="text-right px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Total (₹)</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 bg-white">
@@ -343,18 +343,18 @@ export default function ExportTab({
 
                                 return (
                                     <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-6 py-5 md:sticky md:left-0 md:z-10 bg-white group-hover:bg-gray-50/50 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105">
+                                        <td className="px-3 py-3 md:sticky md:left-0 md:z-10 bg-white group-hover:bg-gray-50/80 transition-colors md:shadow-[1px_0_0_0_#f3f4f6]">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105">
                                                     <img src={thumb} alt={name} className="w-full h-full object-cover" />
                                                 </div>
-                                                <div className="min-w-0 pr-4">
-                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate max-w-[180px] xl:max-w-xs">{name}</p>
-                                                    <p className="text-[10px] text-[#d9a88a] font-bold uppercase tracking-wider truncate max-w-[180px] xl:max-w-xs">{projectName || 'ArcMat'}</p>
+                                                <div className="min-w-0 pr-2">
+                                                    <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] whitespace-nowrap overflow-hidden text-ellipsis">{name}</p>
+                                                    <p className="text-[9px] text-[#d9a88a] font-bold uppercase tracking-wider truncate overflow-hidden text-ellipsis">{projectName || 'ArcMat'}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-3 py-3">
                                             <div className="relative">
                                                 <button
                                                     onClick={() => setStatusDropdown(statusDropdown === id ? null : id)}
@@ -394,12 +394,12 @@ export default function ExportTab({
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                        <td className="px-3 py-3">
+                                            <div className="flex flex-wrap gap-1 mb-1.5">
                                                 {(isPhoto ? data.tags : (productStatuses[id]?.tags))?.map((tag, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="group/tag px-3 py-1 bg-gray-50 text-[#1a1a2e] border border-gray-100 rounded-xl text-[10px] font-black flex items-center gap-1.5 hover:bg-white hover:border-[#d9a88a] transition-all"
+                                                        className="group/tag px-2 py-0.5 bg-gray-50 text-[#1a1a2e] border border-gray-100 rounded-lg text-[9px] font-black flex items-center gap-1 hover:bg-white hover:border-[#d9a88a] transition-all"
                                                     >
                                                         <span
                                                             className="cursor-pointer"
@@ -421,7 +421,7 @@ export default function ExportTab({
                                                             }}
                                                             className="text-gray-300 hover:text-red-500 transition-colors"
                                                         >
-                                                            <X className="w-3 h-3" />
+                                                            <X className="w-2.5 h-2.5" />
                                                         </button>
                                                     </span>
                                                 ))}
@@ -429,7 +429,7 @@ export default function ExportTab({
                                             <input
                                                 type="text"
                                                 placeholder="+ Add label"
-                                                className="text-[10px] w-full bg-transparent border-none outline-none text-[#d9a88a] hover:text-[#c48d6d] font-black uppercase tracking-widest placeholder:text-gray-200 transition-colors px-1"
+                                                className="text-[9px] w-full bg-transparent border-none outline-none text-[#d9a88a] hover:text-[#c48d6d] font-black uppercase tracking-widest placeholder:text-gray-200 transition-colors px-1"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && e.target.value.trim()) {
                                                         const newTag = e.target.value.trim();
@@ -442,10 +442,10 @@ export default function ExportTab({
                                                 }}
                                             />
                                         </td>
-                                        <td className="px-6 py-5 text-[#1a1a2e] font-bold text-sm">{brand || '—'}</td>
-                                        <td className="px-6 py-5 text-gray-400 font-mono text-[10px] tracking-tight">{sku}</td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-xl px-2 py-2 focus-within:border-[#d9a88a] focus-within:bg-white transition-all w-24 group-hover:bg-white">
+                                        <td className="px-3 py-3 text-[#1a1a2e] font-bold text-xs truncate max-w-[100px]">{brand || '—'}</td>
+                                        <td className="px-3 py-3 text-gray-400 font-mono text-[9px] tracking-tight truncate max-w-[100px]">{sku}</td>
+                                        <td className="px-3 py-3">
+                                            <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all w-20 group-hover:bg-white">
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
@@ -466,29 +466,29 @@ export default function ExportTab({
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-gray-700 font-medium">
+                                        <td className="px-3 py-3 text-gray-700 font-medium">
                                             {isPhoto ? (
-                                                <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-xl px-3 py-2 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white">
-                                                    <span className="text-[11px] text-[#d9a88a] font-black">₹</span>
+                                                <div className="flex items-center gap-1 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white">
+                                                    <span className="text-[10px] text-[#d9a88a] font-black">₹</span>
                                                     <input
                                                         type="number"
                                                         min="0"
                                                         value={unitPrice}
                                                         onFocus={(e) => e.target.select()}
                                                         onChange={(e) => handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto)}
-                                                        className="w-32 text-sm font-black bg-transparent outline-none text-[#1a1a2e]"
+                                                        className="w-20 text-xs font-black bg-transparent outline-none text-[#1a1a2e]"
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="font-black text-[#1a1a2e] text-sm">
+                                                <div className="font-black text-[#1a1a2e] text-xs">
                                                     <span className="text-[#d9a88a] mr-1">₹</span>
                                                     {unitPrice.toLocaleString('en-IN')}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <div className="text-lg font-black text-[#1a1a2e]">
-                                                <span className="text-[#d9a88a] mr-1.5 text-xs">₹</span>
+                                        <td className="px-3 py-3 text-right">
+                                            <div className="text-sm font-black text-[#1a1a2e]">
+                                                <span className="text-[#d9a88a] mr-1 text-[10px]">₹</span>
                                                 {total.toLocaleString('en-IN')}
                                             </div>
                                         </td>

@@ -79,8 +79,8 @@ export default function AllProjectsPage() {
     if (!mounted) return null;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <div className="mb-8">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+            <div className="mb-6 sm:mb-8">
                 <h1 className="text-[28px] font-extrabold text-[#2d3142] tracking-tight">
                     Projects
                 </h1>
@@ -107,15 +107,15 @@ export default function AllProjectsPage() {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0 relative">
-                    <div className="relative shrink-0">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 shrink-0 relative w-full md:w-auto mt-4 md:mt-0">
+                    <div className="relative shrink-0 flex-1 min-w-[200px] md:flex-none">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search projects..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 bg-[#f4f5f7] border border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-1 focus:ring-[#d9a88a] rounded-full transition-all text-sm text-gray-600 font-medium w-40 md:w-56 outline-none"
+                            className="w-full pl-9 pr-4 py-2 bg-[#f4f5f7] border border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-1 focus:ring-[#d9a88a] rounded-full transition-all text-sm text-gray-600 font-medium md:w-56 outline-none"
                         />
                     </div>
                     <div className="relative">
@@ -146,7 +146,7 @@ export default function AllProjectsPage() {
                     </div>
                     <Button
                         onClick={() => setIsProjectModalOpen(true)}
-                        className="bg-[#3c4153] hover:bg-[#2d3142] text-white px-5 py-2.5 rounded-full font-semibold flex items-center gap-2 transition-all active:scale-95 text-sm"
+                        className="bg-[#3c4153] hover:bg-[#2d3142] text-white px-5 py-2.5 rounded-full font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 text-sm w-full md:w-auto order-first md:order-last"
                     >
                         <Plus className="w-4 h-4" />
                         New project
@@ -160,7 +160,7 @@ export default function AllProjectsPage() {
                     <p className="text-gray-400 font-bold text-lg">Loading your projects...</p>
                 </div>
             ) : filteredProjects.length > 0 ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(400px,1fr))] gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-8 w-full">
                     {filteredProjects.map(project => (
                         <ProjectCard
                             key={project._id}

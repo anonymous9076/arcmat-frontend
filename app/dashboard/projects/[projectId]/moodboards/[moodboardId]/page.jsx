@@ -655,8 +655,8 @@ export default function MoodboardDetailPage() {
                         </div>
                     </div>
 
-                    {/* ── Tab Navigation ─── */}
-                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+                    {/* Tab Navigation ─── */}
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                         {TABS.map(tab => (
                             <button
                                 key={tab.id}
@@ -713,7 +713,14 @@ export default function MoodboardDetailPage() {
                             )}
 
                             {/* Left Material Panel */}
-                            <div className={`shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[260px]' : 'w-0'}`}>
+                            {/* Mobile Overlay */}
+                            {isPanelOpen && (
+                                <div
+                                    className="absolute inset-0 z-50 bg-black/20 md:hidden"
+                                    onClick={() => setIsPanelOpen(false)}
+                                />
+                            )}
+                            <div className={`absolute md:relative z-50 h-full shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[280px] md:w-[260px] shadow-2xl md:shadow-none' : 'w-0'}`}>
                                 <MaterialPanel
                                     materials={materials}
                                     selectedMaterial={selectedMaterial}
