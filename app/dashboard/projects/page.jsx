@@ -23,6 +23,8 @@ export default function AllProjectsPage() {
     const [sortBy, setSortBy] = useState('last_updated');
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
+    const isArchitect = user?.role === 'architect';
+
     const deleteProjectMutation = useDeleteProject();
 
     useEffect(() => {
@@ -144,13 +146,15 @@ export default function AllProjectsPage() {
                             </div>
                         )}
                     </div>
-                    <Button
-                        onClick={() => setIsProjectModalOpen(true)}
-                        className="bg-[#3c4153] hover:bg-[#2d3142] text-white px-5 py-2.5 rounded-full font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 text-sm w-full md:w-auto order-first md:order-last"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New project
-                    </Button>
+                    {isArchitect && (
+                        <Button
+                            onClick={() => setIsProjectModalOpen(true)}
+                            className="bg-[#3c4153] hover:bg-[#2d3142] text-white px-5 py-2.5 rounded-full font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 text-sm w-full md:w-auto order-first md:order-last"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New project
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -172,13 +176,15 @@ export default function AllProjectsPage() {
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[40px] border border-dashed border-gray-200 text-center">
-                    <button
-                        onClick={() => setIsProjectModalOpen(true)}
-                        className="w-24 h-24 bg-[#fef7f2] hover:bg-[#ffece0] rounded-3xl flex items-center justify-center mb-8 transition-colors group cursor-pointer"
-                        title="Create new project"
-                    >
-                        <Plus className="w-12 h-12 text-[#d9a88a] group-hover:scale-110 transition-transform" />
-                    </button>
+                    {isArchitect && (
+                        <button
+                            onClick={() => setIsProjectModalOpen(true)}
+                            className="w-24 h-24 bg-[#fef7f2] hover:bg-[#ffece0] rounded-3xl flex items-center justify-center mb-8 transition-colors group cursor-pointer"
+                            title="Create new project"
+                        >
+                            <Plus className="w-12 h-12 text-[#d9a88a] group-hover:scale-110 transition-transform" />
+                        </button>
+                    )}
                     <h3 className="text-2xl font-bold text-[#2d3142] mb-3">No projects found</h3>
                     <p className="text-gray-400 font-medium max-w-sm mx-auto mb-10">
                         {searchTerm

@@ -10,7 +10,7 @@ import { getProductImageUrl } from '@/lib/productUtils';
 import { toast } from 'sonner';
 import CoverSelectionModal from './CoverSelectionModal';
 
-export default function MoodboardCard({ moodboard, projectId, onDelete, isArchitect }) {
+export default function MoodboardCard({ moodboard, projectId, onDelete, isArchitect, projectPrivacy }) {
     const { _id, moodboard_name, estimatedCostId } = moodboard;
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(moodboard_name);
@@ -145,22 +145,26 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
                 </Link>
 
                 {/* Cover Edit Button */}
-                <button
-                    onClick={() => setIsCoverModalOpen(true)}
-                    className="absolute top-4 left-4 p-2.5 bg-white/90 backdrop-blur text-gray-500 hover:text-[#d9a88a] rounded-xl shadow-lg opacity-0 translate-y-2 group-hover/preview:opacity-100 group-hover/preview:translate-y-0 transition-all duration-300 z-20"
-                    title="Change Cover"
-                >
-                    <Camera className="w-4 h-4" />
-                </button>
+                {isArchitect && (
+                    <button
+                        onClick={() => setIsCoverModalOpen(true)}
+                        className="absolute top-4 left-4 p-2.5 bg-white/90 backdrop-blur text-gray-500 hover:text-[#d9a88a] rounded-xl shadow-lg opacity-0 translate-y-2 group-hover/preview:opacity-100 group-hover/preview:translate-y-0 transition-all duration-300 z-20"
+                        title="Change Cover"
+                    >
+                        <Camera className="w-4 h-4" />
+                    </button>
+                )}
 
                 {/* Visualizer Floating Button - Now goes to Design Desk tab */}
-                <Link
-                    href={`/dashboard/projects/${projectId}/moodboards/${_id}?tab=designDesk`}
-                    className="absolute bottom-4 right-4 p-3 bg-white/95 backdrop-blur text-[#d9a88a] rounded-2xl shadow-xl opacity-0 translate-y-2 group-hover/preview:opacity-100 group-hover/preview:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-20"
-                    title="Open Design Desk"
-                >
-                    <MonitorPlay className="w-5 h-5" />
-                </Link>
+                {(isArchitect || projectPrivacy?.showRenders) && (
+                    <Link
+                        href={`/dashboard/projects/${projectId}/moodboards/${_id}?tab=designDesk`}
+                        className="absolute bottom-4 right-4 p-3 bg-white/95 backdrop-blur text-[#d9a88a] rounded-2xl shadow-xl opacity-0 translate-y-2 group-hover/preview:opacity-100 group-hover/preview:translate-y-0 transition-all duration-300 hover:scale-110 active:scale-95 z-20"
+                        title="Open Design Desk"
+                    >
+                        <MonitorPlay className="w-5 h-5" />
+                    </Link>
+                )}
             </div>
 
             {/* Info Section */}
@@ -202,22 +206,35 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
 
                 <div className="mt-auto pt-4 flex items-center justify-between gap-3">
                     <div className="flex flex-col">
-                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">Estimated Cost</span>
-                        <div className="flex items-center gap-1 text-base font-black text-[#d9a88a]">
-                            <IndianRupee className="w-3.5 h-3.5" />
-                            {estimatedCostId?.costing?.toLocaleString('en-IN') || '0'}
-                        </div>
+                        {(isArchitect || projectPrivacy?.showPriceToClient) ? (
+                            <>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">Estimated Cost</span>
+                                <div className="flex items-center gap-1 text-base font-black text-[#d9a88a]">
+                                    <IndianRupee className="w-3.5 h-3.5" />
+                                    {estimatedCostId?.costing?.toLocaleString('en-IN') || '0'}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">Status</span>
+                                <div className="flex items-center gap-1 text-base font-black text-[#d9a88a]">
+                                    Active Design
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Link
-                            href="/productlist"
-                            onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
-                            className="p-2.5 bg-[#fef7f2] text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white rounded-xl transition-all"
-                            title="Add Items"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </Link>
+                        {isArchitect && (
+                            <Link
+                                href="/productlist"
+                                onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
+                                className="p-2.5 bg-[#fef7f2] text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white rounded-xl transition-all"
+                                title="Add Items"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </Link>
+                        )}
                         <Link
                             href={`/dashboard/projects/${projectId}/moodboards/${_id}`}
                             className="p-2.5 bg-[#2d3142] text-white hover:bg-[#d9a88a] rounded-xl transition-all"

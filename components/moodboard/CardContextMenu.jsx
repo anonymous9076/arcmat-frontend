@@ -10,9 +10,13 @@ const STATUSES = [
 ];
 
 export default function CardContextMenu({
-    x, y, currentStatus = 'Considering',
+    x, y, currentStatus = 'Considering', isPhoto = false,
     onStatusChange, onRemove,
-    onClose
+    onClose,
+    isClient = false,
+    onOpenHistory,
+    onOpenSampleReq,
+    onOpenRetailerReq
 }) {
     const ref = useRef(null);
 
@@ -53,12 +57,42 @@ export default function CardContextMenu({
 
             <div className="border-t border-gray-100 my-1" />
 
-            <button
-                onClick={() => { onRemove(); onClose(); }}
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
-            >
-                Remove from board
-            </button>
+            {!isPhoto && (
+                <>
+                    <button
+                        onClick={() => { onOpenHistory?.(); onClose(); }}
+                        className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        Material History
+                    </button>
+                    {!isClient && (
+                        <>
+                            <button
+                                onClick={() => { onOpenSampleReq?.(); onClose(); }}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Request Sample
+                            </button>
+                            <button
+                                onClick={() => { onOpenRetailerReq?.(); onClose(); }}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Request Retailer
+                            </button>
+                        </>
+                    )}
+                    <div className="border-t border-gray-100 my-1" />
+                </>
+            )}
+
+            {!isClient && (
+                <button
+                    onClick={() => { onRemove(); onClose(); }}
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
+                >
+                    Remove from board
+                </button>
+            )}
         </div>
     );
 }

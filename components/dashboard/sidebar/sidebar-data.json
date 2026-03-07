@@ -105,6 +105,12 @@
             "href": "/dashboard"
         },
         {
+            "id": "collaborations",
+            "label": "Collaborations",
+            "icon": "Layers",
+            "href": "/dashboard/projects"
+        },
+        {
             "id": "my-orders",
             "label": "My Orders",
             "icon": "ShoppingBag",

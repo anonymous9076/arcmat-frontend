@@ -531,6 +531,12 @@ export default function ExportTab({
                     </tbody>
                 </table>
             </div>
+
+            <div className="mt-6 shrink-0">
+                <p className="text-[10px] text-gray-400 italic">
+                    * Prices shown are indicative and subject to final quotation by the vendor.
+                </p>
+            </div>
         </div>
     );
 }

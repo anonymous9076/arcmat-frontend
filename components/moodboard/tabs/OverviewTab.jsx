@@ -5,8 +5,20 @@ import { toast } from 'sonner';
 
 import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
 import CardContextMenu from '@/components/moodboard/CardContextMenu';
-import { getProductThumbnail, getProductName, getProductBrand, getProductCategory } from '@/lib/productUtils';
+import MaterialHistoryModal from '@/components/moodboard/MaterialHistoryModal';
+import SampleRequestModal from '@/components/moodboard/SampleRequestModal';
+import RetailerContactModal from '@/components/moodboard/RetailerContactModal';
+import {
+    getProductThumbnail,
+    getProductName,
+    getProductBrand,
+    getProductCategory,
+    getProductSize,
+    resolvePricing,
+    formatCurrency
+} from '@/lib/productUtils';
 import useProjectStore from '@/store/useProjectStore';
+import { useAuth } from '@/hooks/useAuth';
 
 export const STATUS_STYLES = {
     'Specified': { dot: 'bg-green-400', label: 'text-green-600' },
@@ -40,13 +52,22 @@ export default function OverviewTab({
     handleRemoveProduct,
     handleAddToCart,
     router,
-    isArchitect
+    isArchitect,
+    privacyControls
 }) {
+    const { user } = useAuth();
+    const isClient = user?.role === 'customer';
+
     const [brandFilterOpen, setBrandFilterOpen] = useState(false);
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [addCardOpen, setAddCardOpen] = useState(false);
     const [photoModalOpen, setPhotoModalOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
+
+    // Modals state
+    // activeModal can be 'history', 'sample', 'retailer', or null
+    const [activeModal, setActiveModal] = useState(null);
+    const [selectedMaterial, setSelectedMaterial] = useState(null);
 
     // Calculate total estimation
     const totalEstimation = products.reduce((sum, p) => {
@@ -167,11 +188,23 @@ export default function OverviewTab({
                         if (contextMenu.isPhoto) handleRemovePhoto(contextMenu.itemId);
                         else handleRemoveProduct(contextMenu.itemId);
                     }}
-                    onEditTitle={isArchitect && contextMenu.isPhoto ? () => {
-                        toast.info('Edit via the product list');
-                    } : null}
                     onClose={() => setContextMenu(null)}
-                    disabled={!isArchitect}
+                    isClient={isClient}
+                    onOpenHistory={() => {
+                        const product = products.find(p => p._id === contextMenu.itemId);
+                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        setActiveModal('history');
+                    }}
+                    onOpenSampleReq={() => {
+                        const product = products.find(p => p._id === contextMenu.itemId);
+                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        setActiveModal('sample');
+                    }}
+                    onOpenRetailerReq={() => {
+                        const product = products.find(p => p._id === contextMenu.itemId);
+                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        setActiveModal('retailer');
+                    }}
                 />
             )}
 
@@ -268,7 +301,13 @@ export default function OverviewTab({
                                     <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1">{photo.title}</p>
                                 </div>
 
-                                {/* Removed Qty/Price inputs from card */}
+                                <div>
+                                    {(!isClient || privacyControls?.showPriceToClient) && (
+                                        <p className="text-xs font-bold text-[#1a1a2e]">
+                                            Est. Market Price: {formatCurrency(photo.price || 0)}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -305,20 +344,59 @@ export default function OverviewTab({
                                     </div>
                                     <div className="p-3 flex flex-col gap-2 flex-1">
                                         <div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
+                                                {getProductSize(product) && <p className="text-[10px] text-gray-400 font-medium whitespace-nowrap">{getProductSize(product)}</p>}
+                                            </div>
                                             <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1">{brand}</p>
                                             <p className="text-[10px] text-gray-400 truncate">{name}</p>
                                         </div>
 
-                                        {/* Removed Qty/Price inputs from card */}
-
-                                        {/* Removed Add to Cart button */}
+                                        <div>
+                                            {(!isClient || privacyControls?.showPriceToClient) && (
+                                                <p className="text-xs font-bold text-[#1a1a2e]">
+                                                    Est. Market Price: {formatCurrency(price || resolvePricing(product).price)}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
                         })}
                 </div>
             )}
+
+            <div className="mt-8 pt-8 border-t border-gray-50">
+                <p className="text-[10px] text-gray-400 italic">
+                    * Prices shown are indicative and subject to final quotation by the vendor.
+                </p>
+            </div>
+
+            {/* Feature Modals */}
+            <MaterialHistoryModal
+                isOpen={activeModal === 'history'}
+                onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                projectId={projectId}
+                spaceId={moodboardId}
+                currentMaterialName={selectedMaterial?.name}
+            />
+
+            <SampleRequestModal
+                isOpen={activeModal === 'sample'}
+                onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                projectId={projectId}
+                spaceId={moodboardId}
+                materialId={selectedMaterial?.id}
+                materialName={selectedMaterial?.name}
+            />
+
+            <RetailerContactModal
+                isOpen={activeModal === 'retailer'}
+                onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                projectId={projectId}
+                materialId={selectedMaterial?.id}
+                materialName={selectedMaterial?.name}
+            />
         </div>
     );
 }

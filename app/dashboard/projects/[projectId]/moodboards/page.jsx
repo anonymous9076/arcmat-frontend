@@ -8,7 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import CreateMoodboardModal from '@/components/dashboard/projects/CreateMoodboardModal';
 import InviteClientModal from '@/components/dashboard/projects/InviteClientModal';
-import { Loader2, Plus, ArrowLeft, Layout, Search, ChevronDown, Filter } from 'lucide-react';
+import PrivacySettingsModal from '@/components/dashboard/projects/PrivacySettingsModal';
+import { Loader2, Plus, ArrowLeft, Layout, Search, ChevronDown, Filter, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Container from '@/components/ui/Container';
@@ -18,6 +19,7 @@ export default function MoodboardsPage() {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [moodboardToDelete, setMoodboardToDelete] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -76,6 +78,13 @@ export default function MoodboardsPage() {
 
                 {isArchitect && (
                     <div className="flex items-center gap-4">
+                        <Button
+                            onClick={() => setIsPrivacyModalOpen(true)}
+                            className="bg-white border text-gray-700 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"
+                        >
+                            <Shield className="w-4 h-4 text-[#d9a88a]" />
+                            Client Settings
+                        </Button>
                         <Button
                             onClick={() => setIsInviteModalOpen(true)}
                             className="bg-[#2d3142] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"
@@ -159,6 +168,7 @@ export default function MoodboardsPage() {
                             projectId={projectId}
                             onDelete={handleDeleteClick}
                             isArchitect={isArchitect}
+                            projectPrivacy={project?.privacyControls}
                         />
                     ))}
                 </div>
@@ -195,6 +205,12 @@ export default function MoodboardsPage() {
                 onClose={() => setIsInviteModalOpen(false)}
                 projectId={projectId}
                 projectName={project?.projectName}
+            />
+
+            <PrivacySettingsModal
+                isOpen={isPrivacyModalOpen}
+                onClose={() => setIsPrivacyModalOpen(false)}
+                project={project}
             />
 
             <ConfirmationModal

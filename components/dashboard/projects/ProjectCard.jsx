@@ -5,11 +5,15 @@ import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera } from 'lucide-
 import Link from 'next/link';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
+import useAuthStore from '@/store/useAuthStore';
 import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 
 export default function ProjectCard({ project, onEdit, onDelete, href }) {
+    const { user } = useAuthStore();
+    const isArchitect = user?.role === 'architect';
+
     const {
         _id,
         projectName,
@@ -129,22 +133,24 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
     return (
         <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full mx-auto md:mx-0">
             {/* Absolute Action Buttons (Hover) */}
-            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-                    className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
-                    title="Edit project"
-                >
-                    <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
-                    className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
-                    title="Delete project"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </div>
+            {isArchitect && (
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+                        className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
+                        title="Edit project"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
+                        className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
+                        title="Delete project"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Left Section */}
             <div className="flex-[1.2] flex flex-col min-w-0 p-2">
@@ -162,14 +168,15 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 <div className="mb-auto relative" ref={phaseDropdownRef}>
                     <span className="text-[10px] text-gray-400 font-bold mb-2 block tracking-wide">Project Phase</span>
                     <button
-                        onClick={() => setIsPhaseDropdownOpen(!isPhaseDropdownOpen)}
-                        className="flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] hover:bg-gray-50 transition-colors"
+                        onClick={() => isArchitect && setIsPhaseDropdownOpen(!isPhaseDropdownOpen)}
+                        className={`flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] ${isArchitect ? 'hover:bg-gray-50 transition-colors cursor-pointer' : 'cursor-default'}`}
+                        disabled={!isArchitect}
                     >
                         <span className="truncate max-w-[120px]">{currentPhase}</span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${isPhaseDropdownOpen ? 'rotate-180' : ''}`} />
+                        {isArchitect && <ChevronDown className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${isPhaseDropdownOpen ? 'rotate-180' : ''}`} />}
                     </button>
 
-                    {isPhaseDropdownOpen && (
+                    {isPhaseDropdownOpen && isArchitect && (
                         <div className="absolute top-full left-0 mt-1 w-56 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
                             {PHASE_OPTIONS.map((option) => (
                                 <button
@@ -187,14 +194,15 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
 
                 <div className="mt-8 relative" ref={dropdownRef}>
                     <button
-                        onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#f4f5f7] rounded-full text-[13px] font-bold text-gray-600 hover:bg-gray-200 transition-colors"
+                        onClick={() => isArchitect && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                        className={`inline-flex items-center gap-2 px-4 py-1.5 bg-[#f4f5f7] rounded-full text-[13px] font-bold text-gray-600 ${isArchitect ? 'hover:bg-gray-200 transition-colors cursor-pointer' : 'cursor-default'}`}
+                        disabled={!isArchitect}
                     >
                         {currentStatus}
-                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                        {isArchitect && <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />}
                     </button>
 
-                    {isStatusDropdownOpen && (
+                    {isStatusDropdownOpen && isArchitect && (
                         <div className="absolute top-full left-0 mt-1 w-40 bg-white shadow-xl rounded-xl border border-gray-100 py-2 z-50">
                             {STATUS_OPTIONS.map((option) => (
                                 <button
@@ -234,13 +242,15 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                     </div>
 
                     <div className="mt-auto">
-                        <Link
-                            href="/productlist"
-                            onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-[#D9A88A] text-white text-[12px] font-bold rounded-full hover:bg-[#D9A88A] shadow-sm transition-colors whitespace-nowrap"
-                        >
-                            See all products
-                        </Link>
+                        {isArchitect && (
+                            <Link
+                                href="/productlist"
+                                onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                                className="inline-flex items-center justify-center px-4 py-2 bg-[#D9A88A] text-white text-[12px] font-bold rounded-full hover:bg-[#D9A88A] shadow-sm transition-colors whitespace-nowrap"
+                            >
+                                See all products
+                            </Link>
+                        )}
                     </div>
                 </div>
 

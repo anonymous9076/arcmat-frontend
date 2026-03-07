@@ -32,6 +32,7 @@ import {
 import OverviewTab from '@/components/moodboard/tabs/OverviewTab';
 import ExportTab from '@/components/moodboard/tabs/ExportTab';
 import DownloadTab from '@/components/moodboard/tabs/DownloadTab';
+import DiscussionTab from '@/components/moodboard/tabs/DiscussionTab';
 
 import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
@@ -58,6 +59,7 @@ function StatusDot({ status = 'Considering' }) {
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'designDesk', label: 'Design Desk', icon: Paintbrush2 },
+    { id: 'discussion', label: 'Discussion', icon: Paintbrush2 }, // Re-using an icon or we could import MessageSquare
     { id: 'export', label: 'Export', icon: TableProperties },
     { id: 'download', label: 'Download', icon: FolderDown },
 ];
@@ -673,7 +675,7 @@ export default function MoodboardDetailPage() {
 
                     {/* Tab Navigation ─── */}
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {TABS.map(tab => (
+                        {TABS.filter(t => isArchitect || ['overview', 'designDesk', 'discussion'].includes(t.id)).map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
@@ -711,6 +713,7 @@ export default function MoodboardDetailPage() {
                         handleAddToCart={handleAddToCart}
                         router={router}
                         isArchitect={isArchitect}
+                        privacyControls={project?.privacyControls}
                     />
                 )}
 
@@ -776,7 +779,7 @@ export default function MoodboardDetailPage() {
                 </div>
 
                 {/* EXPORT */}
-                {activeTab === 'export' && (
+                {activeTab === 'export' && isArchitect && (
                     <ExportTab
                         products={products}
                         customPhotos={customPhotos}
@@ -793,13 +796,18 @@ export default function MoodboardDetailPage() {
                 )}
 
                 {/* DOWNLOAD */}
-                {activeTab === 'download' && (
+                {activeTab === 'download' && isArchitect && (
                     <DownloadTab
                         boardItems={boardItems}
                         exportAsCSV={exportAsCSV}
                         setActiveTab={setActiveTab}
                         downloadCanvas={() => canvasRef.current?.download('jpeg')}
                     />
+                )}
+
+                {/* DISCUSSION */}
+                {activeTab === 'discussion' && (
+                    <DiscussionTab projectId={projectId} />
                 )}
             </div>
         </div>
