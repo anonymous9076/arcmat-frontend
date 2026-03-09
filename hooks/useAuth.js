@@ -70,6 +70,7 @@ export const useAuth = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoadingState] = useState(true);
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { setLoading } = useLoader();
 
     useEffect(() => {
@@ -107,10 +108,13 @@ export const useAuth = () => {
         clearAuthState();
         setUser(null);
         setIsAuthenticated(false);
+        if (queryClient) {
+            queryClient.clear();
+        }
         router.push('/auth/login');
     };
 
-    return { user, isAuthenticated, loading, logout };
+    return { user, isAuthenticated, loading, logout, queryClient };
 };
 
 export const useVerifyOtpMutation = () => {

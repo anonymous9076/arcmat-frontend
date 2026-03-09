@@ -41,11 +41,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const STATUS_OPTIONS = ['Active', 'On hold', 'Completed', 'Canceled', 'Archived'];
     const PHASE_OPTIONS = [
         'Concept Design',
-        'Schematic Design',
         'Design Development',
-        'Specification',
-        'Construction Admin',
-        'Reselection Substitution'
+        'Material Specification',
+        'Construction',
+        'Completed'
     ];
 
     useEffect(() => {

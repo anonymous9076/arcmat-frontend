@@ -332,7 +332,7 @@ export default function UsersPage() {
                                                 )}
                                                 {u.role === 'architect' && (
                                                     <Link
-                                                        href={`/dashboard/users/architects/${u._id}/projects`}
+                                                        href={`/dashboard/projects?architectId=${u._id}`}
                                                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                                                         title="View Projects"
                                                     >

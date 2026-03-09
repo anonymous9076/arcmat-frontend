@@ -103,7 +103,7 @@ export default function Sidebar() {
     .filter(item => {
       if (item.requiresAuth && !isAuthenticated) return false;
 
-      if ((item.id === 'categories' || item.id === 'attributes' || item.id === 'users' || item.id === 'banners') && !isAdmin) {
+      if ((item.id === 'categories' || item.id === 'attributes' || item.id === 'users' || item.id === 'homepage') && !isAdmin) {
         return false;
       }
 

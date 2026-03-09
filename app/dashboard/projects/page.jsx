@@ -11,8 +11,12 @@ import { useDeleteProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
+import { useSearchParams } from 'next/navigation';
+
 export default function AllProjectsPage() {
     const { user } = useAuthStore();
+    const searchParams = useSearchParams();
+    const urlArchitectId = searchParams.get('architectId');
     const [searchTerm, setSearchTerm] = useState('');
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
@@ -24,6 +28,7 @@ export default function AllProjectsPage() {
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
     const isArchitect = user?.role === 'architect';
+    const isAdmin = user?.role === 'admin';
 
     const deleteProjectMutation = useDeleteProject();
 
@@ -32,6 +37,7 @@ export default function AllProjectsPage() {
     }, []);
 
     const { data: projectsData, isLoading } = useGetProjects({
+        architectId: urlArchitectId,
         enabled: mounted && !!user
     });
 
@@ -83,9 +89,21 @@ export default function AllProjectsPage() {
     return (
         <div className="p-4 sm:p-8 max-w-7xl mx-auto">
             <div className="mb-6 sm:mb-8">
+                {urlArchitectId && isAdmin && (
+                    <button
+                        onClick={() => window.history.back()}
+                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#e09a74] transition-colors mb-4 group"
+                    >
+                        <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        Back to User Management
+                    </button>
+                )}
                 <h1 className="text-[28px] font-extrabold text-[#2d3142] tracking-tight">
-                    Projects
+                    {urlArchitectId && isAdmin ? "Architect Projects" : "Projects"}
                 </h1>
+                {urlArchitectId && isAdmin && (
+                    <p className="text-gray-500 text-sm mt-1">Viewing all projects for this architect</p>
+                )}
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

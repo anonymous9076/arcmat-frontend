@@ -22,11 +22,10 @@
     ],
     "phases": [
         "Concept Design",
-        "Schematic Design",
         "Design Development",
-        "Specification",
-        "Construction Admin",
-        "Reselection Substitution"
+        "Material Specification",
+        "Construction",
+        "Completed"
     ],
     "sizes": [
         "50,000+ m²",

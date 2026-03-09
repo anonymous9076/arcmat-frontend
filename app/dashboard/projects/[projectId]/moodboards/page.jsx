@@ -87,13 +87,13 @@ export default function MoodboardsPage() {
                         </Button>
                         <Button
                             onClick={() => setIsInviteModalOpen(true)}
-                            className="bg-[#2d3142] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"
+                            className="bg-[#2d3142] hover:bg-white hover:text-[#2d3142] border border-[#2d3142] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 text-sm"
                         >
                             Invite Client
                         </Button>
                         <Button
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100 hover:scale-105 active:scale-95 text-sm"
+                            className="bg-[#d9a88a] hover:bg-white hover:text-[#d9a88a] border border-[#d9a88a] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2  shadow-lg shadow-orange-100 text-sm"
                         >
                             <Plus className="w-4 h-4" />
                             New Space

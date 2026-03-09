@@ -26,10 +26,10 @@
             "href": "/dashboard/categories"
         },
         {
-            "id": "banners",
-            "label": "Banners",
+            "id": "homepage",
+            "label": "Homepage Content",
             "icon": "Image",
-            "href": "/dashboard/banners"
+            "href": "/dashboard/homepage"
         },
         {
             "id": "profile",
