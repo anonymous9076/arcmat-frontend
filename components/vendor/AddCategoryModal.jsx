@@ -23,7 +23,8 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, existingCateg
         meta_description: '',
         meta_keywords: '',
         status: 'Active',
-        category_image: null
+        category_image: null,
+        showcase: []
     });
     const [previewImage, setPreviewImage] = useState(null);
     const [errors, setErrors] = useState({});
@@ -59,7 +60,8 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, existingCateg
             meta_description: '',
             meta_keywords: '',
             status: 'Active',
-            category_image: null
+            category_image: null,
+            showcase: []
         });
         setPreviewImage(null);
         setErrors({});
@@ -120,6 +122,10 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, existingCateg
             if (categoryData.meta_keywords) formData.append('meta_keywords', categoryData.meta_keywords);
 
             formData.append('status', categoryData.status);
+
+            if (step === 1 && categoryData.showcase?.length > 0) {
+                categoryData.showcase.forEach(val => formData.append('showcase[]', val));
+            }
 
             // Determine parent based on step
             let currentParentId = '';
@@ -392,6 +398,54 @@ export default function AddCategoryModal({ isOpen, onClose, onAdd, existingCateg
                                 </div>
                             </div>
                         </div>
+
+                        {/* Showcase Settings - ONLY for Level 1 */}
+                        {step === 1 && (
+                            <div className="space-y-4 pt-4 border-t border-gray-50">
+                                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">Showcase Optimization</h3>
+                                <p className="text-xs text-gray-500 font-medium">Select where this category should be highlighted on the platform.</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {['Header', 'Gallery', 'Carousel'].map((loc) => (
+                                        <label
+                                            key={loc}
+                                            className={clsx(
+                                                "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer group",
+                                                categoryData.showcase.includes(loc)
+                                                    ? "border-[#d9a88a] bg-orange-50/30"
+                                                    : "border-gray-100 hover:border-gray-200"
+                                            )}
+                                        >
+                                            <div className={clsx(
+                                                "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors",
+                                                categoryData.showcase.includes(loc)
+                                                    ? "bg-[#d9a88a] border-[#d9a88a]"
+                                                    : "border-gray-200 group-hover:border-gray-300"
+                                            )}>
+                                                {categoryData.showcase.includes(loc) && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={categoryData.showcase.includes(loc)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setCategoryData(prev => ({
+                                                        ...prev,
+                                                        showcase: checked
+                                                            ? [...prev.showcase, loc]
+                                                            : prev.showcase.filter(s => s !== loc)
+                                                    }));
+                                                }}
+                                            />
+                                            <span className={clsx(
+                                                "text-sm font-bold uppercase tracking-wider",
+                                                categoryData.showcase.includes(loc) ? "text-[#d9a88a]" : "text-gray-500"
+                                            )}>{loc}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

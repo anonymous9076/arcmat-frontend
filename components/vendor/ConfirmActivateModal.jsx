@@ -6,10 +6,10 @@ export default function ConfirmActivateModal({ isOpen, onClose, onConfirm, isLoa
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-linear-to-r from-green-50 to-emerald-50">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                             <AlertTriangle className="w-6 h-6 text-green-600" />

@@ -53,6 +53,17 @@ export const useGetUsers = ({ enabled = true, ...params } = {}) => {
     });
 };
 
+export const usePlatformStats = (options = {}) => {
+    return useQuery({
+        queryKey: ['platform-stats'],
+        queryFn: async () => {
+            const response = await authService.getPlatformStats();
+            return response.data || response;
+        },
+        ...options
+    });
+};
+
 export const useAuth = () => {
     const { data: userData, isLoading: queryLoading } = useUser();
     const [user, setUser] = useState(null);

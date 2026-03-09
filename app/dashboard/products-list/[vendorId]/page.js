@@ -53,8 +53,11 @@ export default function ProductsListPage() {
   // Use vendorId from URL if available, otherwise fallback to activeBrand ID, then user ID
   const effectiveVendorId = vendorId || activeBrand?._id || user?.brandId || user?._id || user?.id;
 
+  const isViewingByBrand = !!(vendorId || activeBrand?._id || user?.brandId);
+
   const { data: apiResponse, isLoading: productsLoading } = useGetProducts({
-    userId: effectiveVendorId,
+    userId: !isViewingByBrand ? effectiveVendorId : undefined,
+    brandId: isViewingByBrand ? effectiveVendorId : undefined,
     page: currentPage,
     limit: pageSize,
     search: searchTerm,
@@ -116,7 +119,8 @@ export default function ProductsListPage() {
     try {
       // Fetch ALL products matching current filters for export
       const response = await productService.getAllProducts({
-        userid: effectiveVendorId,
+        userid: !isViewingByBrand ? effectiveVendorId : undefined,
+        brand: isViewingByBrand ? effectiveVendorId : undefined,
         page: 1,
         limit: 10000, // Fetch up to 10k items for export
         search: searchTerm,
@@ -273,11 +277,11 @@ export default function ProductsListPage() {
                 </button>
               )}
 
-              <div className="flex items-center grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <Button
                   onClick={handleDataExport}
                   disabled={isExporting}
-                  className="flex items-center rounded-full bg-white text-blue-600 hover:bg-blue-50 min-w-[130px] h-[42px] px-6 border border-blue-600 shadow-sm transition-all duration-300 font-semibold"
+                  className="rounded-full bg-white text-blue-600 hover:bg-blue-50 min-w-[130px] h-[42px] px-6 border border-blue-600 shadow-sm transition-all duration-300 font-semibold flex items-center"
                 >
                   <Package className="w-4 h-4 mr-2" />
                   Export Data
@@ -291,13 +295,16 @@ export default function ProductsListPage() {
                       <Upload className="w-4 h-4 mr-2" />
                       Bulk Import
                     </Button>
-                    <Link
-                      href={`/dashboard/products-list/${effectiveVendorId}/add`}
+                    <button
+                      onClick={() => {
+                        setGlobalLoading(true);
+                        router.push(`/dashboard/products-list/${effectiveVendorId}/add`);
+                      }}
                       className="flex items-center rounded-full bg-[#e09a74] text-white min-w-[130px] h-[42px] px-6 border border-[#e09a74] hover:bg-[#d08963] text-nowrap shadow-md transition-all duration-300 font-semibold"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add Product
-                    </Link>
+                    </button>
                   </>
                 )}
               </div>

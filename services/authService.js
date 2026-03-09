@@ -32,6 +32,11 @@ const authService = {
         return response.data;
     },
 
+    getPlatformStats: async () => {
+        const response = await api.get('/user/platform-stats');
+        return response.data;
+    },
+
     logout: async () => {
         return { success: true };
     },

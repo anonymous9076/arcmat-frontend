@@ -27,6 +27,7 @@ const Footer = () => {
                     <div className="flex flex-col gap-4 text-[#707075]">
                         <h4 className="font-medium text-lg mb-2 text-gray-900">Support</h4>
                         <Link href="/not-found" className="hover:text-gray-800 transition-colors">FAQ's</Link>
+                        <Link href="/help-support" className="hover:text-gray-800 transition-colors">Help and Support</Link>
                         <Link href="/not-found" className="hover:text-gray-800 transition-colors">Privacy and Legal Center</Link>
                         <Link href="/not-found" className="hover:text-gray-800 transition-colors">CA Privacy Notice</Link>
                     </div>

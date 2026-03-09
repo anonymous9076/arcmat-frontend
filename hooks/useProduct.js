@@ -20,12 +20,13 @@ export const VARIANT_KEYS = {
 };
 
 // Hook to fetch products
-export const useGetProducts = ({ userId, page = 1, limit = 10, enabled = true, onlyRetailerProducts = 'false', ...otherFilters } = {}) => {
+export const useGetProducts = ({ userId, brandId, page = 1, limit = 10, enabled = true, onlyRetailerProducts = 'false', ...otherFilters } = {}) => {
     return useQuery({
-        queryKey: PRODUCT_KEYS.list({ userId, page, limit, onlyRetailerProducts, ...otherFilters }),
+        queryKey: PRODUCT_KEYS.list({ userId, brandId, page, limit, onlyRetailerProducts, ...otherFilters }),
         queryFn: () => productService.getAllProducts({
             userid: userId,
             user_id: userId,
+            brand: brandId, // Map brandId to brand
             page,
             limit,
             offset: (Number(page) - 1) * Number(limit),

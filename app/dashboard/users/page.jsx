@@ -8,13 +8,18 @@ import {
     User as UserIcon,
     CheckCircle2,
     XCircle,
-    Eye,
+    PackageSearch,
+    FolderOpen,
+    Info,
+    Calendar,
+    Mail,
+    Phone,
+    MapPin,
+    Briefcase,
     Lock,
     Unlock,
     ShieldCheck,
-    ShieldAlert,
-    PackageSearch,
-    HardHat
+    ShieldAlert
 } from 'lucide-react';
 import { useAuth, useGetUsers, useDeleteUser, useUpdateUser } from '@/hooks/useAuth';
 import Container from '@/components/ui/Container';
@@ -31,6 +36,89 @@ const ROLES = [
     { label: 'Retailers', value: 'retailer' },
     { label: 'Architects', value: 'architect' },
 ];
+
+const UserDetailTooltip = ({ user, index, total }) => {
+    const address = user.address;
+    const isFirst = index < 2;
+    const isLast = total > 5 && index > total - 3;
+
+    return (
+        <div className={clsx(
+            "absolute right-full mr-3 z-[100] w-72 p-5 bg-white rounded-3xl shadow-2xl border border-gray-100 animate-in fade-in slide-in-from-right-4 duration-300 pointer-events-none",
+            isFirst ? "top-0 translate-y-0" : isLast ? "bottom-0 translate-y-0" : "top-1/2 -translate-y-1/2"
+        )}>
+            <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
+                    <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#e09a74] shadow-inner">
+                        <UserIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-black text-gray-900 leading-tight">{user.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">{user.role}</p>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-2.5">
+                        <div className="flex items-center gap-2.5 text-[11px] text-gray-600 font-semibold group/item">
+                            <Mail className="w-3.5 h-3.5 text-[#e09a74]/70" />
+                            <span className="truncate">{user.email}</span>
+                        </div>
+                        {user.mobile && (
+                            <div className="flex items-center gap-2.5 text-[11px] text-gray-600 font-semibold">
+                                <Phone className="w-3.5 h-3.5 text-[#e09a74]/70" />
+                                <span>{user.mobile}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2.5 text-[11px] text-gray-600 font-semibold">
+                            <Calendar className="w-3.5 h-3.5 text-[#e09a74]/70" />
+                            <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                    </div>
+
+                    {(user.profile || user.profession) && (
+                        <div className="pt-3 border-t border-gray-50 space-y-2">
+                            <div className="flex items-start gap-2.5 text-[11px] text-gray-600 font-semibold">
+                                <Briefcase className="w-3.5 h-3.5 text-[#e09a74]/70 mt-0.5" />
+                                <span className="italic">{user.profession || user.profile || 'Professional profile'}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {address && (
+                        <div className="pt-3 border-t border-gray-50 space-y-2">
+                            <div className="flex items-start gap-2.5 text-[11px] text-gray-600 font-semibold leading-relaxed">
+                                <MapPin className="w-3.5 h-3.5 text-[#e09a74]/70 mt-0.5" />
+                                <div>
+                                    <p>{address.address1}</p>
+                                    {address.address2 && <p>{address.address2}</p>}
+                                    <p className="text-[#e09a74] text-[10px] mt-0.5">{address.city}, {address.state} {address.pincode}</p>
+                                    <p className="text-[10px]">{address.country}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!address && (
+                        <div className="pt-2">
+                            <p className="text-[9px] text-gray-300 italic font-medium">No official address registry found</p>
+                        </div>
+                    )}
+
+                    <div className="pt-3 mt-3 border-t border-gray-50">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] mb-1.5 opacity-60">System Registry Key</p>
+                        <p className="font-mono text-[9px] text-gray-500 bg-gray-50/50 p-2 rounded-xl border border-gray-100/50 break-all select-all">{user._id}</p>
+                    </div>
+                </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className={clsx(
+                "absolute w-3 h-3 bg-white border-r border-t border-gray-100 rotate-45",
+                isFirst ? "top-4 -right-1.5" : isLast ? "bottom-4 -right-1.5" : "top-1/2 -translate-y-1/2 -right-1.5"
+            )}></div>
+        </div>
+    );
+};
 
 export default function UsersPage() {
     const { user: currentUser } = useAuth();
@@ -152,8 +240,8 @@ export default function UsersPage() {
             </div>
 
             {/* Users Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="overflow-x-visible">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50/50">
                             <tr>
@@ -183,9 +271,9 @@ export default function UsersPage() {
                                                 <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-[#e09a74]">
                                                     <UserIcon className="w-5 h-5" />
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-gray-900">{u.name}</p>
-                                                    <p className="text-xs text-gray-400">ID: {u._id.slice(-6)}</p>
+                                                <div className="flex flex-col">
+                                                    <p className="text-sm font-extrabold text-gray-900">{u.name}</p>
+                                                    <p className="text-[10px] text-gray-400 font-medium tracking-tight mt-0.5">ID: {u._id.slice(-6)}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -225,6 +313,14 @@ export default function UsersPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
                                             <div className="flex justify-end items-center gap-1.5">
+                                                <div className="group/info relative">
+                                                    <div className="p-1.5  text-gray-400 hover:text-[#e09a74] hover:bg-orange-50 transition-all cursor-help">
+                                                        <Info className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="invisible group-hover/info:visible opacity-0 group-hover/info:opacity-100 transition-all duration-300">
+                                                        <UserDetailTooltip user={u} index={users.indexOf(u)} total={users.length} />
+                                                    </div>
+                                                </div>
                                                 {(u.role === 'brand' || u.role === 'vendor') && (
                                                     <Link
                                                         href={`/dashboard/products-list/${u._id}`}
@@ -240,7 +336,7 @@ export default function UsersPage() {
                                                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                                                         title="View Projects"
                                                     >
-                                                        <HardHat className="w-4 h-4" />
+                                                        <FolderOpen className="w-4 h-4" />
                                                     </Link>
                                                 )}
                                                 {u.role === 'retailer' && (

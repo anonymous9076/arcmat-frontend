@@ -73,6 +73,25 @@ const CategoryItem = ({ category, level, onEdit, onDelete }) => {
                             )}>
                                 {(category.isActive === 0 || category.isActive === false) ? 'Inactive' : 'Active'}
                             </span>
+
+                            {/* Showcase Tags - ONLY for L1 */}
+                            {isL1 && category.showcase?.length > 0 && (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                    {category.showcase.map(loc => (
+                                        <span
+                                            key={loc}
+                                            className={clsx(
+                                                "px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                                                loc === 'Header' && "bg-blue-50 text-blue-600 border-blue-100",
+                                                loc === 'Gallery' && "bg-purple-50 text-purple-600 border-purple-100",
+                                                loc === 'Carousel' && "bg-amber-50 text-amber-600 border-amber-100"
+                                            )}
+                                        >
+                                            {loc}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Meta info */}

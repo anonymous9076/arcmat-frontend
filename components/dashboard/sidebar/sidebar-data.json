@@ -8,7 +8,7 @@
         },
         {
             "id": "products-list",
-            "label": "Products List",
+            "label": "Products",
             "icon": "Package",
             "href": "/dashboard/products-list",
             "requiresAuth": true

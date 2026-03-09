@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 
 export default function MaterialHistoryModal({ isOpen, onClose, projectId, spaceId, currentMaterialName }) {
     const { user } = useAuth();
-    const isClient = user?.role === 'customer';
+    const isClient = user?.role === 'professional' || user?.role === 'customer';
 
     const { data, isLoading } = useGetSpaceHistory(projectId, spaceId);
     const approveMutation = useApproveMaterialVersion(projectId);
@@ -49,7 +49,7 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                             <p className="text-sm text-gray-400 mt-2">Changes made here will be tracked automatically.</p>
                         </div>
                     ) : (
-                        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent">
+                        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-linear-to-b before:from-transparent before:via-gray-200 before:to-transparent">
                             {history.map((entry, index) => (
                                 <div key={entry._id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                     <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-white bg-[#fef7f2] text-[#d9a88a] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-black">

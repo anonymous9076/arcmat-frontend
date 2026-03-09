@@ -17,31 +17,33 @@ const Navbar = () => {
         const categories = categoryTree?.data || categoryTree;
         if (!categories || !Array.isArray(categories)) return [];
 
-        const dynamicItems = categories.map(cat => {
-            return {
-                name: cat.name,
-                id: cat._id || cat.id,
-                image: cat.image ? getCategoryImageUrl(cat.image) : null,
-                isSpecial: false,
-                hasDropdown: cat.children && cat.children.length > 0,
-                categoryData: cat,
-                categories: cat.children ? cat.children.map(subCat => {
-                    const l3Links = subCat.children ? subCat.children.map(c => c.name) : [];
-                    const columns = [];
-                    for (let i = 0; i < l3Links.length; i += 4) {
-                        columns.push(l3Links.slice(i, i + 4));
-                    }
+        const dynamicItems = categories
+            .filter(cat => cat.showcase?.includes('Header'))
+            .map(cat => {
+                return {
+                    name: cat.name,
+                    id: cat._id || cat.id,
+                    image: cat.image ? getCategoryImageUrl(cat.image) : null,
+                    isSpecial: false,
+                    hasDropdown: cat.children && cat.children.length > 0,
+                    categoryData: cat,
+                    categories: cat.children ? cat.children.map(subCat => {
+                        const l3Links = subCat.children ? subCat.children.map(c => c.name) : [];
+                        const columns = [];
+                        for (let i = 0; i < l3Links.length; i += 4) {
+                            columns.push(l3Links.slice(i, i + 4));
+                        }
 
-                    return {
-                        name: subCat.name,
-                        id: subCat._id || subCat.id,
-                        hasSubmenu: subCat.children && subCat.children.length > 0,
-                        links: columns,
-                        children: subCat.children
-                    };
-                }) : []
-            };
-        });
+                        return {
+                            name: subCat.name,
+                            id: subCat._id || subCat.id,
+                            hasSubmenu: subCat.children && subCat.children.length > 0,
+                            links: columns,
+                            children: subCat.children
+                        };
+                    }) : []
+                };
+            });
 
         return dynamicItems;
     }, [categoryTree]);

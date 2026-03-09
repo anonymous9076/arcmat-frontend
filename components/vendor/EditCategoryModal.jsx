@@ -20,7 +20,8 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
         meta_description: '',
         meta_keywords: '',
         status: 'Active',
-        parent_category: ''
+        parent_category: '',
+        showcase: []
     });
     const [previewImage, setPreviewImage] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -36,7 +37,8 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
                 meta_description: category.metadesc || '',
                 meta_keywords: category.meta_keywords || '',
                 status: category.isActive === 1 || category.status === 'Active' ? 'Active' : 'Inactive',
-                parent_category: category.parentId || ''
+                parent_category: category.parentId || '',
+                showcase: category.showcase || []
             });
 
             if (category.image) {
@@ -81,6 +83,14 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
             formData.append('meta_description', categoryData.meta_description);
             formData.append('meta_keywords', categoryData.meta_keywords);
             formData.append('status', categoryData.status);
+
+            if (category.level === 1) {
+                if (categoryData.showcase?.length > 0) {
+                    categoryData.showcase.forEach(val => formData.append('showcase[]', val));
+                } else {
+                    formData.append('showcase[]', ''); // Ensure backend clears it if empty
+                }
+            }
             formData.append('parent_category', categoryData.parent_category);
 
             if (selectedFile) {
@@ -278,6 +288,53 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
                                 </div>
                             </div>
                         </div>
+
+                        {/* Showcase Settings - ONLY for Level 1 */}
+                        {category.level === 1 && (
+                            <div className="pt-4 border-t border-gray-50">
+                                <h3 className="text-xs font-bold text-[#e09a74] uppercase tracking-widest mb-4">Showcase Optimization</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {['Header', 'Gallery', 'Carousel'].map((loc) => (
+                                        <label
+                                            key={loc}
+                                            className={clsx(
+                                                "flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer group",
+                                                categoryData.showcase.includes(loc)
+                                                    ? "border-[#e09a74] bg-orange-50/30"
+                                                    : "border-gray-50 hover:border-gray-100"
+                                            )}
+                                        >
+                                            <div className={clsx(
+                                                "w-5 h-5 rounded flex items-center justify-center border-2 transition-colors",
+                                                categoryData.showcase.includes(loc)
+                                                    ? "bg-[#e09a74] border-[#e09a74]"
+                                                    : "border-gray-200 group-hover:border-gray-300"
+                                            )}>
+                                                {categoryData.showcase.includes(loc) && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={categoryData.showcase.includes(loc)}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setCategoryData(prev => ({
+                                                        ...prev,
+                                                        showcase: checked
+                                                            ? [...prev.showcase, loc]
+                                                            : prev.showcase.filter(s => s !== loc)
+                                                    }));
+                                                }}
+                                            />
+                                            <span className={clsx(
+                                                "text-sm font-bold uppercase tracking-wider",
+                                                categoryData.showcase.includes(loc) ? "text-[#e09a74]" : "text-gray-500"
+                                            )}>{loc}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </form>
                 </div>
 

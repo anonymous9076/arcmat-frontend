@@ -7,6 +7,7 @@ import { useUIStore } from '@/store/useUIStore';
 import { useDeleteProduct, useUpdateProduct } from '@/hooks/useProduct';
 import { useGetCategories } from '@/hooks/useCategory';
 import { useAuth } from '@/hooks/useAuth';
+import { useLoader } from '@/context/LoaderContext';
 import StatusBadge from '../ui/StatusBadge';
 import { toast } from '../ui/Toast';
 import clsx from 'clsx';
@@ -28,6 +29,7 @@ export default function VendorProductTable({ products = [] }) {
   const updateProductMutation = useUpdateProduct();
 
   const { openProductFormModal, openBulkUploadModal } = useUIStore();
+  const { setLoading } = useLoader();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -151,7 +153,10 @@ export default function VendorProductTable({ products = [] }) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => router.push(`/dashboard/products-list/${product.createdBy._id || effectiveVendorId}/edit/${id}`)}
+                      onClick={() => {
+                        setLoading(true);
+                        router.push(`/dashboard/products-list/${product.createdBy._id || effectiveVendorId}/edit/${id}`);
+                      }}
                       className="p-2 text-[#e09a74] hover:bg-orange-50 rounded-lg transition-all cursor-pointer"
                       title="Edit Product"
                     >

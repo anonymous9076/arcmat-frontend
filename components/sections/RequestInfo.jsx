@@ -220,7 +220,7 @@ const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false })
                                 <option>Profession *</option>
                                 <option>Architect</option>
                                 <option>Designer</option>
-                                <option>Contractor</option>
+                                <option>Customer</option>
                                 <option>Other</option>
                             </select>
                             <input

@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import clsx from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import Container from '@/components/ui/Container';
 import { useGetProducts } from '@/hooks/useProduct';
 import { useGetOrders } from '@/hooks/useOrder';
 import { useGetVariants } from '@/hooks/useVariant';
-import { useGetUsers } from '@/hooks/useAuth';
+import { useGetUsers, usePlatformStats } from '@/hooks/useAuth';
 import { useGetVendors } from '@/hooks/useVendor';
 import { useGetCategories } from '@/hooks/useCategory';
 import { getProductImageUrl } from '@/lib/productUtils';
-import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus } from 'lucide-react';
+import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase } from 'lucide-react';
 import { useGetProjects } from '@/hooks/useProject';
 import { useGetAllMoodboards } from '@/hooks/useMoodboard';
 import useProjectStore from '@/store/useProjectStore';
@@ -44,6 +45,102 @@ const getBoardThumbnail = (board) => {
         return getProductImageUrl(m.productId.product_images[0]);
 
     return null;
+};
+
+const RolePieChart = ({ data }) => {
+    const roles = [
+        { id: 'architects', label: 'Architects', value: data?.architects || 0, color: '#10b981', icon: FolderOpen },
+        { id: 'brands', label: 'Brands', value: data?.brands || 0, color: '#3b82f6', icon: Store },
+        { id: 'retailers', label: 'Retailers', value: data?.retailers || 0, color: '#f59e0b', icon: Package },
+        { id: 'professionals', label: 'Professionals', value: data?.professionals || 0, color: '#8b5cf6', icon: Briefcase },
+    ];
+
+    const total = roles.reduce((acc, curr) => acc + curr.value, 0);
+    const [hoveredRole, setHoveredRole] = useState(null);
+
+    // Calculate stroke layouts
+    let cumulativePercent = 0;
+    const segments = roles.map(role => {
+        const percent = total > 0 ? (role.value / total) * 100 : 0;
+        const startPercent = cumulativePercent;
+        cumulativePercent += percent;
+        return { ...role, percent, startPercent };
+    });
+
+    return (
+        <div className="flex flex-col md:flex-row items-center gap-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            {/* Chart */}
+            <div className="relative w-48 h-48 shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {total === 0 ? (
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="20" />
+                    ) : (
+                        segments.map((segment, i) => {
+                            const strokeDasharray = `${segment.percent} 100`;
+                            const strokeDashoffset = `-${segment.startPercent}`;
+                            return (
+                                <motion.circle
+                                    key={segment.id}
+                                    cx="50"
+                                    cy="50"
+                                    r="40"
+                                    fill="transparent"
+                                    stroke={segment.color}
+                                    strokeWidth={hoveredRole === segment.id ? "24" : "20"}
+                                    strokeDasharray={strokeDasharray}
+                                    strokeDashoffset={strokeDashoffset}
+                                    pathLength="100"
+                                    initial={{ strokeDasharray: "0 100" }}
+                                    animate={{
+                                        strokeDasharray: `${segment.percent} 100`,
+                                        opacity: !hoveredRole || hoveredRole === segment.id ? 1 : 0.6
+                                    }}
+                                    transition={{ duration: 1, delay: i * 0.1, ease: "easeOut" }}
+                                    className="cursor-pointer transition-all duration-300"
+                                    onMouseEnter={() => setHoveredRole(segment.id)}
+                                    onMouseLeave={() => setHoveredRole(null)}
+                                />
+                            );
+                        })
+                    )}
+                </svg>
+
+                {/* Center Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Users</p>
+                    <h4 className="text-2xl font-black text-gray-900 leading-tight">{total}</h4>
+                </div>
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-2 gap-3 w-full">
+                {segments.map((role) => (
+                    <motion.div
+                        key={role.id}
+                        onMouseEnter={() => setHoveredRole(role.id)}
+                        onMouseLeave={() => setHoveredRole(null)}
+                        className={clsx(
+                            "p-3 rounded-2xl border transition-all duration-300 flex items-center gap-3",
+                            hoveredRole === role.id ? "bg-gray-50 border-gray-200 shadow-sm" : "border-transparent"
+                        )}
+                    >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${role.color}15`, color: role.color }}>
+                            <role.icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight truncate">{role.label}</p>
+                            <h5 className="text-lg font-bold text-gray-900 leading-none mt-1">{role.value}</h5>
+                        </div>
+                        {role.percent > 0 && (
+                            <span className="ml-auto text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md self-start">
+                                {Math.round(role.percent)}%
+                            </span>
+                        )}
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
 };
 
 export default function DashboardPage() {
@@ -117,6 +214,10 @@ export default function DashboardPage() {
     });
     const totalCategories = categoriesData?.pagination?.total || categoriesData?.data?.length || 0;
 
+    const { data: platformStats, isLoading: isLoadingStats } = usePlatformStats({
+        enabled: isAdmin
+    });
+
     const allVariants = allProducts.reduce((acc, p) => {
         if (p.variants && Array.isArray(p.variants)) {
             return [...acc, ...p.variants.map(v => ({ ...v, productName: p.product_name }))];
@@ -174,18 +275,18 @@ export default function DashboardPage() {
                         <>
                             <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
                                 <p className="text-sm font-medium text-blue-600 mb-1">Total Users</p>
-                                <h3 className="text-3xl font-bold text-blue-700">{totalUsers}</h3>
-                                <div className="mt-2 text-xs text-blue-600/70">Registered customers & pros</div>
+                                <h3 className="text-3xl font-bold text-blue-700">{platformStats?.totalUsers || totalUsers}</h3>
+                                <div className="mt-2 text-xs text-blue-600/70">Registered across all roles</div>
                             </div>
                             <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 shadow-sm">
                                 <p className="text-sm font-medium text-purple-600 mb-1">Total Brands</p>
-                                <h3 className="text-3xl font-bold text-purple-700">{totalVendors}</h3>
+                                <h3 className="text-3xl font-bold text-purple-700">{platformStats?.roles?.brands || totalVendors}</h3>
                                 <div className="mt-2 text-xs text-purple-600/70">Active brands & sellers</div>
                             </div>
                             <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 shadow-sm">
-                                <p className="text-sm font-medium text-indigo-600 mb-1">Total Categories</p>
-                                <h3 className="text-3xl font-bold text-indigo-700">{totalCategories}</h3>
-                                <div className="mt-2 text-xs text-indigo-600/70">Product classifications</div>
+                                <p className="text-sm font-medium text-indigo-600 mb-1">New Signups</p>
+                                <h3 className="text-3xl font-bold text-indigo-700">{platformStats?.activity?.newSignups || 0}</h3>
+                                <div className="mt-2 text-xs text-indigo-600/70">Joined in last 30 days</div>
                             </div>
                         </>
                     ) : (
@@ -193,7 +294,7 @@ export default function DashboardPage() {
                             <div className="bg-green-50 p-6 rounded-2xl border border-green-100 shadow-sm">
                                 <p className="text-sm font-medium text-green-600 mb-1">Active Products</p>
                                 <h3 className="text-3xl font-bold text-green-700">{activeProductsCount}</h3>
-                                <div className="mt-2 text-xs text-green-600/70">Currently visible to customers</div>
+                                <div className="mt-2 text-xs text-green-600/70">Currently visible to professionals</div>
                             </div>
                             <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100 shadow-sm">
                                 <p className="text-sm font-medium text-orange-600 mb-1">Inactive Products</p>
@@ -203,6 +304,64 @@ export default function DashboardPage() {
                         </>
                     )}
                 </div>
+
+                {isAdmin && (
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Activity className="w-5 h-5 text-[#d9a88a]" />
+                            <h2 className="text-xl font-bold text-gray-900">Platform User Composition</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <div className="lg:col-span-3">
+                                <RolePieChart data={platformStats?.roles} />
+                            </div>
+
+                            <div className="bg-[#1a1c1e] text-white p-6 rounded-3xl shadow-xl space-y-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#d9a88a]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Pulse</p>
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-white/5 rounded-lg">
+                                                    <Activity className="w-3 h-3 text-[#d9a88a]" />
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-400">Daily Logins</span>
+                                            </div>
+                                            <span className="text-sm font-bold">{platformStats?.activity?.dailyLogins || 0}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-white/5 rounded-lg">
+                                                    <Users className="w-3 h-3 text-[#d9a88a]" />
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-400">MAU</span>
+                                            </div>
+                                            <span className="text-sm font-bold">{platformStats?.activity?.monthlyActiveUsers || 0}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-white/5 rounded-lg">
+                                                    <UserPlus className="w-3 h-3 text-[#d9a88a]" />
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-400">Monthly Signups</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-[#d9a88a]">{platformStats?.activity?.newSignups || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
@@ -369,12 +528,13 @@ export default function DashboardPage() {
         );
     }
 
-
+    // ARCHITECT DASHBOARD (Implicitly)
     return (
         <Container className="py-8">
-
             {/* Welcome Header */}
             <div className="text-center mb-12">
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome back, {getFirstName()}!</h1>
+                <p className="text-gray-500 max-w-2xl mx-auto mb-8">What are we building today? Explore categories or dive back into your ongoing projects.</p>
 
                 {/* Filter Buttons */}
                 <div className="flex w-full sm:w-auto items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
@@ -430,7 +590,7 @@ export default function DashboardPage() {
                                 </button>
 
                                 {showProjectMenu && (
-                                    <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-10 min-w-[240px] overflow-hidden">
+                                    <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-20 min-w-[240px] overflow-hidden">
                                         {projects.map(p => (
                                             <button
                                                 key={p._id}
@@ -514,7 +674,7 @@ export default function DashboardPage() {
                                         className="group"
                                     >
                                         {/* Board Thumbnail Image */}
-                                        <div className="relative aspect-4/3 bg-[#f8f7f5] rounded-2xl border border-gray-100 overflow-hidden mb-3">
+                                        <div className="relative aspect-[4/3] bg-[#f8f7f5] rounded-2xl border border-gray-100 overflow-hidden mb-3">
                                             {thumb ? (
                                                 <Image
                                                     src={thumb}
@@ -581,6 +741,6 @@ export default function DashboardPage() {
                     Contact Support
                 </Link>
             </div>
-        </Container >
+        </Container>
     );
 }
