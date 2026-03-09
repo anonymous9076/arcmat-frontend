@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateSupportQuery } from '@/hooks/useSupport';
 import Container from '@/components/ui/Container';
@@ -9,7 +10,15 @@ import { Mail, MessageCircle, Send, Plus, X, Loader2, Image as ImageIcon } from 
 import clsx from 'clsx';
 
 export default function HelpSupportPage() {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, loading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !isAuthenticated) {
+            router.push('/auth/login');
+        }
+    }, [isAuthenticated, loading, router]);
+
     const [formData, setFormData] = useState({
         subject: '',
         query: '',
@@ -29,8 +38,6 @@ export default function HelpSupportPage() {
         if (files.length === 0) return;
 
         setUploading(true);
-        // Simulate file upload or use actual upload logic if available
-        // For now, we'll use base64 or temporary blobs for demonstration
         try {
             const newAttachments = await Promise.all(
                 files.map(file => new Promise((resolve) => {
@@ -59,17 +66,20 @@ export default function HelpSupportPage() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!isAuthenticated) {
-            window.location.href = '/auth/login';
-            return;
-        }
-
         createQueryMutation.mutate(formData, {
             onSuccess: () => {
                 setFormData({ subject: '', query: '', attachments: [] });
             }
         });
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-10 h-10 animate-spin text-[#E09A74]" />
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen py-20">
@@ -193,9 +203,6 @@ export default function HelpSupportPage() {
                                             </>
                                         )}
                                     </button>
-                                    {!isAuthenticated && (
-                                        <p className="text-center text-xs text-red-400 font-bold mt-4 uppercase tracking-widest">You must be logged in to submit a ticket</p>
-                                    )}
                                 </div>
                             </form>
                         </div>
