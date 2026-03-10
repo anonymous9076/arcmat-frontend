@@ -19,7 +19,7 @@ const RetailerProfileForm = ({ user, brands, onSubmit, onCancel, isSubmitting })
             cityRegion: user?.retailerProfile?.cityRegion || '',
             email: user?.retailerProfile?.email || user?.email || '',
             mobile: user?.mobile || '',
-            selectedBrands: user?.selectedBrands?.map(b => typeof b === 'object' ? b._id : b) || []
+            selectedBrands: Array.from(new Set(user?.selectedBrands?.map(b => (typeof b === 'object' ? b._id : b)?.toString()))) || []
         }
     });
 
@@ -34,15 +34,22 @@ const RetailerProfileForm = ({ user, brands, onSubmit, onCancel, isSubmitting })
                 cityRegion: user.retailerProfile?.cityRegion || '',
                 email: user.retailerProfile?.email || user.email || '',
                 mobile: user.mobile || '',
-                selectedBrands: user.selectedBrands?.map(b => typeof b === 'object' ? b._id : b) || []
+                selectedBrands: Array.from(new Set(user.selectedBrands?.map(b => (typeof b === 'object' ? b._id : b)?.toString()))) || []
             });
         }
     }, [user, reset]);
 
     const handleToggleBrand = (brandId) => {
-        const updatedBrands = currentSelectedBrands.includes(brandId)
-            ? currentSelectedBrands.filter(id => id !== brandId)
-            : [...currentSelectedBrands, brandId];
+        const idStr = String(brandId);
+        const exists = currentSelectedBrands.some(id => String(id) === idStr);
+
+        let updatedBrands;
+        if (exists) {
+            updatedBrands = currentSelectedBrands.filter(id => String(id) !== idStr);
+        } else {
+            updatedBrands = [...currentSelectedBrands, brandId];
+        }
+
         setValue('selectedBrands', updatedBrands, { shouldDirty: true });
     };
 
@@ -112,7 +119,7 @@ const RetailerProfileForm = ({ user, brands, onSubmit, onCancel, isSubmitting })
                     <input
                         {...register('cityRegion', { required: 'City / Region is required' })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#e09a74]/20 focus:border-[#e09a74] outline-none transition-all"
-                        placeholder="e.g. Mumbai, Maharashtra"
+                        placeholder="e.g. Delhi, Mumbai"
                     />
                     {errors.cityRegion && <p className="text-red-500 text-xs mt-1">{errors.cityRegion.message}</p>}
                 </div>

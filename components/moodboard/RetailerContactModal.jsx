@@ -54,7 +54,7 @@ export default function RetailerContactModal({ isOpen, onClose, projectId, mater
                                 value={city}
                                 onChange={e => setCity(e.target.value)}
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#d9a88a] focus:ring-1 focus:ring-[#d9a88a] outline-none text-sm font-medium transition-all"
-                                placeholder="E.g. Mumbai, Maharashtra"
+                                placeholder="E.g. Delhi, Mumbai"
                             />
                         </div>
                         <div>
