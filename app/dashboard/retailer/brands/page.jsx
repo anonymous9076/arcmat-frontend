@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Store, Package, ExternalLink, Search, Check, Plus, ArrowRight } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Store, Package, ExternalLink, Search, Check, Plus, ArrowRight, MapPin } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import { useGetBrands } from '@/hooks/useBrand';
 import { useGetRetailerBrands, useUpdateRetailerBrands } from '@/hooks/useRetailer';
+import { useGetAddresses } from '@/hooks/useAddress';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { toast } from '@/components/ui/Toast';
@@ -14,13 +15,22 @@ import { getBrandImageUrl } from '@/lib/productUtils';
 
 export default function RetailerBrandsPage() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const retailerId = searchParams.get('retailerId');
-    const [view, setView] = useState(retailerId ? 'my-brands' : 'my-brands'); // 'my-brands' or 'explore'
+    const [view, setView] = useState(retailerId ? 'my-brands' : 'explore'); // Admin viewing retailer -> partnered, Retailer self -> explore
     const [searchTerm, setSearchTerm] = useState('');
 
+    const { user } = useAuthStore();
+    const effectiveRetailerId = retailerId || user?._id || user?.id;
+
     const { data: allBrandsData, isLoading: allLoading } = useGetBrands();
-    const { data: myBrandsData, isLoading: myLoading } = useGetRetailerBrands(retailerId);
+    const { data: myBrandsData, isLoading: myLoading } = useGetRetailerBrands(effectiveRetailerId);
+    const { data: addressesData, isLoading: addressLoading } = useGetAddresses(effectiveRetailerId);
     const updateBrands = useUpdateRetailerBrands();
+
+    const addresses = addressesData?.data || [];
+    const hasAddress = addresses.length > 0;
+    const isRetailer = user?.role === 'retailer';
 
     const allBrands = Array.isArray(allBrandsData?.data)
         ? allBrandsData.data
@@ -37,11 +47,16 @@ export default function RetailerBrandsPage() {
     const myBrandIds = myBrands.map(b => b._id || b.id);
 
     const handleJoinBrand = async (brandId) => {
+        if (!hasAddress) {
+            toast.error('Please register at least one address before adding brand partnerships');
+            return;
+        }
         try {
             await updateBrands.mutateAsync({ brandId, action: 'add', retailerId });
             toast.success('Brand added to reselling list');
         } catch (error) {
-            toast.error('Failed to add brand');
+            const message = error.response?.data?.message || 'Failed to add brand';
+            toast.error(message);
         }
     };
 
@@ -98,16 +113,40 @@ export default function RetailerBrandsPage() {
             </div>
 
             {/* Search */}
-            <div className="relative group max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e09a74] w-5 h-5 transition-colors" />
-                <input
-                    type="text"
-                    placeholder="Search brands by name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-[#e09a74]/10 shadow-sm text-sm transition-all"
-                />
+            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+                <div className="relative group max-w-md flex-1 w-full">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e09a74] w-5 h-5 transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Search brands by name..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-[#e09a74]/10 shadow-sm text-sm transition-all"
+                    />
+                </div>
             </div>
+
+            {!hasAddress && !addressLoading && !retailerId && isRetailer && (
+                <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-amber-500">
+                            <MapPin className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-black text-amber-900 leading-tight">Address Required</h4>
+                            <p className="text-xs text-amber-700 mt-1 font-medium italic opacity-70">
+                                You must register at least one address before you can partner with brands.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => router.push('/profile')}
+                        className="px-6 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                    >
+                        Go to Profile
+                    </button>
+                </div>
+            )}
 
             {isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

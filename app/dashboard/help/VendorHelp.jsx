@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { ChevronDown, ExternalLink, HelpCircle, FileSpreadsheet, LayoutList, AlertCircle, ShoppingBag, Layers } from 'lucide-react';
 import Container from '@/components/ui/Container';
 
-export default function VendorHelpPage() {
+export default function VendorHelp() {
     return (
         <Container className="py-6 max-w-4xl">
             <header className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
                     <HelpCircle className="w-6 h-6 text-blue-600" />
-                    Help / Vendor Guide
+                    Help / Brand Guide
                 </h1>
                 <p className="text-gray-600 text-sm">
                     Master the dashboard to manage your products and catalog efficiently.
@@ -175,7 +175,7 @@ function AccordionItem({ title, children, icon, defaultOpen = false }) {
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        <div className="p-4 pt-0 pl-[3.5rem] pr-8 text-gray-600">
+                        <div className="p-4 pt-0 pl-14 pr-8 text-gray-600">
                             {children}
                         </div>
                     </motion.div>
