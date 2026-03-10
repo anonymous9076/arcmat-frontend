@@ -149,28 +149,29 @@ export function useFabricCanvas({
         });
 
         // --- Grid Rendering ---
-        canvas.on('before:render', function () {
+        canvas.on('after:render', function (opt) {
             if (!showGridRef.current) return;
-            const ctx = canvas.getContext();
+            const ctx = opt.ctx;
+            const vpt = canvas.viewportTransform;
+            const zoom = canvas.getZoom();
+
+            // Get current viewport bounds in canvas coordinates
             const w = canvas.width;
             const h = canvas.height;
-            const vpt = canvas.viewportTransform;
-            const zoom = vpt[0];
-            const offsetX = vpt[4];
-            const offsetY = vpt[5];
+            const left = -vpt[4] / zoom;
+            const top = -vpt[5] / zoom;
+            const right = (w - vpt[4]) / zoom;
+            const bottom = (h - vpt[5]) / zoom;
 
             const gridSize = 40;
-            const left = -offsetX / zoom;
-            const top = -offsetY / zoom;
-            const right = (w - offsetX) / zoom;
-            const bottom = (h - offsetY) / zoom;
 
             ctx.save();
-            ctx.transform(vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]);
+            // In after:render, the context is already transformed by the viewport.
+            // We just need to draw the lines in canvas space.
 
             ctx.beginPath();
             ctx.lineWidth = 1 / zoom;
-            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)'; // Slightly darker for better visibility
 
             const startX = Math.floor(left / gridSize) * gridSize;
             const endX = Math.ceil(right / gridSize) * gridSize;

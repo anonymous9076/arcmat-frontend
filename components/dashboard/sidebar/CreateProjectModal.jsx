@@ -12,9 +12,11 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
 
     const [formData, setFormData] = useState({
         name: '',
+        clientName: '',
         location: {
             city: '',
-            country: 'India'
+            country: 'India',
+            address: ''
         },
         type: '',
         phase: '',
@@ -34,7 +36,8 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
         if (project) {
             setFormData({
                 name: project.projectName || '',
-                location: project.location || { city: '', country: 'India' },
+                clientName: project.clientName || '',
+                location: project.location || { city: '', country: 'India', address: '' },
                 type: project.type || '',
                 phase: project.phase || '',
                 size: project.size || '',
@@ -45,7 +48,8 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
         } else {
             setFormData({
                 name: '',
-                location: { city: '', country: 'India' },
+                clientName: '',
+                location: { city: '', country: 'India', address: '' },
                 type: '',
                 phase: '',
                 size: '',
@@ -96,7 +100,12 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
 
         const payload = {
             projectName: formData.name,
-            location: formData.location,
+            clientName: formData.clientName,
+            location: {
+                ...formData.location,
+                city: formData.location.city,
+                address: formData.location.address
+            },
             type: formData.type,
             phase: formData.phase,
             size: formData.size,
@@ -117,7 +126,8 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
                     onClose();
                     setFormData({
                         name: '',
-                        location: { city: '', country: 'India' },
+                        clientName: '',
+                        location: { city: '', country: 'India', address: '' },
                         type: '',
                         phase: '',
                         size: '',
@@ -180,7 +190,7 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
                         <label className="block text-xl font-bold text-[#2d3142] mb-3">Project name</label>
                         <input
                             name="name"
-                            placeholder="Project name"
+                            placeholder="e.g. Minimalist Villa"
                             value={formData.name}
                             onChange={handleChange}
                             className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
@@ -189,21 +199,32 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
                     </section>
 
                     <section>
-                        <label className="block text-xl font-bold text-[#2d3142] mb-3">Location</label>
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-2">City</label>
+                        <label className="block text-xl font-bold text-[#2d3142] mb-3">Client name</label>
+                        <input
+                            name="clientName"
+                            placeholder="e.g. John Doe"
+                            value={formData.clientName}
+                            onChange={handleChange}
+                            className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
+                        />
+                    </section>
+
+                    <section>
+                        <label className="block text-xl font-bold text-[#2d3142] mb-3">Project Location</label>
+                        <div className="space-y-4">
+                            <input
+                                name="location.address"
+                                placeholder="Area, Building, or Address"
+                                value={formData.location.address}
+                                onChange={handleChange}
+                                className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
+                            />
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="relative">
                                     <select
                                         name="location.city"
                                         value={formData.location.city}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                location: { ...prev.location, city: value }
-                                            }));
-                                        }}
+                                        onChange={handleChange}
                                         className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 appearance-none cursor-pointer"
                                     >
                                         <option value="">Select City</option>
@@ -213,19 +234,13 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
                                     </select>
                                     <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none w-5 h-5 text-gray-400" />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-2">Country</label>
                                 <div className="relative">
                                     <input
                                         type="text"
                                         value="India"
                                         readOnly
-                                        className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent text-gray-700 cursor-not-allowed font-medium"
+                                        className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent text-gray-700 cursor-not-allowed font-medium opacity-60"
                                     />
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2">
-                                        <span className="text-xs font-bold text-[#d9a88a] uppercase tracking-wider">Fixed</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -265,21 +280,13 @@ export default function CreateProjectModal({ isOpen, onClose, project = null }) 
                     </section>
 
                     <section>
-                        <div className="flex items-baseline gap-2 mb-3">
-                            <label className="text-xl font-bold text-[#2d3142]">Budget</label>
-                            <span className="text-sm text-gray-400 font-medium">(Budget for the entire project)</span>
-                        </div>
-                        <div className="relative">
-                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-xl font-medium">₹</span>
-                            <input
-                                name="budget"
-                                type="text"
-                                placeholder="Enter budget"
-                                value={formData.budget}
-                                onChange={handleChange}
-                                className="w-full pl-12 pr-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
-                            />
-                        </div>
+                        <label className="block text-xl font-bold text-[#2d3142] mb-3">Budget Range</label>
+                        <SelectionGrid
+                            fieldName="budget"
+                            options={projectOptions.budgets}
+                            selectedValue={formData.budget}
+                            onSelect={handleSelect}
+                        />
                     </section>
 
                     <section>

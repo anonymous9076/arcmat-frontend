@@ -1,31 +1,19 @@
 {
     "types": [
         "Residential",
-        "Workplace",
-        "Hospitality: Hotel",
-        "Hospitality: Restaurant",
-        "Institution Education",
-        "Healthcare",
-        "Industrial",
-        "Power & Energy",
-        "Transportation",
-        "Wellness",
-        "Retail",
-        "Marine",
-        "Tech",
-        "Government",
-        "Mixed-Use & Multi-Unit Residential",
-        "Sports Entertainment",
-        "Senior Living",
-        "Medical Dental",
-        "Aviation"
+        "Commercial",
+        "Hospitality",
+        "Office",
+        "Retail"
     ],
     "phases": [
         "Concept Design",
+        "Schematic Design",
         "Design Development",
         "Material Specification",
-        "Construction",
-        "Completed"
+        "Construction / Procurement",
+        "Substitution / Revision",
+        "Project Completed"
     ],
     "sizes": [
         "50,000+ m²",
@@ -37,13 +25,10 @@
         "Unsure"
     ],
     "budgets": [
-        "€10M+",
-        "€1M - €10M",
-        "€500K - €1M",
-        "€250K - €500K",
-        "€100K - €250K",
-        "€0 - €100K",
-        "Unsure"
+        "Low",
+        "Medium",
+        "Premium",
+        "Luxury"
     ],
     "months": [
         "January",

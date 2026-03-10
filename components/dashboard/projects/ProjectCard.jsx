@@ -17,6 +17,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const {
         _id,
         projectName,
+        clientName,
         phase = 'Concept Design',
         status = 'Active'
     } = project;
@@ -41,10 +42,12 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const STATUS_OPTIONS = ['Active', 'On hold', 'Completed', 'Canceled', 'Archived'];
     const PHASE_OPTIONS = [
         'Concept Design',
+        'Schematic Design',
         'Design Development',
         'Material Specification',
-        'Construction',
-        'Completed'
+        'Construction / Procurement',
+        'Substitution / Revision',
+        'Project Completed'
     ];
 
     useEffect(() => {
@@ -153,16 +156,23 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
 
             {/* Left Section */}
             <div className="flex-[1.2] flex flex-col min-w-0 p-2">
-                <Link
-                    href={href || `/dashboard/projects/${project._id}/moodboards`}
-                    onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
-                    className="flex items-center gap-2 group/title mb-6 w-max"
-                >
-                    <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
-                        {projectName}
-                    </h3>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
-                </Link>
+                <div className="flex flex-col gap-0.5 mb-6">
+                    <Link
+                        href={href || `/dashboard/projects/${project._id}/moodboards`}
+                        onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                        className="flex items-center gap-2 group/title w-max"
+                    >
+                        <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
+                            {projectName}
+                        </h3>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
+                    </Link>
+                    {clientName && (
+                        <span className="text-sm text-gray-400 font-medium truncate max-w-[200px]">
+                            Client: {clientName}
+                        </span>
+                    )}
+                </div>
 
                 <div className="mb-auto relative" ref={phaseDropdownRef}>
                     <span className="text-[10px] text-gray-400 font-bold mb-2 block tracking-wide">Project Phase</span>
