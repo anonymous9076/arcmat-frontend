@@ -59,7 +59,8 @@ const CanvasPreview = forwardRef((props, ref) => {
         bgProgress,
         activeMenuConfig,
         showGrid,
-        setShowGrid
+        setShowGrid,
+        getSerializedState
     } = useFabricCanvas({
         canvasContainerRef,
         boardItems,
@@ -77,6 +78,9 @@ const CanvasPreview = forwardRef((props, ref) => {
             if (boardItems.length === 0) return false;
             exportHighRes(projectName, format);
             return true;
+        },
+        getLatestState: () => {
+            return getSerializedState();
         }
     }));
 

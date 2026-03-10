@@ -1,12 +1,13 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Edit2, Download, MoreHorizontal, ShoppingCart, Search, ChevronDown, Filter, X } from 'lucide-react';
+import { Edit2, Download, MoreHorizontal, ShoppingCart, Search, ChevronDown, Filter, X, Trash2 } from 'lucide-react';
 import { getProductThumbnail, getProductName, getProductBrand, getProductCategory, resolvePricing } from '@/lib/productUtils';
 import { STATUS_STYLES } from './OverviewTab';
 
 export default function ExportTab({
     products,
     customPhotos,
+    customRows = [],
     boardItems,
     productStatuses,
     projectName,
@@ -15,7 +16,9 @@ export default function ExportTab({
     handlePriceQtyUpdate,
     handlePhotoStatusChange,
     handleProductStatusChange,
-    handleAddCustomRow
+    handleAddCustomRow,
+    handleCustomRowUpdate,
+    handleRemoveCustomRow
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBrands, setSelectedBrands] = useState([]);
@@ -51,13 +54,14 @@ export default function ExportTab({
     // Filtered items
     const filteredItems = useMemo(() => {
         let items = [
-            ...products.map(p => ({ isPhoto: false, data: p })),
-            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
+            ...products.map(p => ({ type: 'product', data: p })),
+            ...customPhotos.map(p => ({ type: 'photo', data: p })),
+            ...customRows.map(r => ({ type: 'row', data: r }))
         ];
 
         if (searchTerm) {
             const s = searchTerm.toLowerCase();
-            items = items.filter(({ data }) => {
+            items = items.filter(({ type, data }) => {
                 const name = (data.title || getProductName(data)).toLowerCase();
                 const brand = (data.brand?.name || getProductBrand(data) || '').toLowerCase();
                 return name.includes(s) || brand.includes(s);
@@ -65,42 +69,50 @@ export default function ExportTab({
         }
 
         if (selectedBrands.length > 0) {
-            items = items.filter(({ isPhoto, data }) => {
-                const b = isPhoto ? 'Custom Upload' : getProductBrand(data);
+            items = items.filter(({ type, data }) => {
+                if (type === 'row') return false; // rows have no brand right now, or maybe they do
+                const b = type === 'photo' ? 'Custom Upload' : getProductBrand(data);
                 return selectedBrands.includes(b);
             });
         }
 
         if (selectedTags.length > 0) {
-            items = items.filter(({ isPhoto, data }) => {
-                const tags = isPhoto ? (data.tags || []) : (productStatuses[data._id]?.tags || []);
+            items = items.filter(({ type, data }) => {
+                let tags = [];
+                if (type === 'row' || type === 'photo') tags = data.tags || [];
+                else tags = productStatuses[data._id]?.tags || [];
                 return selectedTags.some(t => tags.includes(t));
             });
         }
 
         if (selectedSpecStatuses.length > 0) {
-            items = items.filter(({ isPhoto, data }) => {
-                const id = isPhoto ? data.id : data._id;
-                const statusData = isPhoto ? data.status : productStatuses[id];
-                const st = (typeof statusData === 'object' ? statusData.status : statusData) || 'Considering';
+            items = items.filter(({ type, data }) => {
+                let st = 'Considering';
+                if (type === 'row' || type === 'photo') {
+                    st = data.status || 'Considering';
+                } else {
+                    const statusData = productStatuses[data._id];
+                    st = (typeof statusData === 'object' ? statusData.status : statusData) || 'Considering';
+                }
                 return selectedSpecStatuses.includes(st);
             });
         }
 
         return items;
-    }, [products, customPhotos, searchTerm, selectedBrands, selectedTags, selectedSpecStatuses, productStatuses]);
+    }, [products, customPhotos, customRows, searchTerm, selectedBrands, selectedTags, selectedSpecStatuses, productStatuses]);
 
     // Calculate totals
     const { grandTotal, filteredTotal } = useMemo(() => {
         const allItems = [
-            ...products.map(p => ({ isPhoto: false, data: p })),
-            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
+            ...products.map(p => ({ type: 'product', data: p })),
+            ...customPhotos.map(p => ({ type: 'photo', data: p })),
+            ...customRows.map(r => ({ type: 'row', data: r }))
         ];
 
-        const calc = (items) => items.reduce((sum, { isPhoto, data }) => {
-            const id = isPhoto ? data.id : data._id;
+        const calc = (items) => items.reduce((sum, { type, data }) => {
+            const id = type === 'product' ? data._id : data.id;
             let up = 0;
-            if (isPhoto) {
+            if (type === 'photo' || type === 'row') {
                 up = Number(data.price) || 0;
             } else {
                 const meta = productStatuses[id];
@@ -111,7 +123,7 @@ export default function ExportTab({
                     up = price;
                 }
             }
-            const q = isPhoto ? (Number(data.quantity) || 1) : (Number(productStatuses[id]?.quantity) || 1);
+            const q = (type === 'photo' || type === 'row') ? (Number(data.quantity) || 1) : (Number(productStatuses[id]?.quantity) || 1);
             return sum + (up * q);
         }, 0);
 
@@ -119,7 +131,7 @@ export default function ExportTab({
             grandTotal: calc(allItems),
             filteredTotal: calc(filteredItems)
         };
-    }, [products, customPhotos, productStatuses, filteredItems]);
+    }, [products, customPhotos, customRows, productStatuses, filteredItems]);
 
     return (
         <div className="h-full flex flex-col p-4 md:p-8 min-h-0 overflow-hidden">
@@ -335,19 +347,22 @@ export default function ExportTab({
                                 </td>
                             </tr>
                         ) : (
-                            filteredItems.map(({ isPhoto, data }, i) => {
-                                const id = isPhoto ? data.id : data._id;
-                                const thumb = isPhoto ? (data.previewUrl || '/Icons/arcmatlogo.svg') : getProductThumbnail(data);
-                                const name = isPhoto ? data.title : getProductName(data);
-                                const brand = isPhoto ? 'Custom Upload' : getProductBrand(data);
-                                const sku = isPhoto ? '—' : (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '—');
+                            filteredItems.map(({ type, data }, i) => {
+                                const isPhoto = type === 'photo';
+                                const isRow = type === 'row';
+                                const isProduct = type === 'product';
+                                const id = isProduct ? data._id : data.id;
+                                const thumb = isProduct ? getProductThumbnail(data) : (isPhoto ? data.previewUrl : null);
+                                const name = isProduct ? getProductName(data) : data.title;
+                                const brand = isProduct ? getProductBrand(data) : (isPhoto ? 'Custom Upload' : 'Custom Row');
+                                const sku = isProduct ? (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '—') : '—';
 
-                                const statusData = isPhoto ? data.status : productStatuses[id];
+                                const statusData = isProduct ? productStatuses[id] : data.status;
                                 const st = (typeof statusData === 'object' ? statusData.status : statusData) || 'Considering';
 
                                 // Pricing logic
                                 let unitPrice = 0;
-                                if (isPhoto) {
+                                if (isPhoto || isRow) {
                                     unitPrice = data.price !== undefined ? data.price : 0;
                                 } else {
                                     const meta = productStatuses[id];
@@ -359,7 +374,7 @@ export default function ExportTab({
                                     }
                                 }
 
-                                let qty = isPhoto ? data.quantity : productStatuses[id]?.quantity;
+                                let qty = (isPhoto || isRow) ? data.quantity : productStatuses[id]?.quantity;
                                 if (qty === undefined || qty === null) qty = 1;
 
                                 const total = (Number(qty) || 0) * (Number(unitPrice) || 0);
@@ -368,17 +383,28 @@ export default function ExportTab({
                                     <tr key={`${id || 'item'}-${i}`} className="hover:bg-gray-50/50 transition-colors group">
                                         <td className="px-3 py-3 md:sticky md:left-0 md:z-10 bg-white group-hover:bg-gray-50/80 transition-colors md:shadow-[1px_0_0_0_#f3f4f6]">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-50 shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105">
-                                                    <img src={thumb} alt={name} className="w-full h-full object-cover" />
+                                                <div className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 shadow-sm transition-transform group-hover:scale-105 ${isRow ? 'bg-gray-100/50 flex items-center justify-center' : 'bg-gray-50'}`}>
+                                                    {!isRow ? (
+                                                        <img src={thumb || '/Icons/arcmatlogo.svg'} alt={name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="min-w-0 pr-2">
-                                                    {isPhoto ? (
-                                                        <input
-                                                            type="text"
-                                                            value={name}
-                                                            onChange={(e) => handlePriceQtyUpdate(id, { title: e.target.value }, true)}
-                                                            className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -mx-1 transition-all"
-                                                        />
+                                                <div className="min-w-0 pr-2 flex-1">
+                                                    {(isPhoto || isRow) ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={name}
+                                                                onChange={(e) => {
+                                                                    if (isRow) handleCustomRowUpdate(id, { title: e.target.value });
+                                                                    else handlePriceQtyUpdate(id, { title: e.target.value }, true);
+                                                                }}
+                                                                className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -mx-1 transition-all"
+                                                            />
+                                                        </div>
                                                     ) : (
                                                         <p className="font-black text-[#1a1a2e] mb-0.5 leading-tight truncate w-[140px] xl:w-[220px] whitespace-nowrap overflow-hidden text-ellipsis">{name}</p>
                                                     )}
@@ -412,6 +438,7 @@ export default function ExportTab({
                                                                     key={status}
                                                                     onClick={() => {
                                                                         if (isPhoto) handlePhotoStatusChange(id, status);
+                                                                        else if (isRow) handleCustomRowUpdate(id, { status });
                                                                         else handleProductStatusChange(id, status);
                                                                         setStatusDropdown(null);
                                                                     }}
@@ -428,7 +455,7 @@ export default function ExportTab({
                                         </td>
                                         <td className="px-3 py-3">
                                             <div className="flex flex-wrap gap-1 mb-1.5">
-                                                {(isPhoto ? data.tags : (productStatuses[id]?.tags))?.map((tag, idx) => (
+                                                {((isPhoto || isRow) ? data.tags : (productStatuses[id]?.tags))?.map((tag, idx) => (
                                                     <span
                                                         key={idx}
                                                         className="group/tag px-2 py-0.5 bg-gray-50 text-[#1a1a2e] border border-gray-100 rounded-lg text-[9px] font-black flex items-center gap-1 hover:bg-white hover:border-[#d9a88a] transition-all"
@@ -438,9 +465,10 @@ export default function ExportTab({
                                                             onClick={() => {
                                                                 const newTagName = prompt('Rename tag:', tag);
                                                                 if (newTagName && newTagName.trim() && newTagName !== tag) {
-                                                                    const currentTags = (isPhoto ? data.tags : productStatuses[id]?.tags) || [];
+                                                                    const currentTags = ((isPhoto || isRow) ? data.tags : productStatuses[id]?.tags) || [];
                                                                     const updatedTags = currentTags.map(t => t === tag ? newTagName.trim() : t);
-                                                                    handlePriceQtyUpdate(id, { tags: updatedTags }, isPhoto);
+                                                                    if (isRow) handleCustomRowUpdate(id, { tags: updatedTags });
+                                                                    else handlePriceQtyUpdate(id, { tags: updatedTags }, isPhoto);
                                                                 }
                                                             }}
                                                         >
@@ -448,8 +476,10 @@ export default function ExportTab({
                                                         </span>
                                                         <button
                                                             onClick={() => {
-                                                                const currentTags = (isPhoto ? data.tags : productStatuses[id]?.tags) || [];
-                                                                handlePriceQtyUpdate(id, { tags: currentTags.filter(t => t !== tag) }, isPhoto);
+                                                                const currentTags = ((isPhoto || isRow) ? data.tags : productStatuses[id]?.tags) || [];
+                                                                const filteredTags = currentTags.filter(t => t !== tag);
+                                                                if (isRow) handleCustomRowUpdate(id, { tags: filteredTags });
+                                                                else handlePriceQtyUpdate(id, { tags: filteredTags }, isPhoto);
                                                             }}
                                                             className="text-gray-300 hover:text-red-500 transition-colors"
                                                         >
@@ -465,9 +495,10 @@ export default function ExportTab({
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && e.target.value.trim()) {
                                                         const newTag = e.target.value.trim();
-                                                        const currentItemTags = (isPhoto ? data.tags : productStatuses[id]?.tags) || [];
+                                                        const currentItemTags = ((isPhoto || isRow) ? data.tags : productStatuses[id]?.tags) || [];
                                                         if (!currentItemTags.includes(newTag)) {
-                                                            handlePriceQtyUpdate(id, { tags: [...currentItemTags, newTag] }, isPhoto);
+                                                            if (isRow) handleCustomRowUpdate(id, { tags: [...currentItemTags, newTag] });
+                                                            else handlePriceQtyUpdate(id, { tags: [...currentItemTags, newTag] }, isPhoto);
                                                         }
                                                         e.target.value = '';
                                                     }
@@ -486,12 +517,14 @@ export default function ExportTab({
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         if (val === '' || /^\d+$/.test(val)) {
-                                                            handlePriceQtyUpdate(id, { quantity: val }, isPhoto);
+                                                            if (isRow) handleCustomRowUpdate(id, { quantity: val });
+                                                            else handlePriceQtyUpdate(id, { quantity: val }, isPhoto);
                                                         }
                                                     }}
                                                     onBlur={(e) => {
                                                         if (e.target.value === '' || Number(e.target.value) < 1) {
-                                                            handlePriceQtyUpdate(id, { quantity: 1 }, isPhoto);
+                                                            if (isRow) handleCustomRowUpdate(id, { quantity: 1 });
+                                                            else handlePriceQtyUpdate(id, { quantity: 1 }, isPhoto);
                                                         }
                                                     }}
                                                     className="w-full text-sm font-black bg-transparent outline-none text-center text-[#1a1a2e]"
@@ -499,7 +532,7 @@ export default function ExportTab({
                                             </div>
                                         </td>
                                         <td className="px-3 py-3 text-gray-700 font-medium">
-                                            {isPhoto ? (
+                                            {(isPhoto || isRow) ? (
                                                 <div className="flex items-center gap-1 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white">
                                                     <span className="text-[10px] text-[#d9a88a] font-black">₹</span>
                                                     <input
@@ -507,7 +540,10 @@ export default function ExportTab({
                                                         min="0"
                                                         value={unitPrice}
                                                         onFocus={(e) => e.target.select()}
-                                                        onChange={(e) => handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto)}
+                                                        onChange={(e) => {
+                                                            if (isRow) handleCustomRowUpdate(id, { price: e.target.value });
+                                                            else handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto);
+                                                        }}
                                                         className="w-20 text-xs font-black bg-transparent outline-none text-[#1a1a2e]"
                                                     />
                                                 </div>
@@ -519,9 +555,20 @@ export default function ExportTab({
                                             )}
                                         </td>
                                         <td className="px-3 py-3 text-right">
-                                            <div className="text-sm font-black text-[#1a1a2e]">
-                                                <span className="text-[#d9a88a] mr-1 text-[10px]">₹</span>
-                                                {total.toLocaleString('en-IN')}
+                                            <div className="flex items-center justify-end gap-3 text-sm font-black text-[#1a1a2e]">
+                                                <div>
+                                                    <span className="text-[#d9a88a] mr-1 text-[10px]">₹</span>
+                                                    {total.toLocaleString('en-IN')}
+                                                </div>
+                                                {isRow && (
+                                                    <button
+                                                        onClick={() => handleRemoveCustomRow(id)}
+                                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                        title="Delete custom row"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

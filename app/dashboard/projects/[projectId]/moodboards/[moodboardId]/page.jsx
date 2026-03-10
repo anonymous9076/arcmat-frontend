@@ -69,7 +69,8 @@ export default function MoodboardDetailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthenticated } = useAuth();
-    const isArchitect = user?.role === 'architect';
+
+
 
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -80,6 +81,8 @@ export default function MoodboardDetailPage() {
     // Photo upload modal
     // Custom photos: [{ id, title, description, previewUrl, status }]
     const [customPhotos, setCustomPhotos] = useState([]);
+    // Isolated custom rows just for the Export view
+    const [customRows, setCustomRows] = useState([]);
     // Per-product status map: { [productId]: 'Considering' | 'Specified' | 'Excluded' }
     const [productStatuses, setProductStatuses] = useState({});
     const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -123,6 +126,8 @@ export default function MoodboardDetailPage() {
                 if (moodboard.canvasBackgroundColor) setCanvasBg(moodboard.canvasBackgroundColor);
                 // Restore custom photos (title/description/status but not blob URLs which are ephemeral)
                 if (Array.isArray(moodboard.customPhotos)) setCustomPhotos(moodboard.customPhotos);
+                // Restore custom rows
+                if (Array.isArray(moodboard.customRows)) setCustomRows(moodboard.customRows);
                 // Restore product statuses
                 if (moodboard.productMetadata) setProductStatuses(moodboard.productMetadata);
                 isDataLoaded.current = true;
@@ -154,8 +159,12 @@ export default function MoodboardDetailPage() {
 
     /* ── Backend save ───────────────────────────── */
     const saveToBackend = useCallback((items, bg = canvasBg) => {
-        if (!moodboardId || !isDataLoaded.current || !isArchitect) return;
+        if (!moodboardId || !isDataLoaded.current) {
+            return;
+        }
         setIsSaving(true);
+
+
         const budget = items.filter(i => i.type !== 'text').reduce((sum, item) => {
             return sum + (Number(item.price) || 0) * (Number(item.quantity) || 1);
         }, 0);
@@ -172,32 +181,30 @@ export default function MoodboardDetailPage() {
     }, [moodboardId, updateMoodboard, canvasBg]);
 
     useEffect(() => {
-        if (!isDataLoaded.current || !isArchitect) return;
+        if (!isDataLoaded.current) return;
         const timer = setTimeout(() => saveToBackend(boardItems, canvasBg), 1000);
         return () => clearTimeout(timer);
-    }, [boardItems, canvasBg, saveToBackend, isArchitect]);
+    }, [boardItems, canvasBg, saveToBackend]);
 
     /* ── Board handlers ─────────────────────────── */
     const handleDrop = useCallback((material, x, y) => {
         const { price } = resolvePricing(material);
         setBoardItems(prev => {
             const next = [...prev, { id: Date.now() + Math.random(), type: 'material', material, x, y, scale: 1, rotation: 0, quantity: 1, price }];
-            saveToBackend(next);
             return next;
         });
         setSelectedMaterial(material);
         setStagedMaterial(null);
-    }, [saveToBackend]);
+    }, []);
 
     const handleAddText = useCallback((x, y) => {
         const newId = Date.now() + Math.random();
         setBoardItems(prev => {
             const next = [...prev, { id: newId, type: 'text', text: '', fontSize: 32, fontWeight: 'bold', textColor: '#1a1a1a', x, y }];
-            saveToBackend(next);
             return next;
         });
         return newId;
-    }, [saveToBackend]);
+    }, []);
 
     const handleReposition = useCallback((id, x, y) => {
         setBoardItems(prev => prev.map(item => item.id === id ? { ...item, x, y } : item));
@@ -208,23 +215,65 @@ export default function MoodboardDetailPage() {
     }, []);
 
     const handleRemoveItem = useCallback((id) => {
-        setBoardItems(prev => {
-            const next = prev.filter(item => item.id !== id);
-            saveToBackend(next);
-            return next;
-        });
-    }, [saveToBackend]);
+        setBoardItems(prev => prev.filter(item => item.id !== id));
+    }, []);
 
     const handleClearBoard = useCallback(() => {
         setBoardItems([]);
         setSelectedMaterial(null);
         setStagedMaterial(null);
-        saveToBackend([]);
-    }, [saveToBackend]);
+    }, []);
 
     const handleSave = useCallback(() => {
-        saveToBackend(boardItems);
+
+
+        toast.promise(
+            new Promise((resolve, reject) => {
+                try {
+                    if (canvasRef.current && canvasRef.current.getLatestState) {
+                        const latest = canvasRef.current.getLatestState();
+                        setBoardItems(latest);
+                        saveToBackend(latest);
+                    } else {
+                        saveToBackend(boardItems);
+                    }
+                    setTimeout(resolve, 800); // UI delay for clarity
+                } catch (err) {
+                    reject(err);
+                }
+            }),
+            {
+                loading: 'Saving canvas state...',
+                success: 'Canvas saved successfully!',
+                error: 'Could not manually save canvas'
+            }
+        );
     }, [boardItems, saveToBackend]);
+
+    // --- Debounced Auto-Saves for Export Data (Custom Rows, Photos, Metadata) ---
+    useEffect(() => {
+        if (!isDataLoaded.current) return;
+        const timer = setTimeout(() => {
+            updateMoodboard({ id: moodboardId, data: { customRows } });
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [customRows, moodboardId, updateMoodboard]);
+
+    useEffect(() => {
+        if (!isDataLoaded.current) return;
+        const timer = setTimeout(() => {
+            updateMoodboard({ id: moodboardId, data: { customPhotos } });
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [customPhotos, moodboardId, updateMoodboard]);
+
+    useEffect(() => {
+        if (!isDataLoaded.current) return;
+        const timer = setTimeout(() => {
+            updateMoodboard({ id: moodboardId, data: { productMetadata: productStatuses } });
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [productStatuses, moodboardId, updateMoodboard]);
 
     const handleMaterialSelect = useCallback((material) => {
         setSelectedMaterial(material);
@@ -326,73 +375,68 @@ export default function MoodboardDetailPage() {
         toast.success(`"${title}" added to Overview and Canvas!`);
     }, [moodboardId, updateMoodboard]);
 
+    /* ── Export Custom Rows Handlers ───────────── */
     const handleAddCustomRow = useCallback(() => {
-        handlePhotoAdd({
-            file: null,
-            previewUrl: '/Icons/arcmatlogo.svg',
-            title: 'New Custom Item',
-            description: 'Custom item added manually',
+        const newRow = {
+            id: 'row_' + Date.now(),
+            title: 'New Custom Row',
             price: 0,
-            quantity: 1
-        });
-    }, [handlePhotoAdd]);
+            quantity: 1,
+            status: 'Considering',
+            tags: []
+        };
+        setCustomRows(prev => [...prev, newRow]);
+        toast.success("Custom row added to Export!");
+    }, []);
+
+    const handleCustomRowUpdate = useCallback((rowId, updates) => {
+        setCustomRows(prev => prev.map(r => r.id === rowId ? { ...r, ...updates } : r));
+    }, []);
+
+    const handleRemoveCustomRow = useCallback((rowId) => {
+        setCustomRows(prev => prev.filter(r => r.id !== rowId));
+        toast.success("Custom row removed");
+    }, []);
 
     /* ── Status Handlers ───────────────────────── */
     const handlePhotoStatusChange = useCallback((photoId, status) => {
-        setCustomPhotos(prev => {
-            const next = prev.map(p => p.id === photoId ? { ...p, status } : p);
-            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
-            return next;
-        });
-    }, [moodboardId, updateMoodboard]);
+        setCustomPhotos(prev => prev.map(p => p.id === photoId ? { ...p, status } : p));
+    }, []);
 
     const handleProductStatusChange = useCallback((productId, status) => {
         setProductStatuses(prev => {
             const current = prev[productId];
-            const next = {
+            return {
                 ...prev,
                 [productId]: typeof current === 'object' ? { ...current, status } : { status }
             };
-            updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
-            return next;
         });
-    }, [moodboardId, updateMoodboard, isArchitect]);
+    }, []);
 
     const handlePriceQtyUpdate = useCallback((id, updates, isPhoto) => {
         if (isPhoto) {
-            setCustomPhotos(prev => {
-                const next = prev.map(p => p.id === id ? { ...p, ...updates } : p);
-                updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
-                return next;
-            });
+            setCustomPhotos(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
         } else {
             setProductStatuses(prev => {
                 const current = prev[id];
-                const next = {
+                return {
                     ...prev,
                     [id]: typeof current === 'object' ? { ...current, ...updates } : { status: current || 'Considering', ...updates }
                 };
-                updateMoodboard({ id: moodboardId, data: { productMetadata: next } });
-                return next;
             });
         }
-    }, [moodboardId, updateMoodboard]);
+    }, []);
 
     const handleRemovePhoto = useCallback((photoId) => {
         // Remove from Overview customPhotos
-        setCustomPhotos(prev => {
-            const next = prev.filter(p => p.id !== photoId);
-            updateMoodboard({ id: moodboardId, data: { customPhotos: next } });
-            return next;
-        });
+        setCustomPhotos(prev => prev.filter(p => p.id !== photoId));
         // Remove from Canvas boardItems
         setBoardItems(prev => {
             const next = prev.filter(item => item.material?._id !== photoId);
-            saveToBackend(next);
             return next;
         });
         toast.success('Photo removed from board');
-    }, [moodboardId, updateMoodboard, saveToBackend]);
+    }, []);
 
     const handleRemoveProduct = useCallback((productId) => {
         // 1. Remove from EstimatedCost (Overview Tab)
@@ -414,11 +458,10 @@ export default function MoodboardDetailPage() {
         // 2. Remove from Canvas boardItems (Design Desk)
         setBoardItems(prev => {
             const next = prev.filter(item => item.material?._id !== productId);
-            saveToBackend(next);
             return next;
         });
         toast.success('Product removed from board');
-    }, [estimation, products, updateEstimationMutation, moodboardId, queryClient, saveToBackend]);
+    }, [estimation, products, updateEstimationMutation, moodboardId, queryClient]);
 
     /* ── Context Menu ──────────────────────────── */
     const openContextMenu = useCallback((e, itemId, isPhoto) => {
@@ -430,8 +473,9 @@ export default function MoodboardDetailPage() {
     /* ── Excel Export ─────────────────────────────── */
     const exportAsCSV = async () => {
         const allOverviewItems = [
-            ...products.map(p => ({ isPhoto: false, data: p })),
-            ...customPhotos.map(p => ({ isPhoto: true, data: p }))
+            ...products.map(p => ({ type: 'product', data: p })),
+            ...customPhotos.map(p => ({ type: 'photo', data: p })),
+            ...customRows.map(r => ({ type: 'row', data: r }))
         ];
 
         if (allOverviewItems.length === 0) { toast.error('No materials to export'); return; }
@@ -476,15 +520,20 @@ export default function MoodboardDetailPage() {
 
         try {
             for (let i = 0; i < allOverviewItems.length; i++) {
-                const { isPhoto, data } = allOverviewItems[i];
-                const id = isPhoto ? data.id : data._id;
-                const meta = isPhoto ? data : (productStatuses[id] || {});
-                const st = isPhoto ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
-                const qty = Number(meta.quantity) || 1;
+                const { type, data } = allOverviewItems[i];
+                const isPhoto = type === 'photo';
+                const isRow = type === 'row';
+                const isProduct = type === 'product';
+
+                const id = isProduct ? data._id : data.id;
+                const meta = isProduct ? (productStatuses[id] || {}) : data;
+                const st = (isPhoto || isRow) ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
+                let qty = (isPhoto || isRow) ? data.quantity : meta.quantity;
+                qty = Number(qty) || 1;
 
                 let price = 0;
-                if (isPhoto) {
-                    price = Number(meta.price) || 0;
+                if (isPhoto || isRow) {
+                    price = Number(data.price) || 0;
                 } else {
                     if (typeof meta === 'object' && meta.price !== undefined) {
                         price = Number(meta.price);
@@ -500,20 +549,20 @@ export default function MoodboardDetailPage() {
                 const row = worksheet.getRow(currentRow);
 
                 // Set text values
-                row.getCell(2).value = isPhoto ? data.title : getProductName(data);
+                row.getCell(2).value = isProduct ? getProductName(data) : data.title;
                 row.getCell(3).value = st;
                 row.getCell(4).value = project?.projectName || 'ArcMat';
-                row.getCell(5).value = isPhoto ? 'Custom Upload' : getProductBrand(data);
-                row.getCell(6).value = isPhoto ? '—' : (data?.skucode || data?.productId?.skucode || '');
+                row.getCell(5).value = isProduct ? getProductBrand(data) : (isPhoto ? 'Custom Upload' : 'Custom Row');
+                row.getCell(6).value = isProduct ? (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '') : '—';
                 row.getCell(7).value = qty;
                 row.getCell(8).value = price;
                 row.getCell(9).value = total;
 
-                row.height = 100; // Set height for image
+                row.height = isProduct || isPhoto ? 100 : 30; // Set height for image or normal for rows
                 row.alignment = { vertical: 'middle', horizontal: 'center' };
 
                 // Handle Image
-                const thumbUrl = isPhoto ? (data.previewUrl || '') : getProductThumbnail(data);
+                const thumbUrl = isProduct ? getProductThumbnail(data) : (isPhoto ? (data.previewUrl || '') : null);
                 if (thumbUrl) {
                     try {
                         const response = await fetch(thumbUrl);
@@ -599,14 +648,13 @@ export default function MoodboardDetailPage() {
                             ) : (
                                 <div className="flex items-center gap-3 mb-1 group/title w-fit">
                                     <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
-                                    {isArchitect && (
-                                        <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+
                                 </div>
                             )}
                             <p className="text-sm text-gray-400 font-medium mt-1">
@@ -616,14 +664,13 @@ export default function MoodboardDetailPage() {
 
                         <div className="flex items-center justify-between sm:justify-start gap-3 shrink-0">
                             <div className="relative">
-                                {isArchitect && (
-                                    <button
-                                        onClick={() => setMenuOpen(o => !o)}
-                                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
-                                    >
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setMenuOpen(o => !o)}
+                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                                >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </button>
+
                                 {menuOpen && (
                                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
                                         <button
@@ -675,7 +722,7 @@ export default function MoodboardDetailPage() {
 
                     {/* Tab Navigation ─── */}
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {TABS.filter(t => isArchitect || ['overview', 'designDesk', 'discussion'].includes(t.id)).map(tab => (
+                        {TABS.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
@@ -712,7 +759,7 @@ export default function MoodboardDetailPage() {
                         handleRemoveProduct={handleRemoveProduct}
                         handleAddToCart={handleAddToCart}
                         router={router}
-                        isArchitect={isArchitect}
+                        isArchitect={true}
                         privacyControls={project?.privacyControls}
                     />
                 )}
@@ -725,7 +772,7 @@ export default function MoodboardDetailPage() {
                             {!isPanelOpen && (
                                 <button
                                     onClick={() => setIsPanelOpen(true)}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-[60] bg-white border border-l-0 border-gray-200 p-1.5 rounded-r-xl shadow-md hover:bg-gray-50 transition-all group"
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-60 bg-white border border-l-0 border-gray-200 p-1.5 rounded-r-xl shadow-md hover:bg-gray-50 transition-all group"
                                     title="Open Materials"
                                 >
                                     <ChevronDown className="w-5 h-5 -rotate-90 text-gray-400 group-hover:text-[#d9a88a]" />
@@ -779,10 +826,11 @@ export default function MoodboardDetailPage() {
                 </div>
 
                 {/* EXPORT */}
-                {activeTab === 'export' && isArchitect && (
+                {activeTab === 'export' && (
                     <ExportTab
                         products={products}
                         customPhotos={customPhotos}
+                        customRows={customRows}
                         boardItems={boardItems}
                         productStatuses={productStatuses}
                         projectName={project?.projectName}
@@ -792,11 +840,13 @@ export default function MoodboardDetailPage() {
                         handlePhotoStatusChange={handlePhotoStatusChange}
                         handleProductStatusChange={handleProductStatusChange}
                         handleAddCustomRow={handleAddCustomRow}
+                        handleCustomRowUpdate={handleCustomRowUpdate}
+                        handleRemoveCustomRow={handleRemoveCustomRow}
                     />
                 )}
 
                 {/* DOWNLOAD */}
-                {activeTab === 'download' && isArchitect && (
+                {activeTab === 'download' && (
                     <DownloadTab
                         boardItems={boardItems}
                         exportAsCSV={exportAsCSV}

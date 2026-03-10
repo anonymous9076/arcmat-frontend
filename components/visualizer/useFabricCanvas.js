@@ -446,16 +446,6 @@ export function useFabricCanvas({
     };
 
     // --- Toolbar Actions ---
-    const deleteSelection = useCallback(() => {
-        if (!fabricRef.current) return;
-        const canvas = fabricRef.current;
-        const activeObjects = canvas.getActiveObjects();
-        if (activeObjects.length) {
-            activeObjects.forEach(obj => { if (obj.id) onRemoveItem(obj.id); });
-            canvas.discardActiveObject();
-            canvas.requestRenderAll();
-        }
-    }, [onRemoveItem]);
 
     const toggleLock = useCallback(() => {
         if (!fabricRef.current) return;
@@ -481,7 +471,15 @@ export function useFabricCanvas({
         });
     }, []);
 
-    const bringForward = useCallback(() => { if (fabricRef.current?.getActiveObject()) { fabricRef.current.bringObjectForward(fabricRef.current.getActiveObject()); fabricRef.current.requestRenderAll(); } }, []);
+    const bringForward = useCallback(() => {
+        if (!fabricRef.current) return;
+        const activeObjects = fabricRef.current.getActiveObjects();
+        if (activeObjects.length) {
+            activeObjects.forEach(obj => fabricRef.current.bringForward(obj));
+            fabricRef.current.requestRenderAll();
+        }
+    }, []);
+
     const sendBackward = useCallback(() => { if (fabricRef.current?.getActiveObject()) { fabricRef.current.sendObjectBackwards(fabricRef.current.getActiveObject()); fabricRef.current.requestRenderAll(); } }, []);
     const groupSelection = useCallback(() => { if (!fabricRef.current) return; const canvas = fabricRef.current; if (canvas.getActiveObject()?.type === 'activeSelection') { canvas.getActiveObject().toGroup(); canvas.requestRenderAll(); } }, []);
     const ungroupSelection = useCallback(() => { if (!fabricRef.current) return; const activeObj = fabricRef.current.getActiveObject(); if (activeObj?.type === 'group') { activeObj.toActiveSelection(); fabricRef.current.requestRenderAll(); } }, []);
@@ -667,6 +665,79 @@ export function useFabricCanvas({
         }
     };
 
+    const deleteSelection = useCallback(() => {
+        if (!fabricRef.current) return;
+        const canvas = fabricRef.current;
+        const activeObjects = canvas.getActiveObjects();
+        if (activeObjects.length) {
+            activeObjects.forEach(obj => {
+                if (obj.id) onRemoveItem(obj.id);
+                canvas.remove(obj); // Force instant visual clear and engine clear
+            });
+            canvas.discardActiveObject();
+            canvas.requestRenderAll();
+        }
+    }, [onRemoveItem]);
+
+    const getSerializedState = useCallback(() => {
+        if (!fabricRef.current) return boardItems;
+
+        // FabricJS removes grouped active selections from the main canvas object tree.
+        // We must temporarily discard the selection so items return to absolute canvas coordinates.
+        let activeSelectionObjs = null;
+        const active = fabricRef.current.getActiveObject();
+        if (active && active.type === 'activeSelection') {
+            activeSelectionObjs = active.getObjects();
+            fabricRef.current.discardActiveObject();
+        }
+
+        const canvasObjects = fabricRef.current.getObjects();
+
+        // The absolute source of truth is what currently exists in the FabricJS engine
+        const serialized = canvasObjects.map(fObj => {
+            if (!fObj.id) return null;
+            const existingMeta = boardItems.find(i => i.id === fObj.id) || {};
+
+            if (fObj.type === 'i-text' || fObj.type === 'text') {
+                return {
+                    ...existingMeta,
+                    id: fObj.id,
+                    type: 'text',
+                    text: fObj.text,
+                    textColor: fObj.fill,
+                    fontSize: fObj.fontSize,
+                    x: fObj.left,
+                    y: fObj.top,
+                    scale: fObj.scaleX,
+                    rotation: fObj.angle,
+                };
+            } else {
+                return {
+                    ...existingMeta,
+                    id: fObj.id,
+                    type: existingMeta.type || 'material',
+                    x: fObj.left,
+                    y: fObj.top,
+                    scaleX: fObj.scaleX,
+                    scaleY: fObj.scaleY,
+                    rotation: fObj.angle,
+                    // DO NOT multiply by scaleX here. 
+                    // The base width is intrinsic, scaleX handles the sizing independently!
+                    w: fObj.width,
+                    h: fObj.height
+                };
+            }
+        }).filter(Boolean);
+
+        // Restore active selection transparently
+        if (activeSelectionObjs) {
+            const newSel = new fabric.ActiveSelection(activeSelectionObjs, { canvas: fabricRef.current });
+            fabricRef.current.setActiveObject(newSel);
+        }
+
+        return serialized;
+    }, [boardItems]);
+
     return {
         canvasRef,
         zoom,
@@ -691,6 +762,7 @@ export function useFabricCanvas({
         bgProgress,
         activeMenuConfig,
         showGrid,
-        setShowGrid
+        setShowGrid,
+        getSerializedState // Exported here
     };
 }
