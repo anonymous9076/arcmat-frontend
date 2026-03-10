@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHand
 import {
     Lock, LockOpen, Trash, Trash2, Save, Download, Move, CornerUpLeft,
     Type, ImagePlus, ArrowUpToLine, ArrowDownToLine, Focus,
-    Plus, Minus, Wand2, Loader2, FileOutput
+    Plus, Minus, Wand2, Loader2, FileOutput, Grid3x3
 } from 'lucide-react';
 import { getProductName, getProductCategory } from '@/lib/productUtils';
 import { useFabricCanvas } from './useFabricCanvas';
@@ -57,7 +57,9 @@ const CanvasPreview = forwardRef((props, ref) => {
         removeSelectedBackground,
         isProcessingBg,
         bgProgress,
-        activeMenuConfig
+        activeMenuConfig,
+        showGrid,
+        setShowGrid
     } = useFabricCanvas({
         canvasContainerRef,
         boardItems,
@@ -162,31 +164,7 @@ const CanvasPreview = forwardRef((props, ref) => {
         onAddText(x, y);
     };
 
-    /* ── Export CSV ─────────────────────────────────── */
-    const exportAsCSV = () => {
-        const materials = boardItems.filter(i => i.type !== 'text');
-        if (materials.length === 0) return;
-        const headers = ['Product Name', 'Category', 'Quantity', 'Unit Price', 'Total Cost'];
-        let grandTotal = 0;
-        const rows = materials.map(item => {
-            const name = getProductName(item.material);
-            const category = getProductCategory(item.material);
-            const qty = item.quantity || 1;
-            const unitPrice = item.price || 0;
-            const total = qty * unitPrice;
-            grandTotal += total;
-            return [name, category, qty, unitPrice, total].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
-        });
-        const totalRow = ['', '', '', '"Grand Total"', `"${grandTotal}"`].join(',');
-        const csvContent = [headers.join(','), ...rows, totalRow].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${(projectName || 'moodboard').replace(/\s+/g, '-')}-materials.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
+    /* ── Object Drop logic etc. ──────────────────────── */
 
     const handleResetZoom = () => resetZoom();
 
@@ -265,6 +243,20 @@ const CanvasPreview = forwardRef((props, ref) => {
                             </MenuBtn>
                             <div className="w-px h-4 bg-gray-200 mx-1" />
 
+                            {activeMenuConfig.type === 'text' && (
+                                <>
+                                    <div className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-all cursor-pointer overflow-hidden p-[2px]" title="Text Color">
+                                        <input
+                                            type="color"
+                                            className="w-full h-full cursor-pointer rounded-sm border-0 p-0 block"
+                                            value={activeMenuConfig.textColor || '#1a1a1a'}
+                                            onChange={(e) => updateFabricObject(activeMenuConfig.id, { textColor: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                                </>
+                            )}
+
                             {/* Background Remover Button */}
                             <MenuBtn
                                 onClick={removeSelectedBackground}
@@ -314,6 +306,7 @@ const CanvasPreview = forwardRef((props, ref) => {
             <div className="flex items-center justify-between px-3 md:px-4 py-2.5 bg-white border-t border-gray-200 relative z-10 overflow-x-auto no-scrollbar">
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                     <BottomBtn onClick={() => setPanMode(p => !p)} title="Pan" active={panMode}><Move className="w-4 h-4" /></BottomBtn>
+                    <BottomBtn onClick={() => setShowGrid(!showGrid)} title="Toggle Grid" active={showGrid}><Grid3x3 className="w-4 h-4" /></BottomBtn>
                     <BottomBtn onClick={handleUndo} title="Undo" disabled={filledCount === 0}><CornerUpLeft className="w-4 h-4" /></BottomBtn>
                     <BottomBtn onClick={toggleLock} title="Lock Selection" active={lockedIds.size > 0}><Lock className="w-4 h-4" /></BottomBtn>
                     <BottomBtn onClick={groupSelection} title="Group Selection" disabled={selectedIds.size < 2}><Focus className="w-4 h-4" /></BottomBtn>
@@ -355,12 +348,6 @@ const CanvasPreview = forwardRef((props, ref) => {
                         <button onClick={zoomIn} className="px-1 py-1 hover:bg-gray-100"><Plus className="w-3 h-3" /></button>
                     </div>
                 </div>
-
-                {/* Bottom CSV Button */}
-                <button onClick={exportAsCSV} disabled={filledCount === 0} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50 ml-4 shrink-0">
-                    <FileOutput className="w-4 h-4 text-[#e09a74]" />
-                    <span className="hidden sm:inline">Download CSV</span>
-                </button>
             </div>
         </div>
     );

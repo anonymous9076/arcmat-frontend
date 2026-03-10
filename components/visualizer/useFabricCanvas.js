@@ -81,6 +81,12 @@ export function useFabricCanvas({
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [activeMenuConfig, setActiveMenuConfig] = useState(null);
     const [canvasReady, setCanvasReady] = useState(false);
+    const [showGrid, setShowGrid] = useState(false);
+    const showGridRef = useRef(false);
+    useEffect(() => {
+        showGridRef.current = showGrid;
+        if (fabricRef.current) fabricRef.current.requestRenderAll();
+    }, [showGrid]);
 
     // --- Initialize Fabric Canvas ---
     useEffect(() => {
@@ -129,7 +135,6 @@ export function useFabricCanvas({
             this.selection = true;
         });
 
-        // --- Zooming ---
         canvas.on('mouse:wheel', function (opt) {
             const delta = opt.e.deltaY;
             let newZoom = canvas.getZoom();
@@ -141,6 +146,47 @@ export function useFabricCanvas({
             opt.e.stopPropagation();
             setZoom(newZoom);
             updateMenu();
+        });
+
+        // --- Grid Rendering ---
+        canvas.on('before:render', function () {
+            if (!showGridRef.current) return;
+            const ctx = canvas.getContext();
+            const w = canvas.width;
+            const h = canvas.height;
+            const vpt = canvas.viewportTransform;
+            const zoom = vpt[0];
+            const offsetX = vpt[4];
+            const offsetY = vpt[5];
+
+            const gridSize = 40;
+            const left = -offsetX / zoom;
+            const top = -offsetY / zoom;
+            const right = (w - offsetX) / zoom;
+            const bottom = (h - offsetY) / zoom;
+
+            ctx.save();
+            ctx.transform(vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]);
+
+            ctx.beginPath();
+            ctx.lineWidth = 1 / zoom;
+            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+
+            const startX = Math.floor(left / gridSize) * gridSize;
+            const endX = Math.ceil(right / gridSize) * gridSize;
+            const startY = Math.floor(top / gridSize) * gridSize;
+            const endY = Math.ceil(bottom / gridSize) * gridSize;
+
+            for (let x = startX; x <= endX; x += gridSize) {
+                ctx.moveTo(x, top);
+                ctx.lineTo(x, bottom);
+            }
+            for (let y = startY; y <= endY; y += gridSize) {
+                ctx.moveTo(left, y);
+                ctx.lineTo(right, y);
+            }
+            ctx.stroke();
+            ctx.restore();
         });
 
         // --- Active Menu ---
@@ -643,6 +689,8 @@ export function useFabricCanvas({
         removeSelectedBackground,
         isProcessingBg,
         bgProgress,
-        activeMenuConfig
+        activeMenuConfig,
+        showGrid,
+        setShowGrid
     };
 }
