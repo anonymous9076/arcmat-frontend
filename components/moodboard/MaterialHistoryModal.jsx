@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetSpaceHistory, useApproveMaterialVersion } from '@/hooks/useMaterialHistory';
+import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, X, CheckCircle2, CircleDashed, ArrowRightLeft } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
-export default function MaterialHistoryModal({ isOpen, onClose, projectId, spaceId, currentMaterialName }) {
+export default function MaterialHistoryModal({ isOpen, onClose, projectId, spaceId, materialId, currentMaterialName }) {
     const { user } = useAuth();
-    const isClient = user?.role === 'professional' || user?.role === 'customer';
+    // Professionals can also act as clients in some flows, but 'customer' is the primary role
+    const isClient = user?.role === 'customer' || user?.role === 'professional';
 
     const { data, isLoading } = useGetSpaceHistory(projectId, spaceId);
     const approveMutation = useApproveMaterialVersion(projectId);
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    // Mark as read when the modal opens
+    useEffect(() => {
+        if (isOpen && projectId && spaceId && user) {
+            markNotificationsRead({ id: projectId, spaceId, materialId });
+        }
+    }, [isOpen, projectId, spaceId, materialId, user, markNotificationsRead]);
 
     const history = data?.data || [];
+    // Optionally filter history by materialId if we want granular view
+    const filteredHistory = materialId
+        ? history.filter(h => h.materialId === materialId || h.previousMaterialId === materialId)
+        : history;
 
     if (!isOpen) return null;
 
@@ -20,8 +34,14 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200 cursor-default"
+                onClick={e => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#fef7f2]">
                     <div>
                         <h2 className="text-2xl font-black text-[#2d3142]">Material History</h2>
@@ -42,7 +62,7 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                         <div className="flex flex-col items-center justify-center py-20">
                             <Loader2 className="w-10 h-10 text-[#d9a88a] animate-spin mb-4" />
                         </div>
-                    ) : history.length === 0 ? (
+                    ) : filteredHistory.length === 0 ? (
                         <div className="text-center py-20">
                             <ArrowRightLeft className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                             <h3 className="text-xl font-bold text-gray-400">No history yet</h3>
@@ -50,7 +70,7 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                         </div>
                     ) : (
                         <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-linear-to-b before:from-transparent before:via-gray-200 before:to-transparent">
-                            {history.map((entry, index) => (
+                            {filteredHistory.map((entry, index) => (
                                 <div key={entry._id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                                     <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-white bg-[#fef7f2] text-[#d9a88a] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-black">
                                         V{entry.version}
@@ -88,7 +108,7 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                                                 </span>
                                             </div>
 
-                                            {isClient && entry.isFinal && entry.approvalStatus === 'Pending' && (
+                                            {isClient && entry.approvalStatus === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleApprove(entry._id, 'Approved')}

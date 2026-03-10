@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera } from 'lucide-react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
@@ -19,7 +19,9 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
         projectName,
         clientName,
         phase = 'Concept Design',
-        status = 'Active'
+        status = 'Active',
+        unreadMessages = 0,
+        pendingApprovals = 0
     } = project;
 
     const [currentStatus, setCurrentStatus] = useState(status);
@@ -157,16 +159,40 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
             {/* Left Section */}
             <div className="flex-[1.2] flex flex-col min-w-0 p-2">
                 <div className="flex flex-col gap-0.5 mb-6">
-                    <Link
-                        href={href || `/dashboard/projects/${project._id}/moodboards`}
-                        onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
-                        className="flex items-center gap-2 group/title w-max"
-                    >
-                        <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
-                            {projectName}
-                        </h3>
-                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
-                    </Link>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Link
+                            href={href || `/dashboard/projects/${project._id}/moodboards`}
+                            onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                            className="flex items-center gap-2 group/title w-max"
+                        >
+                            <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
+                                {projectName}
+                            </h3>
+                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
+                        </Link>
+
+                        {/* Notification Badges */}
+                        <div className="flex items-center gap-1.5 ml-1">
+                            {unreadMessages > 0 && (
+                                <div
+                                    className="flex items-center justify-center bg-red-50 text-red-600 rounded-full px-2 py-0.5 border border-red-100 shadow-sm"
+                                    title={`${unreadMessages} new message${unreadMessages > 1 ? 's' : ''}`}
+                                >
+                                    <MessageCircle className="w-3 h-3 mr-1" />
+                                    <span className="text-[10px] font-bold leading-none">{unreadMessages}</span>
+                                </div>
+                            )}
+                            {pendingApprovals > 0 && (
+                                <div
+                                    className="flex items-center justify-center bg-amber-50 text-amber-600 rounded-full px-2 py-0.5 border border-amber-100 shadow-sm"
+                                    title={`${pendingApprovals} pending approval${pendingApprovals > 1 ? 's' : ''}`}
+                                >
+                                    <AlertCircle className="w-3 h-3 mr-1" />
+                                    <span className="text-[10px] font-bold leading-none">{pendingApprovals}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     {clientName && (
                         <span className="text-sm text-gray-400 font-medium truncate max-w-[200px]">
                             Client: {clientName}

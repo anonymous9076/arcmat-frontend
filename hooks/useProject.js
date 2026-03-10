@@ -98,7 +98,7 @@ export const useMarkNotificationsRead = () => {
             // We invalidate all project queries so that the unread counts are refreshed
         },
         onError: (error) => {
-            console.error('Failed to mark notifications read:', error);
+            console.error('Failed to mark notifications read:', error.response?.data || error.message);
         }
     });
 };

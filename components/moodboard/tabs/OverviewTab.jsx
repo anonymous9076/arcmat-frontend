@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { ChevronDown, Search, Tag, ShoppingCart, Plus, ImagePlus, List, Building2 } from 'lucide-react';
+import { ChevronDown, Search, Tag, ShoppingCart, Plus, ImagePlus, List, Building2, MessageCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
@@ -231,8 +231,12 @@ export default function OverviewTab({
                         setActiveModal('retailer');
                     }}
                     onOpenDiscussion={() => {
-                        const product = products.find(p => p._id === contextMenu.itemId);
-                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        const product = contextMenu.isPhoto
+                            ? customPhotos.find(p => p.id === contextMenu.itemId)
+                            : products.find(p => p._id === contextMenu.itemId);
+
+                        const name = contextMenu.isPhoto ? product?.title : (product ? getProductName(product) : '');
+                        setSelectedMaterial({ id: contextMenu.itemId, name: name });
                         setActiveModal('discussion');
                     }}
                     onOpenReplace={() => {
@@ -240,6 +244,8 @@ export default function OverviewTab({
                         setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
                         setActiveModal('replace');
                     }}
+                    productNotifications={productNotifications}
+                    itemId={contextMenu.itemId}
                 />
             )}
 
@@ -329,6 +335,19 @@ export default function OverviewTab({
                                     </div>
                                 )}
                                 <StatusDot status={photo.status} />
+
+                                {/* Photo Notification Badges (Unread Comments) */}
+                                <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                                    {productNotifications[photo.id]?.unreadMessages > 0 && (
+                                        <div
+                                            className="flex items-center justify-center bg-red-500 text-white rounded-full px-1.5 py-0.5 shadow-md border border-white"
+                                            title={`${productNotifications[photo.id].unreadMessages} new message${productNotifications[photo.id].unreadMessages > 1 ? 's' : ''}`}
+                                        >
+                                            <MessageCircle className="w-3 h-3 mr-0.5" />
+                                            <span className="text-[10px] font-bold leading-none">{productNotifications[photo.id].unreadMessages}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="p-3 flex flex-col gap-2 flex-1">
                                 <div>
@@ -376,6 +395,28 @@ export default function OverviewTab({
                                             </div>
                                         )}
                                         <StatusDot status={status} />
+
+                                        {/* Product Notification Badges */}
+                                        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                                            {productNotifications[productId]?.unreadMessages > 0 && (
+                                                <div
+                                                    className="flex items-center justify-center bg-red-500 text-white rounded-full px-1.5 py-0.5 shadow-md border border-white"
+                                                    title={`${productNotifications[productId].unreadMessages} new message${productNotifications[productId].unreadMessages > 1 ? 's' : ''}`}
+                                                >
+                                                    <MessageCircle className="w-3 h-3 mr-0.5" />
+                                                    <span className="text-[10px] font-bold leading-none">{productNotifications[productId].unreadMessages}</span>
+                                                </div>
+                                            )}
+                                            {productNotifications[productId]?.pendingApprovals > 0 && (
+                                                <div
+                                                    className="flex items-center justify-center bg-amber-500 text-white rounded-full px-1.5 py-0.5 shadow-md border border-white"
+                                                    title={`${productNotifications[productId].pendingApprovals} pending approval${productNotifications[productId].pendingApprovals > 1 ? 's' : ''}`}
+                                                >
+                                                    <AlertCircle className="w-3 h-3 mr-0.5" />
+                                                    <span className="text-[10px] font-bold leading-none">{productNotifications[productId].pendingApprovals}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="p-3 flex flex-col gap-2 flex-1">
                                         <div>
@@ -413,6 +454,7 @@ export default function OverviewTab({
                 onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
                 projectId={projectId}
                 spaceId={moodboardId}
+                materialId={selectedMaterial?.id}
                 currentMaterialName={selectedMaterial?.name}
             />
 
@@ -437,6 +479,7 @@ export default function OverviewTab({
                 isOpen={activeModal === 'discussion'}
                 onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
                 projectId={projectId}
+                spaceId={moodboardId}
                 materialId={selectedMaterial?.id}
                 materialName={selectedMaterial?.name}
             />
@@ -445,6 +488,8 @@ export default function OverviewTab({
             <ReplaceMaterialModal
                 isOpen={activeModal === 'replace'}
                 onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                projectId={projectId}
+                spaceId={moodboardId}
                 oldMaterialId={selectedMaterial?.id}
                 oldMaterialName={selectedMaterial?.name}
                 onReplace={handleReplaceProduct}

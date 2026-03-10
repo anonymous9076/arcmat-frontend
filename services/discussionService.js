@@ -1,8 +1,9 @@
 import api from '@/lib/api';
 
 export const discussionService = {
-    getComments: async (projectId) => {
-        const response = await api.get(`/discussion/${projectId}`);
+    getComments: async (projectId, spaceId = null) => {
+        const params = spaceId ? { spaceId } : {};
+        const response = await api.get(`/discussion/${projectId}`, { params });
         return response.data;
     },
 

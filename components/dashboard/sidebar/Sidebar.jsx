@@ -30,6 +30,8 @@ import SidebarUser from './SidebarUser';
 import sidebarData from './sidebar-data.json';
 import CreateProjectModal from './CreateProjectModal';
 import Button from '@/components/ui/Button';
+import { useGetProjects } from '@/hooks/useProject';
+
 
 const ICON_MAP = {
   Package,
@@ -66,6 +68,10 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
+  const { data: projectsData } = useGetProjects();
+  const projects = projectsData?.data || [];
+  const totalUnread = projects.reduce((acc, p) => acc + (p.unreadMessages || 0), 0);
+
   useEffect(() => {
     setMounted(true);
     setMobileOpen(false); // Ensure mobile state is reset on mount
@@ -97,6 +103,9 @@ export default function Sidebar() {
     .map(item => {
       if (isBrand && item.id === 'products-list' && (user?._id || user?.id)) {
         return { ...item, href: `/dashboard/products-list/${user._id || user.id}` };
+      }
+      if (mounted && (item.id === 'collaborations' || item.id === 'all-projects')) {
+        return { ...item, badge: totalUnread };
       }
       return item;
     })

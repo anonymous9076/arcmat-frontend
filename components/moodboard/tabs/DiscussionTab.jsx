@@ -1,19 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetComments, usePostComment, useDeleteComment } from '@/hooks/useDiscussion';
+import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Send, Trash2, UserCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Container from '@/components/ui/Container';
 
-export default function DiscussionTab({ projectId }) {
+export default function DiscussionTab({ projectId, spaceId }) {
     const { user } = useAuth();
     const [message, setMessage] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const isArchitect = user?.role === 'architect';
 
-    const { data, isLoading } = useGetComments(projectId);
+    const { data, isLoading } = useGetComments(projectId, spaceId);
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    // Mark general discussions as read when the tab is opened
+    useEffect(() => {
+        if (projectId && spaceId && user) {
+            markNotificationsRead({ id: projectId, spaceId, type: 'general' });
+        }
+    }, [projectId, spaceId, user, markNotificationsRead]);
 
     const comments = data?.data || [];
 
@@ -23,6 +32,7 @@ export default function DiscussionTab({ projectId }) {
 
         postMutation.mutate({
             message: message.trim(),
+            spaceId: spaceId,
             isInternal: isInternal
         }, {
             onSuccess: () => {
@@ -72,6 +82,11 @@ export default function DiscussionTab({ projectId }) {
                                     {comment.isInternal && (
                                         <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-amber-100 text-amber-700">
                                             Private Note
+                                        </span>
+                                    )}
+                                    {comment.referencedMaterialName && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-[#fef7f2] text-[#d9a88a] border border-[#d9a88a]/20 truncate max-w-[150px]" title={comment.referencedMaterialName}>
+                                            {comment.referencedMaterialName}
                                         </span>
                                     )}
                                 </div>

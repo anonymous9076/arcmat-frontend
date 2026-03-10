@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetComments, usePostComment, useDeleteComment } from '@/hooks/useDiscussion';
+import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Send, Trash2, UserCircle2, X } from 'lucide-react';
 
-export default function MaterialDiscussionModal({ isOpen, onClose, projectId, materialId, materialName }) {
+export default function MaterialDiscussionModal({ isOpen, onClose, projectId, spaceId, materialId, materialName }) {
     const { user } = useAuth();
     const [message, setMessage] = useState('');
     const [isInternal, setIsInternal] = useState(false);
@@ -12,6 +13,14 @@ export default function MaterialDiscussionModal({ isOpen, onClose, projectId, ma
     const { data, isLoading } = useGetComments(projectId);
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    // Mark as read when the modal opens
+    useEffect(() => {
+        if (isOpen && materialId && projectId && user) {
+            markNotificationsRead({ id: projectId, spaceId, materialId });
+        }
+    }, [isOpen, materialId, projectId, spaceId, user, markNotificationsRead]);
 
     if (!isOpen || !materialId) return null;
 
@@ -25,6 +34,7 @@ export default function MaterialDiscussionModal({ isOpen, onClose, projectId, ma
 
         postMutation.mutate({
             message: message.trim(),
+            spaceId: spaceId,
             referencedMaterialId: materialId,
             referencedMaterialName: materialName,
             isInternal: isInternal
@@ -37,8 +47,14 @@ export default function MaterialDiscussionModal({ isOpen, onClose, projectId, ma
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-lg h-[80vh] flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-3xl w-full max-w-lg h-[80vh] flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200 cursor-default"
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#fef7f2] shrink-0 rounded-t-3xl">
                     <div>

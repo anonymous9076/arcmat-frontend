@@ -4,13 +4,13 @@ import { toast } from '@/components/ui/Toast';
 
 export const DISCUSSION_KEYS = {
     all: ['discussion'],
-    project: (projectId) => [...DISCUSSION_KEYS.all, projectId],
+    project: (projectId, spaceId = null) => [...DISCUSSION_KEYS.all, projectId, spaceId ? `space-${spaceId}` : 'general'],
 };
 
-export const useGetComments = (projectId) => {
+export const useGetComments = (projectId, spaceId = null) => {
     return useQuery({
-        queryKey: DISCUSSION_KEYS.project(projectId),
-        queryFn: () => discussionService.getComments(projectId),
+        queryKey: DISCUSSION_KEYS.project(projectId, spaceId),
+        queryFn: () => discussionService.getComments(projectId, spaceId),
         enabled: !!projectId,
     });
 };

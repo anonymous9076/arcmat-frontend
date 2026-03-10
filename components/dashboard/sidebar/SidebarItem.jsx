@@ -25,14 +25,24 @@ const SidebarItem = memo(({ item, isCollapsed }) => {
             )}
         >
             <div className="flex items-center gap-3">
-                <Icon className={clsx("w-5 h-5 shrink-0", isActive ? "text-[#d9a88a]" : "text-gray-400 group-hover:text-[#d9a88a]")} />
+                <div className="relative">
+                    <Icon className={clsx("w-5 h-5 shrink-0", isActive ? "text-[#d9a88a]" : "text-gray-400 group-hover:text-[#d9a88a]")} />
+                    {isCollapsed && item.badge > 0 && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                    )}
+                </div>
                 <span
                     className={clsx(
-                        "font-medium text-sm transition-all duration-300 overflow-hidden",
+                        "font-medium text-sm transition-all duration-300 overflow-hidden flex items-center gap-2",
                         isCollapsed ? "max-w-0 opacity-0 translate-x-[-10px]" : "max-w-[200px] opacity-100 translate-x-0"
                     )}
                 >
                     {item.label}
+                    {!isCollapsed && item.badge > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center">
+                            {item.badge}
+                        </span>
+                    )}
                 </span>
             </div>
             <ChevronRight className={clsx(

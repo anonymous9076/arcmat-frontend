@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard, useGetMoodboardsByProject } from '@/hooks/useMoodboard';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
+import { usePostComment } from '@/hooks/useDiscussion';
 import { useMarkNotificationsRead, useGetProductNotifications } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import useProjectStore from '@/store/useProjectStore';
@@ -117,6 +118,7 @@ export default function MoodboardDetailPage() {
     const queryClient = useQueryClient();
     const { mutate: addToCartBackend } = useAddToCart();
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+    const { mutate: postComment } = usePostComment(projectId);
 
     // Fetch product-level notifications
     const { data: notificationsData } = useGetProductNotifications(projectId, moodboardId);
@@ -510,39 +512,49 @@ export default function MoodboardDetailPage() {
         if (!estimation?._id || products.length === 0) return;
         setIsReplacingProduct(true);
 
-        const newProductId = (typeof newProduct.productId === 'object' ? newProduct.productId?._id : newProduct.productId) || newProduct._id;
+        // --- CRITICAL FIX: ID Resolution ---
+        // When searching in ReplaceMaterialModal, the storefront type returns objects where the RetailerProduct ID 
+        // is in 'override_id'. If we use '_id', we're using the variant/product ID, and the backend population fails.
+        const retailerProductId = newProduct.override_id || newProduct._id;
 
-        // 1. Replace in EstimatedCost (Overview Tab)
-        const updatedProductIds = products.map(p => {
-            if (p._id === oldProductId) return newProduct; // Use full object or ID based on how backend expects it.
-            // Wait, typically we send IDs to updateEstimationMutation.
-            return p;
-        }).map(p => p._id || p);
+        // 1. Replace in the product list
+        // Use string comparison to safely find the match
+        const finalIds = products.map(p => String(p._id) === String(oldProductId) ? retailerProductId : String(p._id));
 
-        // Just ensure we replace old ID with new ID
-        const finalIds = products.map(p => p._id === oldProductId ? newProductId : p._id);
-
+        // 2. Update EstimatedCost for the project/space (this updates the product list in the Space)
         updateEstimationMutation.mutate({
             id: estimation._id,
             data: { productIds: finalIds }
         }, {
             onSuccess: () => {
-                // 2. Record Material History
+                // 3. Record Material History & Notify Approvals
                 addMaterialVersionMutation.mutate({
                     spaceId: moodboardId,
                     spaceName: moodboard?.moodboard_name || 'Space',
-                    materialId: newProductId,
+                    materialId: retailerProductId,
                     materialName: getProductName(newProduct),
                     previousMaterialId: oldProductId,
                     previousMaterialName: oldProductName,
                     reason: reason
                 }, {
-                    onSuccess: () => {
-                        // 3. Replace in Canvas boardItems (Design Desk)
-                        // This involves swapping the `material` object for any item matching the old ID
+                    onSuccess: (historyRes) => {
+                        const historyId = historyRes?.history?._id;
+
+                        // 4. Post a System Discussion Message for the Customer
+                        // This ensures the client gets a notification badge
+                        postComment({
+                            message: `[System] Replaced "${oldProductName}" with "${getProductName(newProduct)}". Reason: ${reason}. Please approve or reject in the Overview tab.`,
+                            spaceId: moodboardId,
+                            type: 'comment', // Use 'comment' to trigger unread badge properly
+                            referencedMaterialId: retailerProductId,
+                            referencedMaterialName: getProductName(newProduct),
+                            materialHistoryId: historyId
+                        });
+
+                        // 5. Replace in Canvas boardItems (Design Desk)
                         setBoardItems(prev => {
                             return prev.map(item => {
-                                if (item.material?._id === oldProductId) {
+                                if (item.material?._id && String(item.material._id) === String(oldProductId)) {
                                     return { ...item, material: newProduct, price: resolvePricing(newProduct).price };
                                 }
                                 return item;
@@ -550,26 +562,24 @@ export default function MoodboardDetailPage() {
                         });
 
                         queryClient.invalidateQueries(['moodboard', moodboardId]);
-                        toast.success('Material replaced successfully');
+                        toast.success('Material replaced and client notified');
                         setIsReplacingProduct(false);
-
-                        // Let child know it can close the modal
-                        // This is handled by child relying on isReplacingProduct to turn false... wait, actually we can just close it if we passed down state.
-                        // For simplicity, we can let user close it, or we dispatch an event.
                     },
-                    onError: () => {
+                    onError: (err) => {
+                        console.error("Material History Error:", err);
                         setIsReplacingProduct(false);
                         toast.error('Failed to record material history');
                     }
                 });
             },
-            onError: () => {
+            onError: (err) => {
+                console.error("Replacement Mutate Error:", err);
                 setIsReplacingProduct(false);
-                toast.error('Failed to replace material in list');
+                toast.error('Failed to update space with new material');
             }
         });
 
-    }, [estimation, products, updateEstimationMutation, addMaterialVersionMutation, moodboardId, moodboard, queryClient]);
+    }, [estimation, products, updateEstimationMutation, addMaterialVersionMutation, moodboardId, moodboard, queryClient, postComment]);
 
     /* ── Context Menu ──────────────────────────── */
     const openContextMenu = useCallback((e, itemId, isPhoto) => {
@@ -697,18 +707,26 @@ export default function MoodboardDetailPage() {
 
                     {/* Tab Navigation ─── */}
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {TABS.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`whitespace-nowrap flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all flex-1 sm:flex-none ${activeTab === tab.id
-                                    ? 'border-[#1a1a2e] text-[#1a1a2e]'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                        {TABS.map(tab => {
+                            const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.data?.generalDiscussions > 0;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`whitespace-nowrap flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-all flex-1 sm:flex-none relative ${activeTab === tab.id
+                                        ? 'border-[#1a1a2e] text-[#1a1a2e]'
+                                        : 'border-transparent text-gray-400 hover:text-gray-600'
+                                        }`}
+                                >
+                                    {tab.label}
+                                    {hasGeneralMessages && (
+                                        <span className="flex items-center justify-center bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full ml-1 animate-pulse">
+                                            {notificationsData.data.generalDiscussions}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 </Container>
             </div>

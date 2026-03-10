@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useGetProducts } from '@/hooks/useProduct';
+import { useState, useMemo, useEffect } from 'react';
+import { useGetRetailerProducts } from '@/hooks/useProduct';
+import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { getProductThumbnail, getProductName, getProductBrand, formatCurrency, resolvePricing } from '@/lib/productUtils';
 import { Search, X, Loader2, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -7,6 +8,8 @@ import Button from '@/components/ui/Button';
 export default function ReplaceMaterialModal({
     isOpen,
     onClose,
+    projectId,
+    spaceId,
     oldMaterialId,
     oldMaterialName,
     onReplace,
@@ -16,8 +19,16 @@ export default function ReplaceMaterialModal({
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [reason, setReason] = useState('');
 
-    const { data: productsData, isLoading } = useGetProducts({ limit: 100 }); // Getting a list for quick search
+    const { data: productsData, isLoading } = useGetRetailerProducts({ limit: 100 }); // Getting a list for quick search
     const allProducts = productsData?.data?.data || [];
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    // Mark as read when the modal opens
+    useEffect(() => {
+        if (isOpen && projectId && spaceId && oldMaterialId) {
+            markNotificationsRead({ id: projectId, spaceId, materialId: oldMaterialId });
+        }
+    }, [isOpen, projectId, spaceId, oldMaterialId, markNotificationsRead]);
 
     const searchResults = useMemo(() => {
         if (!searchTerm.trim()) return [];
@@ -47,8 +58,14 @@ export default function ReplaceMaterialModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={handleClose}
+        >
+            <div
+                className="bg-white rounded-3xl w-full max-w-xl shadow-2xl relative animate-in zoom-in-95 duration-200 cursor-default"
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#fef7f2] rounded-t-3xl">
                     <div>

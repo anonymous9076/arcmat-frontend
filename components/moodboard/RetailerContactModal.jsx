@@ -24,8 +24,14 @@ export default function RetailerContactModal({ isOpen, onClose, projectId, mater
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl relative animate-in zoom-in-95 duration-200 cursor-default"
+                onClick={e => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-[#fef7f2]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-[#d9a88a]">
