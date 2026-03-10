@@ -28,6 +28,14 @@ export default function MoodboardsPage() {
 
     const { user } = useAuth();
     const isArchitect = user?.role === 'architect';
+    const isContractor = user?.professionalType === 'Contractor / Builder';
+
+    useEffect(() => {
+        if (isContractor) {
+            toast.error("Contractors do not have access to Spaces.");
+            router.push('/dashboard/projects');
+        }
+    }, [isContractor, router]);
 
     const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
     const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);

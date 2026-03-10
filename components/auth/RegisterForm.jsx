@@ -13,7 +13,7 @@ import clsx from 'clsx';
 import Button from '@/components/ui/Button';
 import BackLink from '../ui/BackLink';
 
-const PROFESSIONS = ['Architect', 'Designer', 'Contractor', 'Other'];
+const PROFESSIONS = ['Architect', 'Interior Designer', 'Landscape Designer', 'Contractor / Builder'];
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -66,7 +66,7 @@ export default function RegisterForm() {
 
     const finalData = {
       ...data,
-      profession: (activeTab === 'professionals' && userType === 'professional') ? data.profession : undefined
+      professionalType: (activeTab === 'professionals' && userType === 'professional') ? data.profession : undefined
     };
 
     let profileUrl = finalData.profile;

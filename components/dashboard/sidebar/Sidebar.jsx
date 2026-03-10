@@ -115,6 +115,11 @@ export default function Sidebar() {
         return false;
       }
 
+      // Hide Spaces (boards) for Contractors
+      if (item.id === 'boards' && user?.professionalType === 'Contractor / Builder') {
+        return false;
+      }
+
       return true;
     });
 
@@ -148,7 +153,7 @@ export default function Sidebar() {
 
           <SidebarUser isCollapsed={safeCollapsed} mounted={mounted} />
 
-          {isArchitect && (
+          {(isArchitect) && (
             <Button
               onClick={() => setIsProjectModalOpen(true)}
               className={clsx(

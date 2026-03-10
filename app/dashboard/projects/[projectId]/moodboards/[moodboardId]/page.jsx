@@ -69,8 +69,14 @@ export default function MoodboardDetailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthenticated } = useAuth();
+    const isContractor = user?.professionalType === 'Contractor / Builder';
 
-
+    useEffect(() => {
+        if (isContractor) {
+            toast.error("Contractors do not have access to Spaces.");
+            router.push('/dashboard/projects');
+        }
+    }, [isContractor, router]);
 
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
