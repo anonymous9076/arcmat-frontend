@@ -107,6 +107,7 @@ const Header = ({ variant = 'default' }) => {
                 <div className='flex items-center gap-2'>
 
                     <button
+                        suppressHydrationWarning
                         onClick={toggleMobileSidebar}
                         className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
                         aria-label="Toggle Menu"

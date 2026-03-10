@@ -63,6 +63,10 @@ const ARCHITECT_MENU_ITEMS = mapIcons(sidebarData.ARCHITECT_MENU_ITEMS);
 export default function Sidebar() {
   const { isCollapsed, toggleSidebar, isMobileOpen, setMobileOpen } = useSidebarStore();
   const { user, isAuthenticated } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
+  const isBrand = user?.role === 'brand' || user?.role === 'vendor';
+  const isRetailer = user?.role === 'retailer';
+  const isArchitect = user?.role === 'architect';
   const [mounted, setMounted] = useState(false);
 
   const pathname = usePathname();
@@ -84,21 +88,17 @@ export default function Sidebar() {
     }
   }, [pathname]);
 
-  const safeCollapsed = isMobileOpen ? false : isCollapsed;
+  // Determine menu items based on role - only after mounting to avoid hydration mismatch
+  const menuItems = (!mounted || !user)
+    ? USER_MENU_ITEMS
+    : (isAdmin || isBrand
+      ? BRAND_MENU_ITEMS
+      : isRetailer
+        ? RETAILER_MENU_ITEMS
+        : isArchitect
+          ? ARCHITECT_MENU_ITEMS
+          : USER_MENU_ITEMS);
 
-  // Determine menu items based on role
-  const isBrand = user?.role === 'brand' || user?.role === 'vendor';
-  const isAdmin = user?.role === 'admin';
-  const isRetailer = user?.role === 'retailer';
-  const isArchitect = user?.role === 'architect';
-
-  const menuItems = isAdmin || isBrand
-    ? BRAND_MENU_ITEMS
-    : isRetailer
-      ? RETAILER_MENU_ITEMS
-      : isArchitect
-        ? ARCHITECT_MENU_ITEMS
-        : USER_MENU_ITEMS;
   const visibleItems = menuItems
     .map(item => {
       if (isBrand && item.id === 'products-list' && (user?._id || user?.id)) {
@@ -110,6 +110,8 @@ export default function Sidebar() {
       return item;
     })
     .filter(item => {
+      if (!mounted) return item.id === 'dashboard'; // Show minimal on server
+
       if (item.requiresAuth && !isAuthenticated) return false;
 
       if ((item.id === 'categories' || item.id === 'attributes' || item.id === 'users' || item.id === 'homepage') && !isAdmin) {
@@ -132,6 +134,10 @@ export default function Sidebar() {
       return true;
     });
 
+  // Calculate safeCollapsed after mounting to ensure it matches browser stored state
+  const currentCollapsed = mounted ? isCollapsed : false;
+  const safeCollapsed = isMobileOpen ? false : currentCollapsed;
+
   return (
     <>
       {isMobileOpen && (
@@ -142,6 +148,7 @@ export default function Sidebar() {
       )}
 
       <aside
+        suppressHydrationWarning
         className={clsx(
           "fixed md:relative z-40 h-screen border-r border-gray-200 bg-white transition-all duration-300 flex flex-col shrink-0",
           safeCollapsed ? "w-20" : "w-64",
@@ -150,16 +157,19 @@ export default function Sidebar() {
       >
         <button
           onClick={toggleSidebar}
+          suppressHydrationWarning
           className="absolute -right-3 top-6 bg-white border border-gray-200 rounded-full p-1 hidden md:flex hover:bg-[#d9a88a] z-50 shadow-sm"
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        <div className={clsx(
-          "p-6 flex flex-col h-full overflow-x-hidden",
-          safeCollapsed ? "overflow-hidden" : "overflow-y-auto"
-        )}>
-
+        <div
+          className={clsx(
+            "p-6 flex flex-col h-full overflow-x-hidden",
+            safeCollapsed ? "overflow-hidden" : "overflow-y-auto"
+          )}
+          suppressHydrationWarning
+        >
           <SidebarUser isCollapsed={safeCollapsed} mounted={mounted} />
 
           {(isArchitect) && (

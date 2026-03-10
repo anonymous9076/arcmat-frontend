@@ -37,6 +37,7 @@ import OverviewTab from '@/components/moodboard/tabs/OverviewTab';
 import ExportTab from '@/components/moodboard/tabs/ExportTab';
 import DownloadTab from '@/components/moodboard/tabs/DownloadTab';
 import DiscussionTab from '@/components/moodboard/tabs/DiscussionTab';
+import DeleteConfirmationModal from '@/components/moodboard/DeleteConfirmationModal';
 
 import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
@@ -89,6 +90,10 @@ export default function MoodboardDetailPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
+    const [isRenderModalOpen, setIsRenderModalOpen] = useState(false);
+    const [selectedFullScreenImage, setSelectedFullScreenImage] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     // Photo upload modal
     // Custom photos: [{ id, title, description, previewUrl, status }]
@@ -182,15 +187,18 @@ export default function MoodboardDetailPage() {
     // Materials from estimation + custom photos for Material Panel
     const materials = useMemo(() => {
         const base = moodboard?.estimatedCostId?.productIds || [];
-        const photos = customPhotos.map(p => ({
-            _id: p.id,
-            name: p.title,
-            isCustomPhoto: true,
-            photoUrl: p.previewUrl,
-            images: [p.previewUrl],
-            category: 'My Photo',
-            brand: 'Custom Upload',
-        }));
+        // Filter out photos tagged as 'Render' from the Design Desk material panel
+        const photos = customPhotos
+            .filter(p => !(p.tags || []).includes('Render'))
+            .map(p => ({
+                _id: p.id,
+                name: p.title,
+                isCustomPhoto: true,
+                photoUrl: p.previewUrl,
+                images: [p.previewUrl],
+                category: 'My Photo',
+                brand: 'Custom Upload',
+            }));
         return [...base, ...photos];
     }, [moodboard, customPhotos]);
 
@@ -358,7 +366,7 @@ export default function MoodboardDetailPage() {
     };
 
     /* ── Photo Upload Handler ──────────────────── */
-    const handlePhotoAdd = useCallback(({ file, previewUrl, title, description, price, quantity }) => {
+    const handlePhotoAdd = useCallback(({ file, previewUrl, title, description, price, quantity, tags = [] }) => {
         const photoId = 'photo_' + Date.now();
         const newPhoto = {
             id: photoId,
@@ -367,7 +375,8 @@ export default function MoodboardDetailPage() {
             previewUrl, // Base64 now
             status: 'Considering',
             price: price || 0,
-            quantity: quantity || 1
+            quantity: quantity || 1,
+            tags: tags
         };
         // Create pseudo-material for Design Desk
         const pseudoMaterial = {
@@ -590,8 +599,15 @@ export default function MoodboardDetailPage() {
 
     /* ── Excel Export ─────────────────────────────── */
     const exportAsCSV = async () => {
+        // For excel export, we might still want all data or filtered? 
+        // User said "ONLY TENDER TAB NOT ALL TABS", implying UI visibility.
+        // Usually export should include everything specified, but let's stick to UI exclusivity first.
         await exportMoodboardToExcel(moodboard, project, products);
     };
+
+    // Filtered photos for Overview and Export (excluding Renders)
+    const generalPhotos = useMemo(() => customPhotos.filter(p => !(p.tags || []).includes('Render')), [customPhotos]);
+    const renderPhotos = useMemo(() => customPhotos.filter(p => (p.tags || []).includes('Render')), [customPhotos]);
 
     if (isLoading || !isMounted) {
         return (
@@ -738,7 +754,7 @@ export default function MoodboardDetailPage() {
                 {activeTab === 'overview' && (
                     <OverviewTab
                         products={products}
-                        customPhotos={customPhotos}
+                        customPhotos={generalPhotos}
                         productStatuses={productStatuses}
                         productNotifications={productNotifications}
                         projectId={projectId}
@@ -833,23 +849,55 @@ export default function MoodboardDetailPage() {
                                 <p className="text-sm text-gray-500 font-medium">Visualizations and renders for this space</p>
                             </div>
                             {isArchitect && (
-                                <button className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsRenderModalOpen(true)}
+                                    className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
+                                >
                                     <Plus className="w-4 h-4" /> Add Render
                                 </button>
                             )}
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {customPhotos.filter(p => (p.tags || []).includes('Render')).map(photo => (
-                                <div key={photo.id} className="group relative aspect-video bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500">
-                                    <img src={photo.previewUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                            {renderPhotos.map(photo => (
+                                <div
+                                    key={photo.id}
+                                    className="group relative aspect-video bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
+                                >
+                                    <img
+                                        src={photo.previewUrl}
+                                        alt={photo.title}
+                                        onClick={() => setSelectedFullScreenImage(photo)}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+
+                                    {/* Delete Button */}
+                                    {isArchitect && (
+                                        <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setItemToDelete(photo.id);
+                                                    setIsDeleteModalOpen(true);
+                                                }}
+                                                className="p-2 bg-white/90 hover:bg-black hover:text-white rounded-xl shadow-lg transition-all text-red-500"
+                                                title="Delete Render"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div
+                                        onClick={() => setSelectedFullScreenImage(photo)}
+                                        className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6"
+                                    >
                                         <p className="text-white font-bold text-lg">{photo.title}</p>
                                         <p className="text-white/80 text-sm line-clamp-1">{photo.description}</p>
                                     </div>
                                 </div>
                             ))}
-                            {customPhotos.filter(p => (p.tags || []).includes('Render')).length === 0 && (
+                            {renderPhotos.length === 0 && (
                                 <div className="col-span-full py-24 border-2 border-dashed border-gray-200 rounded-[40px] flex flex-col items-center justify-center text-center">
                                     <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
                                         <ImagePlus className="w-8 h-8 text-gray-300" />
@@ -868,7 +916,7 @@ export default function MoodboardDetailPage() {
                 {activeTab === 'export' && (
                     <ExportTab
                         products={products}
-                        customPhotos={customPhotos}
+                        customPhotos={generalPhotos}
                         customRows={customRows}
                         boardItems={boardItems}
                         productStatuses={productStatuses}
@@ -901,6 +949,75 @@ export default function MoodboardDetailPage() {
                     <DiscussionTab projectId={projectId} />
                 )}
             </div>
+
+            <PhotoUploadModal
+                isOpen={isRenderModalOpen}
+                onClose={() => setIsRenderModalOpen(false)}
+                onAdd={handlePhotoAdd}
+                tags={['Render']}
+            />
+
+            {/* Full Screen Image Viewer */}
+            {selectedFullScreenImage && (
+                <div
+                    className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden"
+                    onClick={() => setSelectedFullScreenImage(null)}
+                >
+                    <button
+                        className="absolute top-6 right-6 p-3 bg-black/40 hover:bg-black/60 rounded-full text-white transition-all z-50 border border-white/10"
+                        onClick={() => setSelectedFullScreenImage(null)}
+                    >
+                        <X className="w-8 h-8" />
+                    </button>
+
+                    {isArchitect && (
+                        <button
+                            className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-50 border border-white/10 group"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setItemToDelete(selectedFullScreenImage.id);
+                                setIsDeleteModalOpen(true);
+                            }}
+                            title="Delete Render"
+                        >
+                            <Trash2 className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                        </button>
+                    )}
+
+                    <div
+                        className="relative w-full h-full flex items-center justify-center"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <img
+                            src={selectedFullScreenImage.previewUrl}
+                            alt={selectedFullScreenImage.title}
+                            className="w-full h-full object-contain"
+                        />
+
+                        {/* Overlay Metadata */}
+                        <div className="absolute bottom-0 left-0 right-0 p-12 bg-linear-to-t from-black/80 to-transparent pointer-events-none">
+                            <div className="max-w-4xl mx-auto space-y-2">
+                                <h2 className="text-4xl font-black text-white drop-shadow-lg">{selectedFullScreenImage.title}</h2>
+                                {selectedFullScreenImage.description && (
+                                    <p className="text-xl text-white/80 font-medium max-w-2xl drop-shadow-md">{selectedFullScreenImage.description}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={() => {
+                    handleRemovePhoto(itemToDelete);
+                    if (selectedFullScreenImage?.id === itemToDelete) {
+                        setSelectedFullScreenImage(null);
+                    }
+                    setItemToDelete(null);
+                }}
+            />
         </div>
     );
 }

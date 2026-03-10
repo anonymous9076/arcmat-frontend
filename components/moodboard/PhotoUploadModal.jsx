@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { X, Upload, ImagePlus } from 'lucide-react';
 
-export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
+export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) {
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [title, setTitle] = useState('');
@@ -82,7 +82,8 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd }) {
                 title: title.trim(),
                 description: description.trim(),
                 price: 0,
-                quantity: 1
+                quantity: 1,
+                tags: tags
             });
             reset();
             onClose();

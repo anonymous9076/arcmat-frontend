@@ -50,6 +50,7 @@ const SidebarUser = memo(({ isCollapsed, mounted }) => {
     return (
         <div className={clsx("relative mb-8 transition-all", isCollapsed ? "flex justify-center" : "")}>
             <button
+                suppressHydrationWarning
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className={clsx(
                     "flex items-center gap-2 w-full transition-all outline-none text-left overflow-hidden whitespace-nowrap",

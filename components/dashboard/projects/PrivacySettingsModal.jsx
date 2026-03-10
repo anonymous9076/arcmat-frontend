@@ -1,8 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useUpdateProject } from '@/hooks/useProject';
-import { Loader2, X, Shield, Eye, EyeOff } from 'lucide-react';
+import { Loader2, X, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { toast } from 'sonner';
+
+/**
+ * Toggle component defined outside to avoid unnecessary re-mounting
+ * during state updates in the parent modal.
+ */
+const PrivacyToggle = ({ label, description, checked, onChange }) => (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-gray-100/50">
+        <div className="pr-4">
+            <p className="text-sm font-bold text-gray-800">{label}</p>
+            <p className="text-xs font-medium text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+        </div>
+        <button
+            type="button"
+            onClick={() => onChange(!checked)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${checked ? 'bg-[#d9a88a]' : 'bg-gray-300'}`}
+        >
+            <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+        </button>
+    </div>
+);
 
 export default function PrivacySettingsModal({ isOpen, onClose, project }) {
     const updateMutation = useUpdateProject();
@@ -14,11 +36,17 @@ export default function PrivacySettingsModal({ isOpen, onClose, project }) {
         showMoodboards: true
     });
 
+    // Initialize/Sync local state with project data when modal opens
     useEffect(() => {
-        if (project?.privacyControls) {
-            setControls(project.privacyControls);
+        if (isOpen && project?.privacyControls) {
+            setControls({
+                showPriceToClient: !!project.privacyControls.showPriceToClient,
+                showMaterials: project.privacyControls.showMaterials !== false,
+                showRenders: project.privacyControls.showRenders !== false,
+                showMoodboards: project.privacyControls.showMoodboards !== false
+            });
         }
-    }, [project]);
+    }, [project, isOpen]);
 
     if (!isOpen) return null;
 
@@ -31,32 +59,24 @@ export default function PrivacySettingsModal({ isOpen, onClose, project }) {
                 onSuccess: () => {
                     toast.success('Privacy settings updated');
                     onClose();
+                },
+                onError: (error) => {
+                    console.error("Save Error:", error);
+                    toast.error('Failed to save settings');
                 }
             }
         );
     };
 
-    const Toggle = ({ label, description, checked, onChange }) => (
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <div className="pr-4">
-                <p className="text-sm font-bold text-gray-800">{label}</p>
-                <p className="text-xs font-medium text-gray-500 mt-0.5 leading-relaxed">{description}</p>
-            </div>
-            <button
-                type="button"
-                onClick={() => onChange(!checked)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${checked ? 'bg-[#d9a88a]' : 'bg-gray-300'}`}
-            >
-                <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`}
-                />
-            </button>
-        </div>
-    );
-
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+        <div
+            className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+                onClick={e => e.stopPropagation()}
+            >
                 <div className="relative p-8">
                     <button
                         onClick={onClose}
@@ -76,25 +96,25 @@ export default function PrivacySettingsModal({ isOpen, onClose, project }) {
                     </div>
 
                     <div className="space-y-3 mb-8">
-                        <Toggle
+                        <PrivacyToggle
                             label="Show Material Pricing"
                             description="Allow clients to see individual material costs and total budgets."
                             checked={controls.showPriceToClient}
                             onChange={(val) => setControls({ ...controls, showPriceToClient: val })}
                         />
-                        <Toggle
+                        <PrivacyToggle
                             label="Show Materials/Spaces"
                             description="Clients can view the assigned materials for each space."
                             checked={controls.showMaterials}
                             onChange={(val) => setControls({ ...controls, showMaterials: val })}
                         />
-                        <Toggle
+                        <PrivacyToggle
                             label="Show 3D Renders"
                             description="Make 3D visualization renders visible to clients."
                             checked={controls.showRenders}
                             onChange={(val) => setControls({ ...controls, showRenders: val })}
                         />
-                        <Toggle
+                        <PrivacyToggle
                             label="Show Moodboards"
                             description="Allow clients to view moodboards and concept designs."
                             checked={controls.showMoodboards}
@@ -104,15 +124,16 @@ export default function PrivacySettingsModal({ isOpen, onClose, project }) {
 
                     <div className="flex gap-3">
                         <Button
+                            variant="secondary"
                             onClick={onClose}
-                            className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+                            className="flex-1 py-4 rounded-2xl font-bold"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={updateMutation.isPending}
-                            className="flex-1 bg-[#3c4153] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#2d3142] transition-colors"
+                            className="flex-1 bg-[#2d3142] hover:bg-[#1a1c27] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
                             {updateMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Settings'}
                         </Button>
