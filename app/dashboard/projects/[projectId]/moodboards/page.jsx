@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetMoodboardsByProject, useDeleteMoodboard } from '@/hooks/useMoodboard';
-import { useGetProject } from '@/hooks/useProject';
+import { useGetProject, useCompleteProject } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import CreateMoodboardModal from '@/components/dashboard/projects/CreateMoodboardModal';
@@ -13,6 +13,7 @@ import { Loader2, Plus, ArrowLeft, Layout, Search, ChevronDown, Filter, Shield }
 import Button from '@/components/ui/Button';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Container from '@/components/ui/Container';
+import { CheckCircle } from 'lucide-react';
 
 export default function MoodboardsPage() {
     const { projectId } = useParams();
@@ -25,6 +26,7 @@ export default function MoodboardsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('newest');
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
 
     const { user } = useAuth();
     const isArchitect = user?.role === 'architect';
@@ -40,6 +42,7 @@ export default function MoodboardsPage() {
     const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
     const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);
     const deleteMutation = useDeleteMoodboard();
+    const completeMutation = useCompleteProject();
 
     const moodboards = moodboardsData?.data || [];
     const project = projectData?.data || (moodboards.length > 0 ? moodboards[0].projectId : null);
@@ -56,8 +59,21 @@ export default function MoodboardsPage() {
         }
     };
 
+    const handleConfirmComplete = async () => {
+        completeMutation.mutate(projectId, {
+            onSuccess: () => {
+                setIsCompleteModalOpen(false);
+            }
+        });
+    };
+
     const filteredMoodboards = moodboards
-        .filter(mb => mb.moodboard_name?.toLowerCase().includes(searchQuery.toLowerCase()))
+        .filter(mb => {
+            if (!isArchitect && project?.privacyControls?.showMoodboards === false) {
+                return false;
+            }
+            return mb.moodboard_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        })
         .sort((a, b) => {
             if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
             if (sortBy === 'name') return a.moodboard_name.localeCompare(b.moodboard_name);
@@ -86,6 +102,16 @@ export default function MoodboardsPage() {
 
                 {isArchitect && (
                     <div className="flex items-center gap-4">
+                        {project?.status !== 'Completed' && (
+                            <Button
+                                onClick={() => setIsCompleteModalOpen(true)}
+                                disabled={completeMutation.isPending}
+                                className="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-600 hover:text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-sm text-sm disabled:opacity-50"
+                            >
+                                {completeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                Complete Project
+                            </Button>
+                        )}
                         <Button
                             onClick={() => setIsPrivacyModalOpen(true)}
                             className="bg-white border text-gray-700 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"
@@ -229,6 +255,17 @@ export default function MoodboardsPage() {
                 message="Are you sure you want to delete this space and its associated costs? This action cannot be undone."
                 confirmText="Delete"
                 type="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={isCompleteModalOpen}
+                onClose={() => setIsCompleteModalOpen(false)}
+                onConfirm={handleConfirmComplete}
+                title="Complete Project"
+                message="Are you sure you want to finalize this project? All current materials across all spaces will be marked as 'Specified' and the project phase will be updated to Completed."
+                confirmText={completeMutation.isPending ? "Completing..." : "Complete Project"}
+                type="primary"
+            // Using primary instead of danger, since danger is red, success/primary is better.
             />
         </Container>
     );

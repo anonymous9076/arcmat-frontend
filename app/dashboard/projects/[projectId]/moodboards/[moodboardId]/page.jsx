@@ -8,6 +8,8 @@ import Link from 'next/link';
 
 import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard, useGetMoodboardsByProject } from '@/hooks/useMoodboard';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
+import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
+import { useMarkNotificationsRead, useGetProductNotifications } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import useProjectStore from '@/store/useProjectStore';
 import { useAddToCart } from '@/hooks/useCart';
@@ -27,6 +29,7 @@ import {
     getProductImageUrl, getProductName, getProductCategory,
     getProductBrand, getProductThumbnail
 } from '@/lib/productUtils';
+import { exportMoodboardToExcel } from '@/lib/exportUtils';
 
 // Visualizer components
 import OverviewTab from '@/components/moodboard/tabs/OverviewTab';
@@ -105,13 +108,19 @@ export default function MoodboardDetailPage() {
     const [isMounted, setIsMounted] = useState(false);
     const isDataLoaded = useRef(false);
 
-    const { data: moodboardData, isLoading } = useGetMoodboard(moodboardId);
+    const { data: moodboardData, isLoading, isError, error } = useGetMoodboard(moodboardId);
     const { data: siblingData } = useGetMoodboardsByProject(projectId);
     const deleteMutation = useDeleteMoodboard();
     const updateEstimationMutation = useUpdateEstimatedCost();
     const { mutate: updateMoodboard, isPending: isUpdatingName } = useUpdateMoodboard();
+    const addMaterialVersionMutation = useAddMaterialVersion(projectId);
     const queryClient = useQueryClient();
     const { mutate: addToCartBackend } = useAddToCart();
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    // Fetch product-level notifications
+    const { data: notificationsData } = useGetProductNotifications(projectId, moodboardId);
+    const productNotifications = notificationsData?.data?.productNotifications || {};
 
     const moodboard = moodboardData?.data;
     const project = moodboard?.projectId;
@@ -120,6 +129,31 @@ export default function MoodboardDetailPage() {
     const siblingBoards = (siblingData?.data || []).filter(b => b._id !== moodboardId);
 
     useEffect(() => { setIsMounted(true); }, []);
+
+    // Mark GENERAL space/project discussions as read on mount (avoids clearing material-specific badges)
+    useEffect(() => {
+        if (projectId && moodboardId && isAuthenticated) {
+            markNotificationsRead({ id: projectId, spaceId: moodboardId, type: 'general' });
+        }
+    }, [projectId, moodboardId, isAuthenticated, markNotificationsRead]);
+
+    // Redirect if there's an error fetching the moodboard (e.g., 403 Forbidden due to privacy settings)
+    useEffect(() => {
+        if (isError) {
+            toast.error(error?.response?.data?.message || "You don't have permission to view this space.");
+            router.push(`/dashboard/projects/${projectId}`);
+        }
+    }, [isError, error, router, projectId]);
+
+    // Redirect if the data loads and we see the flag is strictly false for a non-architect
+    useEffect(() => {
+        if (!isLoading && moodboard) {
+            if (!isArchitect && project?.privacyControls?.showMoodboards === false) {
+                toast.error("You don't have permission to view spaces for this project.");
+                router.push(`/dashboard/projects/${projectId}`);
+            }
+        }
+    }, [isLoading, moodboard, isArchitect, project, router, projectId]);
 
     useEffect(() => {
         isDataLoaded.current = false;
@@ -471,6 +505,72 @@ export default function MoodboardDetailPage() {
         toast.success('Product removed from board');
     }, [estimation, products, updateEstimationMutation, moodboardId, queryClient]);
 
+    const [isReplacingProduct, setIsReplacingProduct] = useState(false);
+    const handleReplaceProduct = useCallback((oldProductId, oldProductName, newProduct, reason) => {
+        if (!estimation?._id || products.length === 0) return;
+        setIsReplacingProduct(true);
+
+        const newProductId = (typeof newProduct.productId === 'object' ? newProduct.productId?._id : newProduct.productId) || newProduct._id;
+
+        // 1. Replace in EstimatedCost (Overview Tab)
+        const updatedProductIds = products.map(p => {
+            if (p._id === oldProductId) return newProduct; // Use full object or ID based on how backend expects it.
+            // Wait, typically we send IDs to updateEstimationMutation.
+            return p;
+        }).map(p => p._id || p);
+
+        // Just ensure we replace old ID with new ID
+        const finalIds = products.map(p => p._id === oldProductId ? newProductId : p._id);
+
+        updateEstimationMutation.mutate({
+            id: estimation._id,
+            data: { productIds: finalIds }
+        }, {
+            onSuccess: () => {
+                // 2. Record Material History
+                addMaterialVersionMutation.mutate({
+                    spaceId: moodboardId,
+                    spaceName: moodboard?.moodboard_name || 'Space',
+                    materialId: newProductId,
+                    materialName: getProductName(newProduct),
+                    previousMaterialId: oldProductId,
+                    previousMaterialName: oldProductName,
+                    reason: reason
+                }, {
+                    onSuccess: () => {
+                        // 3. Replace in Canvas boardItems (Design Desk)
+                        // This involves swapping the `material` object for any item matching the old ID
+                        setBoardItems(prev => {
+                            return prev.map(item => {
+                                if (item.material?._id === oldProductId) {
+                                    return { ...item, material: newProduct, price: resolvePricing(newProduct).price };
+                                }
+                                return item;
+                            });
+                        });
+
+                        queryClient.invalidateQueries(['moodboard', moodboardId]);
+                        toast.success('Material replaced successfully');
+                        setIsReplacingProduct(false);
+
+                        // Let child know it can close the modal
+                        // This is handled by child relying on isReplacingProduct to turn false... wait, actually we can just close it if we passed down state.
+                        // For simplicity, we can let user close it, or we dispatch an event.
+                    },
+                    onError: () => {
+                        setIsReplacingProduct(false);
+                        toast.error('Failed to record material history');
+                    }
+                });
+            },
+            onError: () => {
+                setIsReplacingProduct(false);
+                toast.error('Failed to replace material in list');
+            }
+        });
+
+    }, [estimation, products, updateEstimationMutation, addMaterialVersionMutation, moodboardId, moodboard, queryClient]);
+
     /* ── Context Menu ──────────────────────────── */
     const openContextMenu = useCallback((e, itemId, isPhoto) => {
         e.preventDefault();
@@ -480,145 +580,7 @@ export default function MoodboardDetailPage() {
 
     /* ── Excel Export ─────────────────────────────── */
     const exportAsCSV = async () => {
-        const allOverviewItems = [
-            ...products.map(p => ({ type: 'product', data: p })),
-            ...customPhotos.map(p => ({ type: 'photo', data: p })),
-            ...customRows.map(r => ({ type: 'row', data: r }))
-        ];
-
-        if (allOverviewItems.length === 0) { toast.error('No materials to export'); return; }
-
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Materials Export');
-
-        // Setup Headers
-        const headerRow = [
-            'Product Image',
-            'Name',
-            'Spec Status',
-            'Project Name',
-            'Brand',
-            'Manufacturer SKU',
-            'Quantity',
-            'Unit Price',
-            'Total Cost'
-        ];
-
-        worksheet.getRow(1).values = headerRow;
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).height = 30;
-        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-
-        // Set column widths
-        worksheet.columns = [
-            { width: 25 }, // Image
-            { width: 30 }, // Name
-            { width: 15 }, // Status
-            { width: 20 }, // Project
-            { width: 20 }, // Brand
-            { width: 20 }, // SKU
-            { width: 10 }, // Qty
-            { width: 15 }, // Price
-            { width: 15 }  // Total
-        ];
-
-        let totalSum = 0;
-
-        toast.loading('Preparing excel export with images...', { id: 'export-toast' });
-
-        try {
-            for (let i = 0; i < allOverviewItems.length; i++) {
-                const { type, data } = allOverviewItems[i];
-                const isPhoto = type === 'photo';
-                const isRow = type === 'row';
-                const isProduct = type === 'product';
-
-                const id = isProduct ? data._id : data.id;
-                const meta = isProduct ? (productStatuses[id] || {}) : data;
-                const st = (isPhoto || isRow) ? (data.status || 'Considering') : (typeof meta === 'object' ? meta.status : meta || 'Considering');
-                let qty = (isPhoto || isRow) ? data.quantity : meta.quantity;
-                qty = Number(qty) || 1;
-
-                let price = 0;
-                if (isPhoto || isRow) {
-                    price = Number(data.price) || 0;
-                } else {
-                    if (typeof meta === 'object' && meta.price !== undefined) {
-                        price = Number(meta.price);
-                    } else {
-                        const { price: defaultPrice } = resolvePricing(data);
-                        price = defaultPrice;
-                    }
-                }
-                const total = qty * price;
-                totalSum += total;
-
-                const currentRow = i + 2;
-                const row = worksheet.getRow(currentRow);
-
-                // Set text values
-                row.getCell(2).value = isProduct ? getProductName(data) : data.title;
-                row.getCell(3).value = st;
-                row.getCell(4).value = project?.projectName || 'ArcMat';
-                row.getCell(5).value = isProduct ? getProductBrand(data) : (isPhoto ? 'Custom Upload' : 'Custom Row');
-                row.getCell(6).value = isProduct ? (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '') : '—';
-                row.getCell(7).value = qty;
-                row.getCell(8).value = price;
-                row.getCell(9).value = total;
-
-                row.height = isProduct || isPhoto ? 100 : 30; // Set height for image or normal for rows
-                row.alignment = { vertical: 'middle', horizontal: 'center' };
-
-                // Handle Image
-                const thumbUrl = isProduct ? getProductThumbnail(data) : (isPhoto ? (data.previewUrl || '') : null);
-                if (thumbUrl) {
-                    try {
-                        const response = await fetch(thumbUrl);
-                        const buffer = await response.arrayBuffer();
-                        const extension = thumbUrl.split('.').pop().split('?')[0].toLowerCase() || 'png';
-
-                        const imageId = workbook.addImage({
-                            buffer: buffer,
-                            extension: extension === 'jpg' ? 'jpeg' : extension,
-                        });
-
-                        worksheet.addImage(imageId, {
-                            tl: { col: 0, row: currentRow - 1 },
-                            ext: { width: 120, height: 120 },
-                            editAs: 'oneCell'
-                        });
-                    } catch (err) {
-                        console.error('Failed to load image for row', i, err);
-                        row.getCell(1).value = '(Image Failed)';
-                    }
-                }
-            }
-
-            // Add Grand Total Row
-            const totalRowIndex = allOverviewItems.length + 2;
-            const totalRow = worksheet.getRow(totalRowIndex);
-            totalRow.getCell(8).value = 'GRAND TOTAL';
-            totalRow.getCell(8).font = { bold: true };
-            totalRow.getCell(9).value = totalSum;
-            totalRow.getCell(9).font = { bold: true };
-            totalRow.height = 30;
-            totalRow.alignment = { vertical: 'middle' };
-
-            // Generate and Download
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${(moodboard?.moodboard_name || 'moodboard').replace(/\s+/g, '-')}-export.xlsx`;
-            link.click();
-            URL.revokeObjectURL(url);
-
-            toast.success('Excel exported successfully!', { id: 'export-toast' });
-        } catch (error) {
-            console.error('Export failed:', error);
-            toast.error('Failed to export Excel', { id: 'export-toast' });
-        }
+        await exportMoodboardToExcel(moodboard, project, products);
     };
 
     if (isLoading || !isMounted) {
@@ -760,6 +722,7 @@ export default function MoodboardDetailPage() {
                         products={products}
                         customPhotos={customPhotos}
                         productStatuses={productStatuses}
+                        productNotifications={productNotifications}
                         projectId={projectId}
                         projectName={project?.projectName}
                         moodboardId={moodboardId}
@@ -770,6 +733,8 @@ export default function MoodboardDetailPage() {
                         handlePriceQtyUpdate={handlePriceQtyUpdate}
                         handleRemovePhoto={handleRemovePhoto}
                         handleRemoveProduct={handleRemoveProduct}
+                        handleReplaceProduct={handleReplaceProduct}
+                        isReplacingProduct={isReplacingProduct}
                         handleAddToCart={handleAddToCart}
                         router={router}
                         isArchitect={isArchitect}

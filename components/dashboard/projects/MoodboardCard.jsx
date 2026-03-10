@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X, MonitorPlay, FolderOpen, Camera, Copy } from 'lucide-react';
+import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X, MonitorPlay, FolderOpen, Camera, Copy, Download, MessageCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
@@ -9,6 +9,8 @@ import { useUpdateMoodboard, useDuplicateMoodboard } from '@/hooks/useMoodboard'
 import { getProductImageUrl } from '@/lib/productUtils';
 import { toast } from 'sonner';
 import CoverSelectionModal from './CoverSelectionModal';
+import { exportMoodboardToExcel } from '@/lib/exportUtils';
+import { moodboardService } from '@/services/moodboardService';
 
 export default function MoodboardCard({ moodboard, projectId, onDelete, isArchitect, projectPrivacy }) {
     const { _id, moodboard_name, estimatedCostId } = moodboard;
@@ -18,6 +20,7 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
 
     const { mutate: updateMoodboard, isPending } = useUpdateMoodboard();
     const { mutate: duplicateSpace, isPending: isDuplicating } = useDuplicateMoodboard();
+    const [isExporting, setIsExporting] = useState(false);
 
     const handleSave = () => {
         if (!editName.trim()) {
@@ -79,6 +82,38 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
             });
     };
 
+    const handleDownloadExcel = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+            setIsExporting(true);
+            toast.loading('Fetching space data...', { id: 'fetch-toast' });
+
+            // Fetch the fully populated moodboard
+            const response = await moodboardService.getMoodboardById(_id);
+            const fullMoodboard = response?.data;
+
+            if (!fullMoodboard) {
+                toast.dismiss('fetch-toast');
+                toast.error('Failed to load space data');
+                return;
+            }
+
+            toast.dismiss('fetch-toast');
+
+            // Project data is populated inside fullMoodboard.projectId
+            await exportMoodboardToExcel(fullMoodboard, fullMoodboard.projectId);
+
+        } catch (error) {
+            console.error('Failed to download excel:', error);
+            toast.dismiss('fetch-toast');
+            toast.error('Failed to export space');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const previewImages = getPreviewItems(moodboard);
     const itemCount = moodboard.canvasState?.filter(i => i.type === 'material').length || 0;
 
@@ -88,6 +123,14 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
             <div className="absolute top-4 right-4 flex gap-1 opaque group-hover:opacity-100 transition-opacity z-20">
                 {isArchitect && (
                     <>
+                        <button
+                            onClick={handleDownloadExcel}
+                            disabled={isExporting}
+                            className={`p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-green-500 rounded-xl transition-all ${isExporting ? 'opacity-50 animate-pulse' : ''}`}
+                            title="Download Excel"
+                        >
+                            <Download className="w-4 h-4" />
+                        </button>
                         <button
                             onClick={(e) => { e.preventDefault(); duplicateSpace(_id); }}
                             disabled={isDuplicating}
@@ -201,6 +244,29 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
                                 <h3 className="text-lg font-extrabold text-[#2d3142] truncate group-hover:text-[#d9a88a] transition-colors">
                                     {moodboard_name}
                                 </h3>
+
+                                {/* Notification Badges */}
+                                <div className="flex items-center gap-1.5 ml-1">
+                                    {moodboard.unreadMessages > 0 && (
+                                        <div
+                                            className="flex items-center justify-center bg-red-50 text-red-600 rounded-full px-2 py-0.5 border border-red-100 shadow-sm"
+                                            title={`${moodboard.unreadMessages} new message${moodboard.unreadMessages > 1 ? 's' : ''}`}
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                                            <span className="text-xs font-bold leading-none">{moodboard.unreadMessages}</span>
+                                        </div>
+                                    )}
+                                    {moodboard.pendingApprovals > 0 && (
+                                        <div
+                                            className="flex items-center justify-center bg-amber-50 text-amber-600 rounded-full px-2 py-0.5 border border-amber-100 shadow-sm"
+                                            title={`${moodboard.pendingApprovals} pending approval${moodboard.pendingApprovals > 1 ? 's' : ''}`}
+                                        >
+                                            <AlertCircle className="w-3.5 h-3.5 mr-1" />
+                                            <span className="text-xs font-bold leading-none">{moodboard.pendingApprovals}</span>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <button
                                     onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
                                     className="p-1 text-gray-300 hover:text-[#d9a88a] transition-colors opacity-0 group-hover:opacity-100"

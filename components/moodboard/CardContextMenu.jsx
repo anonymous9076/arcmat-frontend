@@ -16,7 +16,9 @@ export default function CardContextMenu({
     isClient = false,
     onOpenHistory,
     onOpenSampleReq,
-    onOpenRetailerReq
+    onOpenRetailerReq,
+    onOpenDiscussion,
+    onOpenReplace
 }) {
     const ref = useRef(null);
 
@@ -59,6 +61,20 @@ export default function CardContextMenu({
 
             {!isPhoto && (
                 <>
+                    <button
+                        onClick={() => { onOpenDiscussion?.(); onClose(); }}
+                        className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                    >
+                        Discuss Material
+                    </button>
+                    {!isClient && (
+                        <button
+                            onClick={() => { onOpenReplace?.(); onClose(); }}
+                            className="w-full text-left px-4 py-2 text-sm font-semibold text-[#d9a88a] hover:bg-[#fef7f2] transition-colors"
+                        >
+                            Replace Material
+                        </button>
+                    )}
                     <button
                         onClick={() => { onOpenHistory?.(); onClose(); }}
                         className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"

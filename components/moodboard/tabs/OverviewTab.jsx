@@ -8,6 +8,8 @@ import CardContextMenu from '@/components/moodboard/CardContextMenu';
 import MaterialHistoryModal from '@/components/moodboard/MaterialHistoryModal';
 import SampleRequestModal from '@/components/moodboard/SampleRequestModal';
 import RetailerContactModal from '@/components/moodboard/RetailerContactModal';
+import MaterialDiscussionModal from '@/components/moodboard/MaterialDiscussionModal';
+import ReplaceMaterialModal from '@/components/moodboard/ReplaceMaterialModal';
 import {
     getProductThumbnail,
     getProductName,
@@ -19,6 +21,9 @@ import {
 } from '@/lib/productUtils';
 import useProjectStore from '@/store/useProjectStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
+import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const STATUS_STYLES = {
     'Specified': { dot: 'bg-green-400', label: 'text-green-600' },
@@ -40,6 +45,7 @@ export default function OverviewTab({
     products,
     customPhotos,
     productStatuses,
+    productNotifications,
     projectId,
     projectName,
     moodboardId,
@@ -50,6 +56,8 @@ export default function OverviewTab({
     handlePriceQtyUpdate,
     handleRemovePhoto,
     handleRemoveProduct,
+    handleReplaceProduct,
+    isReplacingProduct,
     handleAddToCart,
     router,
     isArchitect,
@@ -64,8 +72,12 @@ export default function OverviewTab({
     const [photoModalOpen, setPhotoModalOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
 
+    const updateEstimationMutation = useUpdateEstimatedCost();
+    const addMaterialVersionMutation = useAddMaterialVersion(projectId);
+    const queryClient = useQueryClient();
+
     // Modals state
-    // activeModal can be 'history', 'sample', 'retailer', or null
+    // activeModal can be 'history', 'sample', 'retailer', 'discussion', 'replace', or null
     const [activeModal, setActiveModal] = useState(null);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
 
@@ -84,6 +96,19 @@ export default function OverviewTab({
         e.stopPropagation();
         setContextMenu({ x: e.clientX, y: e.clientY, itemId, isPhoto });
     }, []);
+
+    const handleReplaceProductSubmit = (oldProductId, oldProductName, newProduct, reason) => {
+        // Find existing estimation 
+        // OverviewTab doesn't have the full moodboard or estimation data natively passed aside from products list, 
+        // but products list is basically estimatedCost.productIds.
+        // We will call handleRemoveProduct(old) and then Add it, but handleRemoveProduct is passed down and doesn't return a promise easily.
+        // Actually, we need to update the estimatedCost directly here to swap the IDs.
+
+        // Let's assume the parent can pass down estimationId. Wait, we don't have it as a prop.
+        // We need estimationId. Let's look at page.jsx: it passes products, not estimationId.
+        // I will add estimationId as a prop shortly in page.jsx. For now, let's assume `estimationId` is passed, or we just rely on the parent.
+        // Actually, let's pass an `onReplaceProduct` up to `page.jsx` where `estimation` object lives.
+    };
 
     // Providing a placeholder moodboard if it's undefined
     const moodboard = { moodboard_name: moodboardName };
@@ -204,6 +229,16 @@ export default function OverviewTab({
                         const product = products.find(p => p._id === contextMenu.itemId);
                         setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
                         setActiveModal('retailer');
+                    }}
+                    onOpenDiscussion={() => {
+                        const product = products.find(p => p._id === contextMenu.itemId);
+                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        setActiveModal('discussion');
+                    }}
+                    onOpenReplace={() => {
+                        const product = products.find(p => p._id === contextMenu.itemId);
+                        setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
+                        setActiveModal('replace');
                     }}
                 />
             )}
@@ -396,6 +431,24 @@ export default function OverviewTab({
                 projectId={projectId}
                 materialId={selectedMaterial?.id}
                 materialName={selectedMaterial?.name}
+            />
+
+            <MaterialDiscussionModal
+                isOpen={activeModal === 'discussion'}
+                onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                projectId={projectId}
+                materialId={selectedMaterial?.id}
+                materialName={selectedMaterial?.name}
+            />
+
+            {/* Replace uses a callback passed to parent or handled locally if we pass the right props. We will pass a prop handleReplaceProduct up. */}
+            <ReplaceMaterialModal
+                isOpen={activeModal === 'replace'}
+                onClose={() => { setActiveModal(null); setSelectedMaterial(null); }}
+                oldMaterialId={selectedMaterial?.id}
+                oldMaterialName={selectedMaterial?.name}
+                onReplace={handleReplaceProduct}
+                isReplacing={isReplacingProduct}
             />
         </div>
     );

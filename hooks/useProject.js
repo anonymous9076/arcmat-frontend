@@ -72,3 +72,42 @@ export const useDeleteProject = () => {
         }
     });
 };
+
+export const useCompleteProject = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: projectService.completeProject,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            toast.success('Project marked as completed! All materials are now specified.');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to complete project');
+        }
+    });
+};
+
+export const useMarkNotificationsRead = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, spaceId, materialId, type }) => projectService.markNotificationsRead(id, spaceId, materialId, type),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            // We invalidate all project queries so that the unread counts are refreshed
+        },
+        onError: (error) => {
+            console.error('Failed to mark notifications read:', error);
+        }
+    });
+};
+
+export const useGetProductNotifications = (projectId, spaceId) => {
+    return useQuery({
+        queryKey: [...PROJECT_KEYS.detail(projectId), 'space', spaceId, 'notifications'],
+        queryFn: () => projectService.getProductNotifications(projectId, spaceId),
+        enabled: !!projectId && !!spaceId,
+        refetchInterval: 30000 // Poll every 30s to keep badges fresh
+    });
+};

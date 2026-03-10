@@ -24,5 +24,21 @@ export const projectService = {
     deleteProject: async (id) => {
         const response = await api.delete(`/project/${id}`);
         return response.data;
+    },
+
+    completeProject: async (id) => {
+        const response = await api.post(`/project/${id}/complete`);
+        return response.data;
+    },
+
+    getProductNotifications: async (id, spaceId) => {
+        const response = await api.get(`/project/${id}/space/${spaceId}/notifications`);
+        return response.data;
+    },
+
+    markNotificationsRead: async (id, spaceId = null, materialId = null, type = null) => {
+        const payload = { spaceId, materialId, type };
+        const response = await api.post(`/project/${id}/mark-read`, payload);
+        return response.data;
     }
 };
