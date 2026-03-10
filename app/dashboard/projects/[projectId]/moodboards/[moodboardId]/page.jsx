@@ -742,7 +742,7 @@ export default function MoodboardDetailPage() {
 
                     {/* Tab Navigation ─── */}
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {TABS.map(tab => {
+                        {TABS.filter(tab => tab.id !== 'download' || isArchitect).map(tab => {
                             const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.data?.generalDiscussions > 0;
                             return (
                                 <button

@@ -260,7 +260,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 {project.coverImage && (
                     <div className="absolute inset-0 z-0">
                         <Image src={project.coverImage} alt="" fill className="object-cover opacity-20" />
-                        <div className="absolute inset-0 bg-linear-to-r from-[#fafafb] via-[#fafafb]/80 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-r from-[#fafafb] via-[#fafafb]/10d to-transparent" />
                     </div>
                 )}
 
@@ -272,7 +272,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                             className="p-1.5 bg-white shadow-sm rounded-lg text-gray-400 hover:text-[#d9a88a] transition-colors"
                             title="Change Project Cover"
                         >
-                            {/* <Camera className="w-3.5 h-3.5" /> */}
+                            <Camera className="w-3.5 h-3.5" />
                         </button>
                     </div>
 

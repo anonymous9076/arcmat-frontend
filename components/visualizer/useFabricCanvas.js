@@ -476,12 +476,19 @@ export function useFabricCanvas({
         if (!fabricRef.current) return;
         const activeObjects = fabricRef.current.getActiveObjects();
         if (activeObjects.length) {
-            activeObjects.forEach(obj => fabricRef.current.bringForward(obj));
+            activeObjects.forEach(obj => fabricRef.current.bringObjectForward(obj));
             fabricRef.current.requestRenderAll();
         }
     }, []);
 
-    const sendBackward = useCallback(() => { if (fabricRef.current?.getActiveObject()) { fabricRef.current.sendObjectBackwards(fabricRef.current.getActiveObject()); fabricRef.current.requestRenderAll(); } }, []);
+    const sendBackward = useCallback(() => {
+        if (!fabricRef.current) return;
+        const activeObjects = fabricRef.current.getActiveObjects();
+        if (activeObjects.length) {
+            activeObjects.forEach(obj => fabricRef.current.sendObjectBackwards(obj));
+            fabricRef.current.requestRenderAll();
+        }
+    }, []);
     const groupSelection = useCallback(() => { if (!fabricRef.current) return; const canvas = fabricRef.current; if (canvas.getActiveObject()?.type === 'activeSelection') { canvas.getActiveObject().toGroup(); canvas.requestRenderAll(); } }, []);
     const ungroupSelection = useCallback(() => { if (!fabricRef.current) return; const activeObj = fabricRef.current.getActiveObject(); if (activeObj?.type === 'group') { activeObj.toActiveSelection(); fabricRef.current.requestRenderAll(); } }, []);
     const zoomIn = useCallback(() => { if (!fabricRef.current) return; let newZoom = fabricRef.current.getZoom() + ZOOM_STEP; if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM; fabricRef.current.setZoom(newZoom); setZoom(newZoom); }, []);
