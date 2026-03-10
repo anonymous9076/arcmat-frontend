@@ -6,7 +6,8 @@ import Sidebar from '@/components/dashboard/sidebar/Sidebar';
 import BasicInfoCard from '@/components/profile/BasicInfoCard';
 import ChangePasswordCard from '@/components/profile/ChangePasswordCard';
 import BusinessProfileTab from '@/components/profile/BusinessProfileTab';
-import { User, Building2, Lock, MapPin } from 'lucide-react';
+import RetailerProfileTab from '@/components/profile/RetailerProfileTab';
+import { User, Building2, Lock, MapPin, Store } from 'lucide-react';
 import AddressList from '@/components/profile/AddressList';
 import Footer from '@/components/layouts/Footer';
 
@@ -15,11 +16,13 @@ const ProfilePage = () => {
     const [activeTab, setActiveTab] = useState('basic');
 
     const isBrandRole = user?.role === 'brand';
+    const isRetailerRole = user?.role === 'retailer';
 
     const tabs = [
         { id: 'basic', label: 'Basic Information', icon: User },
         { id: 'address', label: 'Manage Addresses', icon: MapPin },
         ...(isBrandRole ? [{ id: 'business', label: 'Business Profile', icon: Building2 }] : []),
+        ...(isRetailerRole ? [{ id: 'retailer', label: 'Retailer Profile', icon: Store }] : []),
         { id: 'password', label: 'Change Password', icon: Lock },
     ];
 
@@ -60,6 +63,7 @@ const ProfilePage = () => {
                                 {activeTab === 'basic' && <BasicInfoCard user={user} />}
                                 {activeTab === 'address' && <AddressList />}
                                 {activeTab === 'business' && isBrandRole && <BusinessProfileTab />}
+                                {activeTab === 'retailer' && isRetailerRole && <RetailerProfileTab />}
                                 {activeTab === 'password' && <ChangePasswordCard />}
                             </div>
                         </div>
