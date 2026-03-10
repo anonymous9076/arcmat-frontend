@@ -368,6 +368,8 @@ export default function MoodboardDetailPage() {
     /* ── Photo Upload Handler ──────────────────── */
     const handlePhotoAdd = useCallback(({ file, previewUrl, title, description, price, quantity, tags = [] }) => {
         const photoId = 'photo_' + Date.now();
+        const isRender = tags.includes('Render');
+
         const newPhoto = {
             id: photoId,
             title,
@@ -378,6 +380,20 @@ export default function MoodboardDetailPage() {
             quantity: quantity || 1,
             tags: tags
         };
+
+        if (isRender) {
+            setCustomPhotos(prev => {
+                const nextPhotos = [...prev, newPhoto];
+                updateMoodboard({
+                    id: moodboardId,
+                    data: { customPhotos: nextPhotos }
+                });
+                return nextPhotos;
+            });
+            toast.success(`"${title}" added to Renders!`);
+            return;
+        }
+
         // Create pseudo-material for Design Desk
         const pseudoMaterial = {
             _id: photoId,
