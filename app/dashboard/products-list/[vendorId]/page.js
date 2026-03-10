@@ -149,7 +149,6 @@ export default function ProductsListPage() {
           'Sub-Sub Category (L3)': p.subsubcategoryId?.name || '',
           'Brand': p.brand?.name || p.brand || '',
           'Images': (p.product_images || []).join(', '),
-          'Short Description': p.sort_description || '',
           'Description': p.description || '',
           'Meta Title': p.meta_title || '',
           'Meta Keywords': p.meta_keywords || '',

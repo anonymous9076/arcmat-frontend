@@ -19,7 +19,6 @@ export const useCompareStore = create(
                     product_name: root.product_name || root.name,
                     name: root.product_name || root.name,
                     brand: root.brand,
-                    sort_description: root.sort_description || root.subtitle,
                     product_images: root.product_images || [],
                     variant_images: product.variant_images || [],
                     image: product.image || root.image || root.product_image1,

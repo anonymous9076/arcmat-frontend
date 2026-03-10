@@ -162,7 +162,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     const currentItem = selectedVariant || product
     const name = product.product_name || product.name
     const description = product.description
-    const subtitle = product.sort_description || product.subtitle || (description ? description.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...' : '')
+    const subtitle = product.subtitle || (description ? description.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...' : '')
     const stockQuantity = Number(currentItem.stock || currentItem.available_stock || 0)
     const isActive = currentItem.status === 1 || currentItem.status === '1' || currentItem.status === 'Active'
     const inStock = isActive && stockQuantity > 0

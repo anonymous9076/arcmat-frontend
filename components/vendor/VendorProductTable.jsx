@@ -90,7 +90,7 @@ export default function VendorProductTable({ products = [] }) {
                 Date Created
               </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                Short Description
+                Last Updated
               </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                 Status
@@ -105,7 +105,6 @@ export default function VendorProductTable({ products = [] }) {
               const id = product._id || product.id;
               const images = product.product_images || product.images || [];
               const name = product.product_name || product.name;
-              const description = product.sort_description || product.description;
               const isActive = product.status === 1 || product.status === 'Active' || product.isActive === true;
               const status = product.status ?? (isActive ? 'Active' : 'Inactive');
 
@@ -143,10 +142,12 @@ export default function VendorProductTable({ products = [] }) {
                       year: 'numeric'
                     }) : '-'}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600 line-clamp-2 max-w-xs">
-                      {description}
-                    </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {product.updatedAt ? new Date(product.updatedAt).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <StatusBadge status={isActive ? 'active' : 'inactive'} />

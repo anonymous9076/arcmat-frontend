@@ -16,7 +16,6 @@ export default function AddVariantModal({ isOpen, onClose, productId, parentProd
     const [formData, setFormData] = useState({
         product_name: '',
         product_url: '',
-        sort_description: '',
         description: '',
         meta_title: '',
         meta_keywords: '',
@@ -48,7 +47,6 @@ export default function AddVariantModal({ isOpen, onClose, productId, parentProd
             setFormData({
                 product_name: editingVariant.product_name || '',
                 product_url: editingVariant.product_url || '',
-                sort_description: editingVariant.sort_description || '',
                 description: editingVariant.description || '',
                 meta_title: editingVariant.meta_title || '',
                 meta_keywords: editingVariant.meta_keywords || '',
@@ -86,7 +84,6 @@ export default function AddVariantModal({ isOpen, onClose, productId, parentProd
             setFormData(prev => ({
                 ...prev,
                 product_name: parentProduct.product_name + ' - ',
-                sort_description: parentProduct.sort_description || '',
                 description: parentProduct.description || '',
                 meta_title: parentProduct.meta_title || '',
                 meta_keywords: parentProduct.meta_keywords || '',
@@ -249,16 +246,6 @@ export default function AddVariantModal({ isOpen, onClose, productId, parentProd
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
                                     </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Short Description</label>
-                                    <textarea
-                                        name="sort_description"
-                                        value={formData.sort_description}
-                                        onChange={handleChange}
-                                        rows={2}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#e09a74]"
-                                    />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Full Description (Editor)</label>

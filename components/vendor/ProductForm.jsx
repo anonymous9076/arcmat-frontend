@@ -153,9 +153,27 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      setNewImages(prev => [...prev, ...files]);
-      const newPreviews = files.map(file => URL.createObjectURL(file));
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const validFiles = [];
+    const invalidFiles = [];
+
+    files.forEach(file => {
+      if (file.size > MAX_SIZE) {
+        invalidFiles.push(`${file.name} (Too large, max 5MB)`);
+      } else if (!file.type.startsWith('image/')) {
+        invalidFiles.push(`${file.name} (Not an image)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      toast.error(`Some files were skipped: ${invalidFiles.join(', ')}`);
+    }
+
+    if (validFiles.length > 0) {
+      setNewImages(prev => [...prev, ...validFiles]);
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file));
       setPreviewImages(prev => [...prev, ...newPreviews]);
     }
   };

@@ -20,7 +20,9 @@ import {
   HardHat,
   Store,
   Palette,
-  PlayCircle
+  PlayCircle,
+  BarChart3,
+  Briefcase
 } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '@/store/useAuthStore';
@@ -47,7 +49,9 @@ const ICON_MAP = {
   HardHat,
   Store,
   Palette,
-  PlayCircle
+  PlayCircle,
+  BarChart3,
+  Briefcase
 };
 
 const mapIcons = (items) => items.map(item => ({
@@ -106,6 +110,9 @@ export default function Sidebar() {
       }
       if (mounted && (item.id === 'collaborations' || item.id === 'all-projects')) {
         return { ...item, badge: totalUnread };
+      }
+      if (isBrand && item.id === 'analytics') {
+        return { ...item, href: '/dashboard/analytics/brand' };
       }
       return item;
     })

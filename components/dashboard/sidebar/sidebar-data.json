@@ -7,6 +7,12 @@
             "href": "/dashboard"
         },
         {
+            "id": "analytics",
+            "label": "Analytics",
+            "icon": "BarChart3",
+            "href": "/dashboard/analytics"
+        },
+        {
             "id": "products-list",
             "label": "Products",
             "icon": "Package",
@@ -42,13 +48,6 @@
             "label": "Users",
             "icon": "Users",
             "href": "/dashboard/users"
-        },
-        {
-            "id": "architects",
-            "label": "Architects",
-            "icon": "HardHat",
-            "href": "/dashboard/architects",
-            "brandOnly": true
         },
         {
             "id": "help",

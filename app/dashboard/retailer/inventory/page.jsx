@@ -123,6 +123,7 @@ export default function RetailerProductsPage() {
                                 <th className="px-6 py-4 font-bold">Variant</th>
                                 <th className="px-6 py-4 font-bold">Price</th>
                                 <th className="px-6 py-4 font-bold">Stock</th>
+                                <th className="px-6 py-4 font-bold">Added On</th>
                                 <th className="px-6 py-4 font-bold">Status</th>
                                 <th className="px-6 py-4 font-bold text-right">Actions</th>
                             </tr>
@@ -148,7 +149,7 @@ export default function RetailerProductsPage() {
                                                 </div>
                                                 <div className="min-w-0">
                                                     <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#e09a74] transition-colors truncate">{product.product_name}</h3>
-                                                    <p className="text-xs text-gray-400 font-medium mt-0.5 truncate max-w-[200px]">{product.sort_description || 'No description available'}</p>
+                                                    <p className="text-xs text-gray-400 font-medium mt-0.5 truncate max-w-[200px]">{product.description ? product.description.replace(/<[^>]*>?/gm, '').substring(0, 50) + '...' : 'No description available'}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -169,6 +170,15 @@ export default function RetailerProductsPage() {
                                                 item.stock <= 5 ? "text-red-500" : "text-gray-900"
                                             )}>
                                                 {item.stock} <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">in stock</span>
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className="text-sm font-bold text-gray-600">
+                                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                }) : '-'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 align-middle">

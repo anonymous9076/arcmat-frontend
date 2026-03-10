@@ -175,7 +175,7 @@ export default function BrandInventoryPage() {
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                                                    {product.sort_description || 'No description available.'}
+                                                    {product.description ? product.description.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...' : 'No description available.'}
                                                 </p>
                                             </div>
                                         </div>
