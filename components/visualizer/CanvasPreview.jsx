@@ -25,6 +25,7 @@ const CanvasPreview = forwardRef((props, ref) => {
         autoSaving = false,
         projectName = 'My Project',
         roomName = 'Living Room',
+        isArchitect = true,
     } = props;
     const photoInputRef = useRef(null);
     const canvasContainerRef = useRef(null);
@@ -129,6 +130,13 @@ const CanvasPreview = forwardRef((props, ref) => {
             const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
             if (isInput) return;
 
+            if (!isArchitect) {
+                // Allow zoom and pan even for clients
+                if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); zoomIn(); }
+                if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); zoomOut(); }
+                return;
+            }
+
             if ((e.ctrlKey || e.metaKey) && e.key === ']') { e.preventDefault(); bringForward(); }
             if ((e.ctrlKey || e.metaKey) && e.key === '[') { e.preventDefault(); sendBackward(); }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') { e.preventDefault(); groupSelection(); }
@@ -143,11 +151,12 @@ const CanvasPreview = forwardRef((props, ref) => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleUndo, handleSave, zoomIn, zoomOut, deleteSelection, bringForward, sendBackward, groupSelection, ungroupSelection]);
+    }, [handleUndo, handleSave, zoomIn, zoomOut, deleteSelection, bringForward, sendBackward, groupSelection, ungroupSelection, isArchitect]);
 
     /* ── Drag & Drop ─────────────────────────────────── */
     const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true); };
     const handleDropEvent = (e) => {
+        if (!isArchitect) return;
         e.preventDefault();
         setIsDragOver(false);
         if (e.dataTransfer.getData('placed-card')) return;
@@ -194,14 +203,18 @@ const CanvasPreview = forwardRef((props, ref) => {
                 </div>
 
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                    {filledCount > 0 && (
-                        <button onClick={onClear} className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors">
-                            <Trash2 className="w-3.5 h-3.5" /><span className="hidden md:inline">Clear</span>
-                        </button>
+                    {isArchitect && (
+                        <>
+                            {filledCount > 0 && (
+                                <button onClick={onClear} className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-500 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /><span className="hidden md:inline">Clear</span>
+                                </button>
+                            )}
+                            <button onClick={handleSave} className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${saving ? 'bg-green-50 text-green-600 border-green-200' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                <Save className="w-3.5 h-3.5" /> <span className="hidden md:inline">{saving ? 'Saved!' : 'Save'}</span>
+                            </button>
+                        </>
                     )}
-                    <button onClick={handleSave} className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${saving ? 'bg-green-50 text-green-600 border-green-200' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                        <Save className="w-3.5 h-3.5" /> <span className="hidden md:inline">{saving ? 'Saved!' : 'Save'}</span>
-                    </button>
 
                     {/* Top Download Image / PDF */}
                     <button onClick={() => {
@@ -227,7 +240,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                         <p className="text-sm font-medium">Drag materials or add text</p>
                     </div>
                 )}
-                {activeMenuConfig && (
+                {isArchitect && activeMenuConfig && (
                     <div
                         className="absolute z-50 bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-gray-200 flex flex-col items-center p-1.5 gap-1 transition-opacity pointer-events-auto"
                         style={{
@@ -311,40 +324,45 @@ const CanvasPreview = forwardRef((props, ref) => {
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                     <BottomBtn onClick={() => setPanMode(p => !p)} title="Pan" active={panMode}><Move className="w-4 h-4" /></BottomBtn>
                     <BottomBtn onClick={() => setShowGrid(!showGrid)} title="Toggle Grid" active={showGrid}><Grid3x3 className="w-4 h-4" /></BottomBtn>
-                    <BottomBtn onClick={handleUndo} title="Undo" disabled={filledCount === 0}><CornerUpLeft className="w-4 h-4" /></BottomBtn>
-                    <BottomBtn onClick={toggleLock} title="Lock Selection" active={lockedIds.size > 0}><Lock className="w-4 h-4" /></BottomBtn>
-                    <BottomBtn onClick={groupSelection} title="Group Selection" disabled={selectedIds.size < 2}><Focus className="w-4 h-4" /></BottomBtn>
-                    <BottomBtn onClick={deleteSelection} title="Delete Selection" disabled={selectedIds.size === 0}><Trash className="w-4 h-4" /></BottomBtn>
 
-                    <div className="w-px h-5 bg-gray-200 mx-1" />
+                    {isArchitect && (
+                        <>
+                            <BottomBtn onClick={handleUndo} title="Undo" disabled={filledCount === 0}><CornerUpLeft className="w-4 h-4" /></BottomBtn>
+                            <BottomBtn onClick={toggleLock} title="Lock Selection" active={lockedIds.size > 0}><Lock className="w-4 h-4" /></BottomBtn>
+                            <BottomBtn onClick={groupSelection} title="Group Selection" disabled={selectedIds.size < 2}><Focus className="w-4 h-4" /></BottomBtn>
+                            <BottomBtn onClick={deleteSelection} title="Delete Selection" disabled={selectedIds.size === 0}><Trash className="w-4 h-4" /></BottomBtn>
 
-                    <BottomBtn onClick={handleAddTextAtCenter} title="Add Text"><Type className="w-4 h-4" /></BottomBtn>
-                    <BottomBtn onClick={() => photoInputRef.current?.click()} title="Add Photo"><ImagePlus className="w-4 h-4" /></BottomBtn>
-                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                            <div className="w-px h-5 bg-gray-200 mx-1" />
 
-                    <div className="w-px h-5 bg-gray-200 mx-1" />
+                            <BottomBtn onClick={handleAddTextAtCenter} title="Add Text"><Type className="w-4 h-4" /></BottomBtn>
+                            <BottomBtn onClick={() => photoInputRef.current?.click()} title="Add Photo"><ImagePlus className="w-4 h-4" /></BottomBtn>
+                            <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
 
-                    {/* Canvas Background Color Picker */}
-                    <div className="relative group/bg">
-                        <BottomBtn
-                            onClick={() => document.getElementById('canvas-bg-picker').click()}
-                            title="Canvas Background"
-                        >
-                            <div
-                                className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                                style={{ backgroundColor: props.canvasBg }}
-                            />
-                        </BottomBtn>
-                        <input
-                            id="canvas-bg-picker"
-                            type="color"
-                            className="absolute -top-10 left-0 opacity-0 pointer-events-none"
-                            value={props.canvasBg}
-                            onChange={(e) => props.onBgChange(e.target.value)}
-                        />
-                    </div>
+                            <div className="w-px h-5 bg-gray-200 mx-1" />
 
-                    <div className="w-px h-5 bg-gray-200 mx-1" />
+                            {/* Canvas Background Color Picker */}
+                            <div className="relative group/bg">
+                                <BottomBtn
+                                    onClick={() => document.getElementById('canvas-bg-picker').click()}
+                                    title="Canvas Background"
+                                >
+                                    <div
+                                        className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                                        style={{ backgroundColor: props.canvasBg }}
+                                    />
+                                </BottomBtn>
+                                <input
+                                    id="canvas-bg-picker"
+                                    type="color"
+                                    className="absolute -top-10 left-0 opacity-0 pointer-events-none"
+                                    value={props.canvasBg}
+                                    onChange={(e) => props.onBgChange(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="w-px h-5 bg-gray-200 mx-1" />
+                        </>
+                    )}
 
                     <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden ml-2">
                         <button onClick={zoomOut} className="px-1 py-1 hover:bg-gray-100"><Minus className="w-3 h-3" /></button>

@@ -1,26 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Loader2, X, Send } from 'lucide-react';
+import { Mail, Loader2, X, Send, User } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function InviteClientModal({ isOpen, onClose, projectId, projectName }) {
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!email) return;
+        if (!email || !name) return;
 
         setIsLoading(true);
         try {
             const response = await api.post(
                 `/project/${projectId}/invite-client`,
-                { email }
+                { email, name }
             );
 
             if (response.data.status === 'successful') {
@@ -37,7 +38,7 @@ export default function InviteClientModal({ isOpen, onClose, projectId, projectN
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                 <div className="relative p-8">
                     <button
@@ -59,6 +60,24 @@ export default function InviteClientModal({ isOpen, onClose, projectId, projectN
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
+                            <label htmlFor="name" className="block text-sm font-bold text-gray-700 mb-2 ml-1">
+                                Client's Full Name
+                            </label>
+                            <div className="relative">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    id="name"
+                                    placeholder="John Doe"
+                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#d9a88a]/20 transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
                             <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2 ml-1">
                                 Client's Email Address
                             </label>
@@ -79,7 +98,7 @@ export default function InviteClientModal({ isOpen, onClose, projectId, projectN
                         <div className="pt-2">
                             <Button
                                 type="submit"
-                                disabled={isLoading || !email}
+                                disabled={isLoading || !email || !name}
                                 className="w-full bg-[#d9a88a] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-orange-100 disabled:opacity-50 disabled:hover:scale-100"
                             >
                                 {isLoading ? (

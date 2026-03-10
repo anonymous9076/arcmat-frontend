@@ -14,9 +14,45 @@ function AcceptInviteContent() {
     const projectId = searchParams.get('projectId');
     const email = searchParams.get('email');
 
-    const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
+    const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error', 'need_password'
     const [projectName, setProjectName] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const processAcceptance = async (providedPassword = null) => {
+        try {
+            if (providedPassword) setIsSubmitting(true);
+            else setStatus('loading');
+
+            const payload = { projectId, email };
+            if (providedPassword) payload.password = providedPassword;
+
+            const response = await api.patch(
+                `/project/accept-invite`,
+                payload
+            );
+
+            if (response.data.status === 'successful') {
+                if (response.data.data.requiresPassword) {
+                    setStatus('need_password');
+                    setProjectName(response.data.data.projectName);
+                } else {
+                    setStatus('success');
+                    setProjectName(response.data.data.projectName);
+                    toast.success('Invitation accepted!');
+                    // If account was just created, we might want to automatically log them in or redirect to login
+                }
+            }
+        } catch (error) {
+            console.error('Acceptance error:', error);
+            setStatus('error');
+            setErrorMessage(error.response?.data?.message || 'Failed to accept invitation. It may have expired or already been accepted.');
+            toast.error('Failed to accept invitation');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     useEffect(() => {
         if (!projectId || !email) {
@@ -24,29 +60,6 @@ function AcceptInviteContent() {
             setErrorMessage('Invalid invitation link. Please check your email.');
             return;
         }
-
-        const processAcceptance = async () => {
-            try {
-                // Introduce a small delay for a smoother premium feel
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                const response = await api.patch(
-                    `/project/accept-invite`,
-                    { projectId, email }
-                );
-
-                if (response.data.status === 'successful') {
-                    setStatus('success');
-                    setProjectName(response.data.data.projectName);
-                    toast.success('Invitation accepted!');
-                }
-            } catch (error) {
-                console.error('Acceptance error:', error);
-                setStatus('error');
-                setErrorMessage(error.response?.data?.message || 'Failed to accept invitation. It may have expired or already been accepted.');
-                toast.error('Failed to accept invitation');
-            }
-        };
 
         processAcceptance();
     }, [projectId, email]);
@@ -66,6 +79,47 @@ function AcceptInviteContent() {
         );
     }
 
+    if (status === 'need_password') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-24 h-24 rounded-[32px] bg-blue-50 flex items-center justify-center mb-8 shadow-sm">
+                    <ShieldCheck className="w-12 h-12 text-blue-500" />
+                </div>
+                <h1 className="text-3xl font-black text-[#2d3142] mb-3 tracking-tight">
+                    Create Your Account
+                </h1>
+                <p className="text-gray-500 font-medium max-w-md mx-auto mb-8 text-base">
+                    Welcome! You've been invited to join <span className="text-[#d9a88a] font-bold">"{projectName}"</span>. Please create a password to secure your account.
+                </p>
+
+                <form
+                    onSubmit={(e) => { e.preventDefault(); processAcceptance(password); }}
+                    className="w-full max-w-sm space-y-4"
+                >
+                    <div className="relative">
+                        <input
+                            type="password"
+                            placeholder="Create a strong password"
+                            required
+                            minLength={6}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#d9a88a]/20 transition-all outline-none"
+                        />
+                    </div>
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || password.length < 6}
+                        className="w-full bg-[#d9a88a] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-orange-100/50"
+                    >
+                        {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                        Finalize & Join Project
+                    </Button>
+                </form>
+            </div>
+        );
+    }
+
     if (status === 'success') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center animate-in fade-in zoom-in-95 duration-700">
@@ -79,10 +133,10 @@ function AcceptInviteContent() {
                     The invitation has been successfully accepted. You now have exclusive access to view this project's designs and selections.
                 </p>
                 <Button
-                    onClick={() => router.push('/')}
+                    onClick={() => router.push('/auth/login')}
                     className="bg-[#d9a88a] text-white px-12 py-4 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-orange-100/50"
                 >
-                    Accepts Invitation
+                    Proceed to Login
                     <ArrowRight className="w-5 h-5" />
                 </Button>
             </div>

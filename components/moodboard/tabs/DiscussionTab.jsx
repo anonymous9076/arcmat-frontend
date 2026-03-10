@@ -8,6 +8,8 @@ import Container from '@/components/ui/Container';
 export default function DiscussionTab({ projectId }) {
     const { user } = useAuth();
     const [message, setMessage] = useState('');
+    const [isInternal, setIsInternal] = useState(false);
+    const isArchitect = user?.role === 'architect';
 
     const { data, isLoading } = useGetComments(projectId);
     const postMutation = usePostComment(projectId);
@@ -19,8 +21,14 @@ export default function DiscussionTab({ projectId }) {
         e.preventDefault();
         if (!message.trim()) return;
 
-        postMutation.mutate({ message: message.trim() }, {
-            onSuccess: () => setMessage('')
+        postMutation.mutate({
+            message: message.trim(),
+            isInternal: isInternal
+        }, {
+            onSuccess: () => {
+                setMessage('');
+                setIsInternal(false);
+            }
         });
     };
 
@@ -61,6 +69,11 @@ export default function DiscussionTab({ projectId }) {
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${authorRole === 'architect' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                                         {authorRole}
                                     </span>
+                                    {comment.isInternal && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-amber-100 text-amber-700">
+                                            Private Note
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="group relative flex items-start gap-2 max-w-[80%]">
                                     <div className={`px-4 py-3 rounded-2xl text-sm ${isMe ? 'bg-[#1a1a2e] text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-700 rounded-tl-sm shadow-sm'}`}>
@@ -87,26 +100,46 @@ export default function DiscussionTab({ projectId }) {
 
             {/* Input Area */}
             <div className="p-4 bg-white border-t border-gray-100">
-                <form onSubmit={handleSend} className="flex items-end gap-3">
-                    <textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 resize-none min-h-[50px] max-h-[150px] p-3 border border-gray-200 rounded-2xl focus:border-[#d9a88a] focus:ring-1 focus:ring-[#d9a88a] outline-none text-sm transition-all bg-gray-50"
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSend(e);
-                            }
-                        }}
-                    />
-                    <Button
-                        type="submit"
-                        disabled={!message.trim() || postMutation.isPending}
-                        className="bg-[#d9a88a] text-white p-3 rounded-2xl hover:bg-[#c29377] disabled:opacity-50 disabled:cursor-not-allowed h-[50px] w-[50px] flex items-center justify-center shrink-0"
-                    >
-                        {postMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-1" />}
-                    </Button>
+                <form onSubmit={handleSend} className="flex flex-col gap-3">
+                    {isArchitect && (
+                        <div className="flex items-center gap-2 ml-1">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={isInternal}
+                                    onChange={(e) => setIsInternal(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300 accent-[#d9a88a]"
+                                />
+                                <span className="text-xs font-bold text-gray-500 group-hover:text-gray-700 transition-colors">
+                                    Send as Private Note (Architect Only)
+                                </span>
+                            </label>
+                        </div>
+                    )}
+                    <div className="flex items-end gap-3">
+                        <textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder={isInternal ? "Type a private note..." : "Type a message..."}
+                            className={`flex-1 resize-none min-h-[50px] max-h-[150px] p-3 border rounded-2xl focus:ring-1 outline-none text-sm transition-all ${isInternal
+                                ? 'bg-amber-50/30 border-amber-200 focus:border-amber-400 focus:ring-amber-400'
+                                : 'bg-gray-50 border-gray-200 focus:border-[#d9a88a] focus:ring-[#d9a88a]'
+                                }`}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend(e);
+                                }
+                            }}
+                        />
+                        <Button
+                            type="submit"
+                            disabled={!message.trim() || postMutation.isPending}
+                            className={`${isInternal ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#d9a88a] hover:bg-[#c29377]'} text-white p-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed h-[50px] w-[50px] flex items-center justify-center shrink-0 transition-colors`}
+                        >
+                            {postMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-1" />}
+                        </Button>
+                    </div>
                 </form>
             </div>
         </div>

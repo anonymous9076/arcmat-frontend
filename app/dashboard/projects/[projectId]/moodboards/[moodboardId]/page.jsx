@@ -59,7 +59,8 @@ function StatusDot({ status = 'Considering' }) {
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'designDesk', label: 'Design Desk', icon: Paintbrush2 },
-    { id: 'discussion', label: 'Discussion', icon: Paintbrush2 }, // Re-using an icon or we could import MessageSquare
+    { id: 'renders', label: 'Renders', icon: ImagePlus },
+    { id: 'discussion', label: 'Discussion', icon: Paintbrush2 },
     { id: 'export', label: 'Export', icon: TableProperties },
     { id: 'download', label: 'Download', icon: FolderDown },
 ];
@@ -69,6 +70,7 @@ export default function MoodboardDetailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, isAuthenticated } = useAuth();
+    const isArchitect = user?.role === 'architect';
     const isContractor = user?.professionalType === 'Contractor / Builder';
 
     useEffect(() => {
@@ -654,13 +656,14 @@ export default function MoodboardDetailPage() {
                             ) : (
                                 <div className="flex items-center gap-3 mb-1 group/title w-fit">
                                     <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-
+                                    {isArchitect && (
+                                        <button
+                                            onClick={() => setIsEditing(true)}
+                                            className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             )}
                             <p className="text-sm text-gray-400 font-medium mt-1">
@@ -679,25 +682,29 @@ export default function MoodboardDetailPage() {
 
                                 {menuOpen && (
                                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                        <button
-                                            onClick={() => { setIsEditing(true); setMenuOpen(false); }}
-                                            className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                        >
-                                            <Edit2 className="w-4 h-4" /> Rename
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setMenuOpen(false);
-                                                if (window.confirm('Delete this space?')) {
-                                                    deleteMutation.mutate(moodboardId, {
-                                                        onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
-                                                    });
-                                                }
-                                            }}
-                                            className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
-                                        >
-                                            <Trash2 className="w-4 h-4" /> Delete
-                                        </button>
+                                        {isArchitect && (
+                                            <>
+                                                <button
+                                                    onClick={() => { setIsEditing(true); setMenuOpen(false); }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                                >
+                                                    <Edit2 className="w-4 h-4" /> Rename
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setMenuOpen(false);
+                                                        if (window.confirm('Delete this space?')) {
+                                                            deleteMutation.mutate(moodboardId, {
+                                                                onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                                                >
+                                                    <Trash2 className="w-4 h-4" /> Delete
+                                                </button>
+                                            </>
+                                        )}
                                         {siblingBoards.length > 0 && (
                                             <>
                                                 <div className="border-t border-gray-100 my-1" />
@@ -765,7 +772,7 @@ export default function MoodboardDetailPage() {
                         handleRemoveProduct={handleRemoveProduct}
                         handleAddToCart={handleAddToCart}
                         router={router}
-                        isArchitect={true}
+                        isArchitect={isArchitect}
                         privacyControls={project?.privacyControls}
                     />
                 )}
@@ -793,16 +800,18 @@ export default function MoodboardDetailPage() {
                                     onClick={() => setIsPanelOpen(false)}
                                 />
                             )}
-                            <div className={`absolute md:relative z-50 h-full shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[280px] md:w-[260px] shadow-2xl md:shadow-none' : 'w-0'}`}>
-                                <MaterialPanel
-                                    materials={materials}
-                                    selectedMaterial={selectedMaterial}
-                                    stagedMaterial={stagedMaterial}
-                                    onSelect={handleMaterialSelect}
-                                    isOpen={isPanelOpen}
-                                    onToggle={() => setIsPanelOpen(!isPanelOpen)}
-                                />
-                            </div>
+                            {isArchitect && (
+                                <div className={`absolute md:relative z-50 h-full shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[280px] md:w-[260px] shadow-2xl md:shadow-none' : 'w-0'}`}>
+                                    <MaterialPanel
+                                        materials={materials}
+                                        selectedMaterial={selectedMaterial}
+                                        stagedMaterial={stagedMaterial}
+                                        onSelect={handleMaterialSelect}
+                                        isOpen={isPanelOpen}
+                                        onToggle={() => setIsPanelOpen(!isPanelOpen)}
+                                    />
+                                </div>
+                            )}
 
                             {/* Canvas */}
                             <div className="flex-1 flex flex-col min-w-0">
@@ -825,11 +834,52 @@ export default function MoodboardDetailPage() {
                                     onClear={handleClearBoard}
                                     onSave={handleSave}
                                     onMaterialSelect={setSelectedMaterial}
+                                    isArchitect={isArchitect}
                                 />
                             </div>
                         </div>
                     )}
                 </div>
+
+                {/* RENDERS */}
+                {activeTab === 'renders' && (
+                    <div className="h-full overflow-y-auto p-8">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-2xl font-black text-[#1a1a2e] mb-1">Renders</h2>
+                                <p className="text-sm text-gray-500 font-medium">Visualizations and renders for this space</p>
+                            </div>
+                            {isArchitect && (
+                                <button className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2">
+                                    <Plus className="w-4 h-4" /> Add Render
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {customPhotos.filter(p => (p.tags || []).includes('Render')).map(photo => (
+                                <div key={photo.id} className="group relative aspect-video bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500">
+                                    <img src={photo.previewUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                                        <p className="text-white font-bold text-lg">{photo.title}</p>
+                                        <p className="text-white/80 text-sm line-clamp-1">{photo.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            {customPhotos.filter(p => (p.tags || []).includes('Render')).length === 0 && (
+                                <div className="col-span-full py-24 border-2 border-dashed border-gray-200 rounded-[40px] flex flex-col items-center justify-center text-center">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+                                        <ImagePlus className="w-8 h-8 text-gray-300" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-500">No renders yet</h3>
+                                    <p className="text-sm text-gray-400 max-w-xs mt-1">
+                                        {isArchitect ? "Upload high-quality renders and tag them as 'Render' to show them here." : "No renders have been uploaded for this space yet."}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* EXPORT */}
                 {activeTab === 'export' && (
@@ -848,6 +898,8 @@ export default function MoodboardDetailPage() {
                         handleAddCustomRow={handleAddCustomRow}
                         handleCustomRowUpdate={handleCustomRowUpdate}
                         handleRemoveCustomRow={handleRemoveCustomRow}
+                        isArchitect={isArchitect}
+                        privacyControls={project?.privacyControls}
                     />
                 )}
 

@@ -18,8 +18,13 @@ export default function ExportTab({
     handleProductStatusChange,
     handleAddCustomRow,
     handleCustomRowUpdate,
-    handleRemoveCustomRow
+    handleRemoveCustomRow,
+    isArchitect,
+    privacyControls
 }) {
+    const isClient = !isArchitect;
+    const showPriceToClient = privacyControls?.showPriceToClient;
+    const showPrice = isArchitect || showPriceToClient;
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [selectedTags, setSelectedTags] = useState([]);
@@ -144,14 +149,22 @@ export default function ExportTab({
                 <div className="text-left md:text-right">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Estimation</p>
                     <div className="flex items-baseline gap-2 justify-start md:justify-end">
-                        {(searchTerm || selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 && (
-                            <span className="text-sm font-bold text-[#d9a88a]">
-                                Filtered: ₹{filteredTotal.toLocaleString('en-IN')} /
+                        {showPrice ? (
+                            <>
+                                {(searchTerm || selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 && (
+                                    <span className="text-sm font-bold text-[#d9a88a]">
+                                        Filtered: ₹{filteredTotal.toLocaleString('en-IN')} /
+                                    </span>
+                                )}
+                                <span className="text-3xl font-black text-[#1a1a2e]">
+                                    ₹{grandTotal.toLocaleString('en-IN')}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-xl font-black text-[#1a1a2e]">
+                                Price details hidden
                             </span>
                         )}
-                        <span className="text-3xl font-black text-[#1a1a2e]">
-                            ₹{grandTotal.toLocaleString('en-IN')}
-                        </span>
                     </div>
                 </div>
             </div>
@@ -184,39 +197,43 @@ export default function ExportTab({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-3 border border-gray-100 bg-white rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
-                        <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Choose template</span><span className="sm:hidden">Template</span>
-                    </button>
+                    {isArchitect && (
+                        <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-5 py-3 border border-gray-100 bg-white rounded-2xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                            <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Choose template</span><span className="sm:hidden">Template</span>
+                        </button>
+                    )}
                     <button
                         onClick={exportAsCSV}
                         className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
                     >
                         <Download className="w-4 h-4" /> Export
                     </button>
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowMoreMenu(!showMoreMenu)}
-                            className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm shrink-0 h-[46px] w-[46px] flex items-center justify-center" // Ensure button size matches others
-                        >
-                            <MoreHorizontal className="w-5 h-5" />
-                        </button>
-                        {showMoreMenu && (
-                            <>
-                                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowMoreMenu(false)} />
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] py-2 z-50 animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                        onClick={() => {
-                                            handleAddCustomRow?.();
-                                            setShowMoreMenu(false);
-                                        }}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors"
-                                    >
-                                        Add custom row
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    {isArchitect && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                                className="p-3 border border-gray-100 bg-white rounded-2xl text-gray-500 hover:bg-gray-50 transition-all shadow-sm shrink-0 h-[46px] w-[46px] flex items-center justify-center" // Ensure button size matches others
+                            >
+                                <MoreHorizontal className="w-5 h-5" />
+                            </button>
+                            {showMoreMenu && (
+                                <>
+                                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowMoreMenu(false)} />
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.11)] py-2 z-50 animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            onClick={() => {
+                                                handleAddCustomRow?.();
+                                                setShowMoreMenu(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm font-bold text-gray-700 transition-colors"
+                                        >
+                                            Add custom row
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -332,8 +349,12 @@ export default function ExportTab({
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Brand</th>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">SKU</th>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Quantity</th>
-                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Unit Price</th>
-                            <th className="text-right px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Total (₹)</th>
+                            {showPrice && (
+                                <>
+                                    <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Unit Price</th>
+                                    <th className="text-right px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[110px]">Total (₹)</th>
+                                </>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 bg-white">
@@ -508,11 +529,12 @@ export default function ExportTab({
                                         <td className="px-3 py-3 text-[#1a1a2e] font-bold text-xs truncate max-w-[100px]">{brand || '—'}</td>
                                         <td className="px-3 py-3 text-gray-400 font-mono text-[9px] tracking-tight truncate max-w-[100px]">{sku}</td>
                                         <td className="px-3 py-3">
-                                            <div className="flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all w-20 group-hover:bg-white">
+                                            <div className={`flex items-center gap-1.5 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all w-20 group-hover:bg-white ${!isArchitect && 'pointer-events-none'}`}>
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
                                                     value={qty || ''}
+                                                    readOnly={!isArchitect}
                                                     onFocus={(e) => e.target.select()}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
@@ -531,46 +553,51 @@ export default function ExportTab({
                                                 />
                                             </div>
                                         </td>
-                                        <td className="px-3 py-3 text-gray-700 font-medium">
-                                            {(isPhoto || isRow) ? (
-                                                <div className="flex items-center gap-1 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white">
-                                                    <span className="text-[10px] text-[#d9a88a] font-black">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        value={unitPrice}
-                                                        onFocus={(e) => e.target.select()}
-                                                        onChange={(e) => {
-                                                            if (isRow) handleCustomRowUpdate(id, { price: e.target.value });
-                                                            else handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto);
-                                                        }}
-                                                        className="w-20 text-xs font-black bg-transparent outline-none text-[#1a1a2e]"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="font-black text-[#1a1a2e] text-xs">
-                                                    <span className="text-[#d9a88a] mr-1">₹</span>
-                                                    {unitPrice.toLocaleString('en-IN')}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-3 py-3 text-right">
-                                            <div className="flex items-center justify-end gap-3 text-sm font-black text-[#1a1a2e]">
-                                                <div>
-                                                    <span className="text-[#d9a88a] mr-1 text-[10px]">₹</span>
-                                                    {total.toLocaleString('en-IN')}
-                                                </div>
-                                                {isRow && (
-                                                    <button
-                                                        onClick={() => handleRemoveCustomRow(id)}
-                                                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
-                                                        title="Delete custom row"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
+                                        {showPrice && (
+                                            <>
+                                                <td className="px-3 py-3 text-gray-700 font-medium">
+                                                    {(isPhoto || isRow) ? (
+                                                        <div className={`flex items-center gap-1 bg-gray-50/50 border border-gray-100 rounded-lg px-2 py-1.5 focus-within:border-[#d9a88a] focus-within:bg-white transition-all group-hover:bg-white ${!isArchitect && 'pointer-events-none'}`}>
+                                                            <span className="text-[10px] text-[#d9a88a] font-black">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={unitPrice}
+                                                                readOnly={!isArchitect}
+                                                                onFocus={(e) => e.target.select()}
+                                                                onChange={(e) => {
+                                                                    if (isRow) handleCustomRowUpdate(id, { price: e.target.value });
+                                                                    else handlePriceQtyUpdate(id, { price: e.target.value }, isPhoto);
+                                                                }}
+                                                                className="w-20 text-xs font-black bg-transparent outline-none text-[#1a1a2e]"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="font-black text-[#1a1a2e] text-xs">
+                                                            <span className="text-[#d9a88a] mr-1">₹</span>
+                                                            {unitPrice.toLocaleString('en-IN')}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-3 text-sm font-black text-[#1a1a2e]">
+                                                        <div>
+                                                            <span className="text-[#d9a88a] mr-1 text-[10px]">₹</span>
+                                                            {total.toLocaleString('en-IN')}
+                                                        </div>
+                                                        {isArchitect && isRow && (
+                                                            <button
+                                                                onClick={() => handleRemoveCustomRow(id)}
+                                                                className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                                title="Delete custom row"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </>
+                                        )}
                                     </tr>
                                 );
                             })
