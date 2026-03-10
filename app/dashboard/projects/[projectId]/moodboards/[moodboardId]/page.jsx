@@ -137,12 +137,15 @@ export default function MoodboardDetailPage() {
 
     useEffect(() => { setIsMounted(true); }, []);
 
-    // Mark GENERAL space/project discussions as read on mount (avoids clearing material-specific badges)
+    // Mark GENERAL space/project discussions as read when on Discussion tab or on mount
     useEffect(() => {
         if (projectId && moodboardId && isAuthenticated) {
-            markNotificationsRead({ id: projectId, spaceId: moodboardId, type: 'general' });
+            const hasUnreadGeneral = notificationsData?.data?.generalDiscussions > 0;
+            if (activeTab === 'discussion' || !isDataLoaded.current) {
+                markNotificationsRead({ id: projectId, spaceId: moodboardId, type: 'general' });
+            }
         }
-    }, [projectId, moodboardId, isAuthenticated, markNotificationsRead]);
+    }, [projectId, moodboardId, isAuthenticated, activeTab, notificationsData, markNotificationsRead]);
 
     // Redirect if there's an error fetching the moodboard (e.g., 403 Forbidden due to privacy settings)
     useEffect(() => {
@@ -962,7 +965,7 @@ export default function MoodboardDetailPage() {
 
                 {/* DISCUSSION */}
                 {activeTab === 'discussion' && (
-                    <DiscussionTab projectId={projectId} />
+                    <DiscussionTab projectId={projectId} spaceId={moodboardId} />
                 )}
             </div>
 

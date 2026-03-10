@@ -17,12 +17,12 @@ export default function DiscussionTab({ projectId, spaceId }) {
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
-    // Mark general discussions as read when the tab is opened
+    // Mark general discussions as read when the tab is opened or new messages arrive
     useEffect(() => {
         if (projectId && spaceId && user) {
             markNotificationsRead({ id: projectId, spaceId, type: 'general' });
         }
-    }, [projectId, spaceId, user, markNotificationsRead]);
+    }, [projectId, spaceId, user, markNotificationsRead, data]);
 
     const comments = data?.data || [];
 

@@ -93,9 +93,14 @@ export const useMarkNotificationsRead = () => {
 
     return useMutation({
         mutationFn: ({ id, spaceId, materialId, type }) => projectService.markNotificationsRead(id, spaceId, materialId, type),
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
-            // We invalidate all project queries so that the unread counts are refreshed
+            // Be specific to ensure the badge clears immediately
+            if (variables.id && variables.spaceId) {
+                queryClient.invalidateQueries({
+                    queryKey: ['projects', 'detail', variables.id, 'space', variables.spaceId, 'notifications']
+                });
+            }
         },
         onError: (error) => {
             console.error('Failed to mark notifications read:', error.response?.data || error.message);
