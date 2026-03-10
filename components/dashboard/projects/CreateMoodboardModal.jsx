@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Layout, Loader2 } from 'lucide-react';
+import projectOptions from '../sidebar/project-options.json';
 import Button from '@/components/ui/Button';
 import { useCreateMoodboard, useUpdateMoodboard } from '@/hooks/useMoodboard';
 
@@ -9,6 +10,15 @@ export default function CreateMoodboardModal({ isOpen, onClose, projectId, moodb
     const [name, setName] = useState('');
     const createMutation = useCreateMoodboard();
     const updateMutation = useUpdateMoodboard();
+
+    const TEMPLATES = [
+        'Living Room',
+        'Bedroom',
+        'Kitchen',
+        'Bathroom',
+        'Dining',
+        'Lobby'
+    ];
 
     const isEditing = !!moodboard;
 
@@ -82,6 +92,29 @@ export default function CreateMoodboardModal({ isOpen, onClose, projectId, moodb
                             />
                         </div>
                     </div>
+
+                    {!isEditing && (
+                        <div className="space-y-3">
+                            <label className="text-xs uppercase font-black tracking-widest text-[#2d3142] ml-1">
+                                Quick Templates
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {TEMPLATES.map(template => (
+                                    <button
+                                        key={template}
+                                        type="button"
+                                        onClick={() => setName(template)}
+                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${name === template
+                                            ? 'bg-[#d9a88a] text-white border-[#d9a88a]'
+                                            : 'bg-gray-50 text-gray-400 border-gray-100 hover:border-[#d9a88a]/30 hover:text-[#d9a88a]'
+                                            }`}
+                                    >
+                                        {template}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex gap-3 pt-2">
                         <Button

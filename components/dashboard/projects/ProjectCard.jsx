@@ -234,7 +234,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 {project.coverImage && (
                     <div className="absolute inset-0 z-0">
                         <Image src={project.coverImage} alt="" fill className="object-cover opacity-20" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#fafafb] via-[#fafafb]/80 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-r from-[#fafafb] via-[#fafafb]/80 to-transparent" />
                     </div>
                 )}
 

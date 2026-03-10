@@ -87,3 +87,18 @@ export const useDeleteMoodboard = () => {
         }
     });
 };
+
+export const useDuplicateMoodboard = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: moodboardService.duplicateMoodboard,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
+            toast.success('Space Template duplicated! (Canvas cleared)');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to duplicate space');
+        }
+    });
+};

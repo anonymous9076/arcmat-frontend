@@ -34,5 +34,10 @@ export const moodboardService = {
     deleteMoodboard: async (id) => {
         const response = await api.delete(`/moodboard/${id}`);
         return response.data;
+    },
+
+    duplicateMoodboard: async (id) => {
+        const response = await api.post(`/moodboard/duplicate/${id}`);
+        return response.data;
     }
 };

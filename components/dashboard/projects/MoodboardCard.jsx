@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X, MonitorPlay, FolderOpen, Camera } from 'lucide-react';
+import { Layout, IndianRupee, ArrowRight, Trash2, Plus, Edit2, Check, X, MonitorPlay, FolderOpen, Camera, Copy } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
-import { useUpdateMoodboard } from '@/hooks/useMoodboard';
+import { useUpdateMoodboard, useDuplicateMoodboard } from '@/hooks/useMoodboard';
 import { getProductImageUrl } from '@/lib/productUtils';
 import { toast } from 'sonner';
 import CoverSelectionModal from './CoverSelectionModal';
@@ -17,6 +17,7 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
 
     const { mutate: updateMoodboard, isPending } = useUpdateMoodboard();
+    const { mutate: duplicateSpace, isPending: isDuplicating } = useDuplicateMoodboard();
 
     const handleSave = () => {
         if (!editName.trim()) {
@@ -86,13 +87,23 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
             {/* Action Buttons (Top Right Overlay) */}
             <div className="absolute top-4 right-4 flex gap-1 opaque group-hover:opacity-100 transition-opacity z-20">
                 {isArchitect && (
-                    <button
-                        onClick={(e) => { e.preventDefault(); onDelete(_id); }}
-                        className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                        title="Delete space"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                    <>
+                        <button
+                            onClick={(e) => { e.preventDefault(); duplicateSpace(_id); }}
+                            disabled={isDuplicating}
+                            className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-[#d9a88a] rounded-xl transition-all disabled:opacity-50"
+                            title="Copy Space Template"
+                        >
+                            <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.preventDefault(); onDelete(_id); }}
+                            className="p-2 bg-white/80 backdrop-blur shadow-sm text-gray-400 hover:text-red-500 rounded-xl transition-all"
+                            title="Delete space"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </>
                 )}
             </div>
 
