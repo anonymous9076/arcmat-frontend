@@ -208,7 +208,7 @@ export default function BrandProfessionalInsights() {
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("All");
 
-    const brandId = user?.selectedBrands?.[0] || user?.brandId || user?.id;
+    const brandId = (user?.selectedBrands?.[0]?._id || user?.selectedBrands?.[0]) || user?.brandId || user?.id;
     const { data: analytics, isLoading } = useBrandProfessionalInsights({ brandId });
 
     if (isLoading) {

@@ -31,7 +31,7 @@ export default function BrandRetailerAnalyticsView() {
 
     const { data: analytics, isLoading } = useBrandRetailerAnalytics({
         ...filters,
-        brandId: user?.selectedBrands?.[0] || user?.brandId || user?.id
+        brandId: (user?.selectedBrands?.[0]?._id || user?.selectedBrands?.[0]) || user?.brandId || user?.id
     });
 
     const retailers = analytics?.retailers || [];

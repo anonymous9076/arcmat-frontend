@@ -16,7 +16,7 @@ import {
 export default function BrandProductAnalytics() {
     const { user } = useAuth();
     const { data: analytics, isLoading } = useBrandProductAnalytics({
-        brandId: user?.selectedBrands?.[0] || user?.brandId || user?.id
+        brandId: (user?.selectedBrands?.[0]?._id || user?.selectedBrands?.[0]) || user?.brandId || user?.id
     });
 
     if (isLoading) {
