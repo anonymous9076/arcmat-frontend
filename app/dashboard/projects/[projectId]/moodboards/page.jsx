@@ -69,8 +69,11 @@ export default function MoodboardsPage() {
 
     const filteredMoodboards = moodboards
         .filter(mb => {
-            if (!isArchitect && project?.privacyControls?.showMoodboards === false) {
-                return false;
+            if (!isArchitect && project?.privacyControls) {
+                const { showMoodboards, showMaterials, showRenders } = project.privacyControls;
+                if (showMoodboards === false && showMaterials === false && showRenders === false) {
+                    return false;
+                }
             }
             return mb.moodboard_name?.toLowerCase().includes(searchQuery.toLowerCase());
         })

@@ -87,6 +87,7 @@ export default function MoodboardDetailPage() {
 
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
+
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
@@ -147,6 +148,16 @@ export default function MoodboardDetailPage() {
         }
     }, [projectId, moodboardId, isAuthenticated, activeTab, notificationsData, markNotificationsRead]);
 
+    // Enforce default fallback tab if current active tab is disabled for clients
+    useEffect(() => {
+        if (!isLoading && moodboard && !isArchitect && project?.privacyControls) {
+            const controls = project.privacyControls;
+            if (activeTab === 'overview' && controls.showMaterials === false) setActiveTab('discussion');
+            if (activeTab === 'designDesk' && controls.showMoodboards === false) setActiveTab('discussion');
+            if (activeTab === 'renders' && controls.showRenders === false) setActiveTab('discussion');
+        }
+    }, [isLoading, moodboard, isArchitect, project, activeTab]);
+
     // Redirect if there's an error fetching the moodboard (e.g., 403 Forbidden due to privacy settings)
     useEffect(() => {
         if (isError) {
@@ -155,10 +166,12 @@ export default function MoodboardDetailPage() {
         }
     }, [isError, error, router, projectId]);
 
-    // Redirect if the data loads and we see the flag is strictly false for a non-architect
+    // Redirect if the data loads and we see all relevant flags are strictly false for a non-architect
     useEffect(() => {
-        if (!isLoading && moodboard) {
-            if (!isArchitect && project?.privacyControls?.showMoodboards === false) {
+        if (!isLoading && moodboard && !isArchitect && project?.privacyControls) {
+            const { showMoodboards, showMaterials, showRenders } = project.privacyControls;
+            // If they can't see moodboards, materials, OR renders, kick them out of the Space view completely
+            if (showMoodboards === false && showMaterials === false && showRenders === false) {
                 toast.error("You don't have permission to view spaces for this project.");
                 router.push(`/dashboard/projects/${projectId}`);
             }
@@ -742,7 +755,18 @@ export default function MoodboardDetailPage() {
 
                     {/* Tab Navigation ─── */}
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                        {TABS.filter(tab => tab.id !== 'download' || isArchitect).map(tab => {
+                        {TABS.filter(tab => {
+                            if (tab.id === 'download' && !isArchitect) return false;
+                            
+                            // Client View Permissions Check
+                            if (!isArchitect && project?.privacyControls) {
+                                if (tab.id === 'overview' && project.privacyControls.showMaterials === false) return false;
+                                if (tab.id === 'designDesk' && project.privacyControls.showMoodboards === false) return false;
+                                if (tab.id === 'renders' && project.privacyControls.showRenders === false) return false;
+                            }
+                            
+                            return true;
+                        }).map(tab => {
                             const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.data?.generalDiscussions > 0;
                             return (
                                 <button
