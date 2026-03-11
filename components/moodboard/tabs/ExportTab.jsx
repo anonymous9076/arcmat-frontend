@@ -139,12 +139,12 @@ export default function ExportTab({
     }, [products, customPhotos, customRows, productStatuses, filteredItems]);
 
     return (
-        <div className="h-full flex flex-col p-4 md:p-8 min-h-0 overflow-hidden">
+        <div className="flex flex-col p-3 md:p-8 min-h-0 md:h-full md:overflow-hidden">
             {/* Header Summary */}
-            <div className="shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-gray-100">
+            <div className="shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4 mb-4 md:mb-8 pb-4 md:pb-6 border-b border-gray-100">
                 <div>
-                    <h2 className="text-2xl font-black text-[#1a1a2e] mb-1">Export Summary</h2>
-                    <p className="text-sm text-gray-500 font-medium">Manage and export your project materials</p>
+                    <h2 className="text-xl md:text-2xl font-black text-[#1a1a2e] mb-0.5 md:mb-1">Export Summary</h2>
+                    <p className="text-[12px] md:text-sm text-gray-500 font-medium tracking-tight">Manage and export your project materials</p>
                 </div>
                 <div className="text-left md:text-right">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Estimation</p>
@@ -170,8 +170,8 @@ export default function ExportTab({
             </div>
 
             {/* Toolbar */}
-            <div className="shrink-0 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto flex-1 max-w-full lg:max-w-md">
+            <div className="shrink-0 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 w-full lg:w-auto lg:flex-1 max-w-full lg:max-w-md">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -179,12 +179,12 @@ export default function ExportTab({
                             placeholder="Search materials..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-gray-100 transition-all font-medium placeholder:text-gray-400 shadow-sm"
+                            className="w-full pl-11 pr-4 py-2.5 md:py-3 bg-white border border-gray-100 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-gray-100 transition-all font-medium placeholder:text-gray-400 shadow-sm"
                         />
                     </div>
                     <button
                         onClick={() => setShowFiltersModal(true)}
-                        className={`flex items-center justify-center gap-2 px-5 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${(selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex items-center justify-center gap-2 px-5 py-2.5 md:py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${(selectedBrands.length || selectedTags.length || selectedSpecStatuses.length) > 0 ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]' : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
                     >
                         <Filter className="w-4 h-4" />
                         Filters
@@ -204,7 +204,7 @@ export default function ExportTab({
                     )}
                     <button
                         onClick={exportAsCSV}
-                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
+                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-2.5 md:py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
                     >
                         <Download className="w-4 h-4" /> Export
                     </button>
@@ -339,8 +339,8 @@ export default function ExportTab({
             )}
 
             {/* Table */}
-            <div className={`flex-1 border border-gray-100 rounded-[28px] overflow-auto shadow-sm bg-white transition-all duration-300 relative ${statusDropdown ? 'pb-[180px]' : ''}`}>
-                <table className="w-full text-sm border-separate border-spacing-0 min-w-[1000px]">
+            <div className={`w-full md:flex-1 border border-gray-100 rounded-xl md:rounded-[28px] overflow-auto shadow-sm bg-white transition-all duration-300 relative min-h-[250px] ${statusDropdown ? 'pb-[180px]' : ''}`}>
+                <table className="w-full text-sm border-separate border-spacing-0 min-w-[800px] md:min-w-[1000px]">
                     <thead className="bg-gray-50/95 sticky top-0 z-20 backdrop-blur-sm shadow-[0_1px_0_0_#f3f4f6]">
                         <tr>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[200px] md:sticky md:left-0 md:z-30 bg-gray-50/95 shadow-[1px_0_0_0_#f3f4f6]">Name</th>

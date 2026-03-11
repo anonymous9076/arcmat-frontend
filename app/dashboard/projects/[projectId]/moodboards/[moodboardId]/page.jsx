@@ -638,10 +638,10 @@ export default function MoodboardDetailPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-white overflow-hidden">
+        <div className={`flex flex-col bg-white ${activeTab === 'designdesk' ? 'h-screen overflow-hidden' : 'min-h-[calc(100vh-64px)]'}`}>
             {/* ── Header ───────────────────────────────── */}
             <div className="border-b border-gray-100 bg-white">
-                <Container className="pt-6 pb-0">
+                <Container className="pt-4 md:pt-6 pb-0">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                         <div className="flex-1 min-w-0">
                             {isEditing ? (
@@ -767,7 +767,7 @@ export default function MoodboardDetailPage() {
             </div>
 
             {/* ── Tab Content ─────────────────────────── */}
-            <div className="flex-1 overflow-hidden">
+            <div className={`flex-1 ${activeTab === 'designdesk' ? 'overflow-hidden' : 'pb-8 md:pb-0'}`}>
 
                 {/* OVERVIEW */}
                 {activeTab === 'overview' && (
@@ -861,23 +861,23 @@ export default function MoodboardDetailPage() {
 
                 {/* RENDERS */}
                 {activeTab === 'renders' && (
-                    <div className="h-full overflow-y-auto p-8">
-                        <div className="flex items-center justify-between mb-8">
+                    <div className="h-full overflow-y-auto p-4 md:p-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
                             <div>
-                                <h2 className="text-2xl font-black text-[#1a1a2e] mb-1">Renders</h2>
-                                <p className="text-sm text-gray-500 font-medium">Visualizations and renders for this space</p>
+                                <h2 className="text-xl md:text-2xl font-black text-[#1a1a2e] mb-0.5 md:mb-1">Renders</h2>
+                                <p className="text-[12px] md:text-sm text-gray-500 font-medium tracking-tight">Visualizations and renders for this space</p>
                             </div>
                             {isArchitect && (
                                 <button
                                     onClick={() => setIsRenderModalOpen(true)}
-                                    className="px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
+                                    className="w-full sm:w-auto justify-center px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" /> Add Render
                                 </button>
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                             {renderPhotos.map(photo => (
                                 <div
                                     key={photo.id}
@@ -909,7 +909,7 @@ export default function MoodboardDetailPage() {
 
                                     <div
                                         onClick={() => setSelectedFullScreenImage(photo)}
-                                        className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6"
+                                        className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6"
                                     >
                                         <p className="text-white font-bold text-lg">{photo.title}</p>
                                         <p className="text-white/80 text-sm line-clamp-1">{photo.description}</p>
@@ -979,7 +979,7 @@ export default function MoodboardDetailPage() {
             {/* Full Screen Image Viewer */}
             {selectedFullScreenImage && (
                 <div
-                    className="fixed inset-0 z-[300] bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden"
+                    className="fixed inset-0 z-300 bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden"
                     onClick={() => setSelectedFullScreenImage(null)}
                 >
                     <button
