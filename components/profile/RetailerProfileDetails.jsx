@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Building2, User, Phone, MapPin, Tag, Mail } from 'lucide-react';
+import { Edit, Building2, User, Phone, MapPin, Tag, Mail, MessageSquare, Clock } from 'lucide-react';
 
 const RetailerProfileDetails = ({ user, brands, onEdit }) => {
     if (!user) return null;
@@ -67,6 +67,26 @@ const RetailerProfileDetails = ({ user, brands, onEdit }) => {
                                 <p className="text-gray-900 font-medium">{retailerProfile.cityRegion || 'N/A'}</p>
                             </div>
                         </div>
+
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-yellow-50 flex items-center justify-center text-yellow-600 shrink-0">
+                                <MessageSquare size={18} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Preferred Contact</p>
+                                <p className="text-gray-900 font-medium">{retailerProfile.preferredContactMethod || 'Phone'}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                                <Clock size={18} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Calling Hours</p>
+                                <p className="text-gray-900 font-medium">{retailerProfile.callingHours || 'Not specified'}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -82,6 +102,27 @@ const RetailerProfileDetails = ({ user, brands, onEdit }) => {
             <div className="space-y-4 pt-6 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-2">
                     <MapPin size={16} className="text-gray-400" />
+                    <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Cities Served (Service Areas)</h4>
+                </div>
+                {retailerProfile.cities && retailerProfile.cities.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {retailerProfile.cities.map((city, index) => (
+                            <span
+                                key={index}
+                                className="px-4 py-2 bg-[#e09a74]/5 border border-[#e09a74]/20 text-[#e09a74] text-sm font-bold rounded-xl shadow-sm"
+                            >
+                                {city}
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-gray-500 text-sm italic py-2 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">No service cities defined.</p>
+                )}
+            </div>
+
+            <div className="space-y-4 pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-2">
+                    <Building2 size={16} className="text-gray-400" />
                     <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Business Address</h4>
                 </div>
                 <p className="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">

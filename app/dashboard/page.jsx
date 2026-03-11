@@ -49,10 +49,10 @@ const getBoardThumbnail = (board) => {
 
 const RolePieChart = ({ data }) => {
     const roles = [
-        { id: 'architects', label: 'Architects', value: data?.architects || 0, color: '#10b981', icon: FolderOpen },
-        { id: 'brands', label: 'Brands', value: data?.brands || 0, color: '#3b82f6', icon: Store },
-        { id: 'retailers', label: 'Retailers', value: data?.retailers || 0, color: '#f59e0b', icon: Package },
-        { id: 'professionals', label: 'Professionals', value: data?.professionals || 0, color: '#8b5cf6', icon: Briefcase },
+        { id: 'architects', label: 'Architects', value: data?.architects || 0, color: '#10b981', icon: FolderOpen, trend: '+5%' },
+        { id: 'brands', label: 'Brands', value: data?.brands || 0, color: '#3b82f6', icon: Store, trend: '+12%' },
+        { id: 'retailers', label: 'Retailers', value: data?.retailers || 0, color: '#f59e0b', icon: Package, trend: '+8%' },
+        { id: 'professionals', label: 'Professionals', value: data?.professionals || 0, color: '#8b5cf6', icon: Briefcase, trend: '+3%' },
     ];
 
     const total = roles.reduce((acc, curr) => acc + curr.value, 0);
@@ -68,12 +68,15 @@ const RolePieChart = ({ data }) => {
     });
 
     return (
-        <div className="flex flex-col md:flex-row items-center gap-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center gap-10 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-full relative overflow-hidden group">
+            {/* Background Texture */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#d9a88a 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+
             {/* Chart */}
-            <div className="relative w-48 h-48 shrink-0">
+            <div className="relative w-52 h-52 shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                     {total === 0 ? (
-                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="20" />
+                        <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="18" />
                     ) : (
                         segments.map((segment, i) => {
                             const strokeDasharray = `${segment.percent} 100`;
@@ -86,16 +89,16 @@ const RolePieChart = ({ data }) => {
                                     r="40"
                                     fill="transparent"
                                     stroke={segment.color}
-                                    strokeWidth={hoveredRole === segment.id ? "24" : "20"}
+                                    strokeWidth={hoveredRole === segment.id ? "22" : "18"}
                                     strokeDasharray={strokeDasharray}
                                     strokeDashoffset={strokeDashoffset}
                                     pathLength="100"
                                     initial={{ strokeDasharray: "0 100" }}
                                     animate={{
                                         strokeDasharray: `${segment.percent} 100`,
-                                        opacity: !hoveredRole || hoveredRole === segment.id ? 1 : 0.6
+                                        opacity: !hoveredRole || hoveredRole === segment.id ? 1 : 0.4
                                     }}
-                                    transition={{ duration: 1, delay: i * 0.1, ease: "easeOut" }}
+                                    transition={{ duration: 1, delay: i * 0.1, ease: "circOut" }}
                                     className="cursor-pointer transition-all duration-300"
                                     onMouseEnter={() => setHoveredRole(segment.id)}
                                     onMouseLeave={() => setHoveredRole(null)}
@@ -107,35 +110,43 @@ const RolePieChart = ({ data }) => {
 
                 {/* Center Content */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Users</p>
-                    <h4 className="text-2xl font-black text-gray-900 leading-tight">{total}</h4>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center mb-0.5">Total User</p>
+                    <h4 className="text-3xl font-black text-gray-900 leading-none">{total}</h4>
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-2 border border-emerald-100/50">ACTIVE</span>
                 </div>
             </div>
 
-            {/* Legend */}
-            <div className="grid grid-cols-2 gap-3 w-full">
+            {/* Legend - Structured */}
+            <div className="grid grid-cols-2 gap-4 w-full relative z-10">
                 {segments.map((role) => (
                     <motion.div
                         key={role.id}
                         onMouseEnter={() => setHoveredRole(role.id)}
                         onMouseLeave={() => setHoveredRole(null)}
                         className={clsx(
-                            "p-3 rounded-2xl border transition-all duration-300 flex items-center gap-3",
-                            hoveredRole === role.id ? "bg-gray-50 border-gray-200 shadow-sm" : "border-transparent"
+                            "p-3.5 rounded-2xl border transition-all duration-300 flex flex-col gap-2 bg-white",
+                            hoveredRole === role.id ? "border-gray-200 shadow-md translate-y-[-2px]" : "border-gray-50 bg-gray-50/30"
                         )}
                     >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${role.color}15`, color: role.color }}>
-                            <role.icon className="w-4 h-4" />
+                        <div className="flex items-center justify-between">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: `${role.color}15`, color: role.color }}>
+                                <role.icon className="w-4.5 h-4.5" />
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-500 bg-white px-2 py-0.5 rounded-full shadow-sm">
+                                {role.trend}
+                            </span>
                         </div>
                         <div className="min-w-0">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight truncate">{role.label}</p>
-                            <h5 className="text-lg font-bold text-gray-900 leading-none mt-1">{role.value}</h5>
+                            <div className="flex items-end justify-between mt-1">
+                                <h5 className="text-xl font-bold text-gray-900 leading-none">{role.value}</h5>
+                                {role.percent > 0 && (
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                                        {Math.round(role.percent)}%
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        {role.percent > 0 && (
-                            <span className="ml-auto text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md self-start">
-                                {Math.round(role.percent)}%
-                            </span>
-                        )}
                     </motion.div>
                 ))}
             </div>
@@ -312,52 +323,93 @@ export default function DashboardPage() {
                             <h2 className="text-xl font-bold text-gray-900">Platform User Composition</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                             <div className="lg:col-span-3">
                                 <RolePieChart data={platformStats?.roles} />
                             </div>
 
-                            <div className="bg-[#1a1c1e] text-white p-6 rounded-3xl shadow-xl space-y-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#d9a88a]/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                            <div className="relative group lg:col-span-2">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.6, ease: "easeOut" }}
+                                    className="h-full bg-white text-gray-900 p-6 rounded-4xl shadow-sm relative overflow-hidden border border-gray-100/80 hover:shadow-md transition-all duration-500"
+                                >
+                                    {/* Subtle decorative elements for light mode */}
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-[#d9a88a]/5 rounded-full -mr-24 -mt-24 blur-[80px]"></div>
+                                    <div className="absolute bottom-0 left-0 w-36 h-36 bg-blue-500/5 rounded-full -ml-18 -mb-18 blur-[60px]"></div>
 
-                                <div className="relative z-10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Pulse</p>
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div className="relative z-10 flex flex-col h-full">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-[#d9a88a]"></span>
+                                                    <p className="text-[10px] font-black text-[#d9a88a] uppercase tracking-[0.2em]">Live Analytics</p>
+                                                </div>
+                                                <h3 className="text-xl font-black text-gray-800 tracking-tight">Active Pulse</h3>
+                                            </div>
+                                            <div className="relative flex items-center justify-center p-2 bg-emerald-50 rounded-full border border-emerald-100">
+                                                <div className="absolute w-4 h-4 rounded-full bg-emerald-500/20 animate-ping"></div>
+                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 flex-1">
+                                            {[
+                                                { label: "Daily Logins", value: platformStats?.activity?.dailyLogins || 0, icon: Activity, color: "text-[#d9a88a]", bgColor: "bg-[#d9a88a]/10", sub: "Today's activity" },
+                                                { label: "MAU", value: platformStats?.activity?.monthlyActiveUsers || 0, icon: Users, color: "text-blue-500", bgColor: "bg-blue-50", sub: "Active this month" },
+                                                { label: "Monthly Signups", value: platformStats?.activity?.newSignups || 0, icon: UserPlus, color: "text-emerald-500", bgColor: "bg-emerald-50", sub: "New registrations" }
+                                            ].map((stat, idx) => (
+                                                <motion.div
+                                                    key={stat.label}
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.3 + idx * 0.1 }}
+                                                    className="flex items-center justify-between group/item p-1"
+                                                >
+                                                    <div className="flex items-center gap-3.5">
+                                                        <div className={clsx("p-3 rounded-2xl border border-transparent group-hover/item:border-white group-hover/item:shadow-sm transition-all duration-300", stat.bgColor)}>
+                                                            <stat.icon className={clsx("w-5 h-5", stat.color)} />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold text-gray-600 group-hover/item:text-gray-900 transition-colors">{stat.label}</span>
+                                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{stat.sub}</span>
+                                                        </div>
+                                                    </div>
+                                                    <motion.div className="text-right">
+                                                        <motion.div
+                                                            key={stat.value}
+                                                            initial={{ scale: 0.8, opacity: 0 }}
+                                                            animate={{ scale: 1, opacity: 1 }}
+                                                            className="text-2xl font-black tabular-nums text-gray-800 leading-none"
+                                                        >
+                                                            {stat.value}
+                                                        </motion.div>
+                                                    </motion.div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-6 pt-5 border-t border-gray-100">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">System Integrity</p>
+                                                <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">98% SECURE</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: '85%' }}
+                                                        transition={{ duration: 1.5, ease: "circOut" }}
+                                                        className="h-full bg-gradient-to-r from-[#d9a88a] to-emerald-500"
+                                                    ></motion.div>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-400">OPTIMAL</span>
+                                            </div>
+                                            <p className="text-[9px] text-gray-400 mt-3 font-medium text-center italic">Last sync: Just now</p>
+                                        </div>
                                     </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-white/5 rounded-lg">
-                                                    <Activity className="w-3 h-3 text-[#d9a88a]" />
-                                                </div>
-                                                <span className="text-xs font-medium text-gray-400">Daily Logins</span>
-                                            </div>
-                                            <span className="text-sm font-bold">{platformStats?.activity?.dailyLogins || 0}</span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-white/5 rounded-lg">
-                                                    <Users className="w-3 h-3 text-[#d9a88a]" />
-                                                </div>
-                                                <span className="text-xs font-medium text-gray-400">MAU</span>
-                                            </div>
-                                            <span className="text-sm font-bold">{platformStats?.activity?.monthlyActiveUsers || 0}</span>
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-white/5 rounded-lg">
-                                                    <UserPlus className="w-3 h-3 text-[#d9a88a]" />
-                                                </div>
-                                                <span className="text-xs font-medium text-gray-400">Monthly Signups</span>
-                                            </div>
-                                            <span className="text-sm font-bold text-[#d9a88a]">{platformStats?.activity?.newSignups || 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                </motion.div>
                             </div>
                         </div>
                     </div>

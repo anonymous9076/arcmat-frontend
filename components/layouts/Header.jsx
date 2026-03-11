@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { LogOut, User, ChevronDown, Heart, Folder, ShoppingCart, LayoutDashboard, Menu, Search, Camera, Loader2 } from 'lucide-react';
 import { useSidebarStore } from '@/store/useSidebarStore';
+import NotificationCenter from '../dashboard/NotificationCenter';
 import { getProductImageUrl } from '@/lib/productUtils';
 import { useGetProducts } from '@/hooks/useProduct';
 import { useGetWishlist } from '@/hooks/useWishlist';
@@ -131,8 +132,8 @@ const Header = ({ variant = 'default' }) => {
                     </div>
                 </div>
 
-                {/* <div className="flex items-center gap-2 lg:gap-6 flex-shrink-0"></div> */}
-                {(!isDashboard || user?.role !== 'brand') && (
+                {/* Search Bar: Visible on main site, hidden on dashboard for better focus */}
+                {!isDashboard && (
                     <div className='hidden md:flex flex-1 max-w-2xl mx-4 relative'>
                         <div className="relative w-full group">
                             <div className="flex items-center w-full bg-gray-100/80 hover:bg-gray-100 transition-colors rounded-full px-4 h-11 border border-transparent focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-sm">
@@ -220,13 +221,16 @@ const Header = ({ variant = 'default' }) => {
                 )}
 
                 <div className="flex items-center gap-2 lg:gap-6 shrink-0">
-                    {(!isDashboard || user?.role !== 'brand') && (
+                    {/* Common Tools */}
+                    {mounted && isAuthenticated && (
                         <>
-                            <button className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'>
-                                <Image src="/Icons/ai_icon.png" alt="AI Tools" width={28} height={28} />
-                            </button>
+                            {(!isDashboard || user?.role !== 'brand') && (
+                                <button className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'>
+                                    <Image src="/Icons/ai_icon.png" alt="AI Tools" width={28} height={28} />
+                                </button>
+                            )}
 
-                            {isAuthenticated && user?.invitedProjects?.length > 0 && (
+                            {user?.invitedProjects?.length > 0 && (
                                 <div ref={projectsRef} className="relative">
                                     <button
                                         onClick={() => setProjectsOpen(!projectsOpen)}
@@ -265,17 +269,17 @@ const Header = ({ variant = 'default' }) => {
                                 </div>
                             )}
 
-                            <div className='h-6 w-px bg-gray-200 hidden sm:block'></div>
+                            <NotificationCenter />
                         </>
                     )}
 
                     <div className='flex md:flex items-center sm:gap-4'>
-                        {(!user || user.role !== 'brand') && (
+                        {mounted && (!user || user.role !== 'brand') && (
                             <>
                                 <Link href="/wishlist">
                                     <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/wishlist'>
                                         <Heart size={22} className="text-gray-600 group-hover/wishlist:text-[#e09a74] transition-colors" />
-                                        {mounted && wishlistCount > 0 && (
+                                        {wishlistCount > 0 && (
                                             <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
                                                 {wishlistCount > 99 ? '99+' : wishlistCount}
                                             </span>
@@ -284,11 +288,11 @@ const Header = ({ variant = 'default' }) => {
                                 </Link>
                             </>
                         )}
-                        {(!user || user.role !== 'brand') && (
+                        {mounted && (!user || user.role !== 'brand') && (
                             <Link href="/cart">
                                 <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/cart'>
                                     <ShoppingCart size={22} className="text-gray-600 group-hover/cart:text-[#e09a74] transition-colors" />
-                                    {mounted && cartCount > 0 && (
+                                    {cartCount > 0 && (
                                         <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
                                             {cartCount > 99 ? '99+' : cartCount}
                                         </span>
@@ -299,7 +303,9 @@ const Header = ({ variant = 'default' }) => {
                     </div>
 
                     <div className='hidden lg:flex items-center gap-2 min-w-[100px] justify-end'>
-                        {loading ? (
+                        {!mounted ? (
+                            <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />
+                        ) : loading ? (
                             <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />
                         ) : isAuthenticated && user ? (
                             <div ref={desktopProfileRef} className="relative">
@@ -363,7 +369,7 @@ const Header = ({ variant = 'default' }) => {
 
 
                     <div ref={mobileProfileRef} className="relative lg:hidden">
-                        {isAuthenticated && user ? (
+                        {mounted && isAuthenticated && user ? (
                             <button
                                 onClick={() => setProfileOpen(!profileOpen)}
                                 className="p-1 hover:bg-gray-50 rounded-full transition-colors"
@@ -376,13 +382,15 @@ const Header = ({ variant = 'default' }) => {
                                     )}
                                 </div>
                             </button>
-                        ) : (
+                        ) : mounted ? (
                             <button
                                 onClick={() => setProfileOpen(!profileOpen)}
                                 className="p-2 hover:bg-gray-50 rounded-full transition-colors"
                             >
                                 <User size={24} className="text-gray-600" />
                             </button>
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />
                         )}
 
                         {profileOpen && (

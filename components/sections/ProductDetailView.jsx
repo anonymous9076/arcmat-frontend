@@ -15,13 +15,15 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/thumbs'
 import 'swiper/css/free-mode'
-import { ShoppingCart, Check, Heart } from 'lucide-react'
+import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin } from 'lucide-react'
 import { useCartStore } from '@/store/useCartStore'
 import { useAddToCart } from '@/hooks/useCart'
 import { toast } from '@/components/ui/Toast';
 import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount, getSpecifications, formatNumber, formatCurrency } from '@/lib/productUtils'
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
+import { useCreateNotification } from '@/hooks/useNotification'
+import { useGetProjects } from '@/hooks/useProject'
 
 const ProductDetailView = ({ product, initialVariantId, categories = [], childCategories = [] }) => {
     const [thumbsSwiper, setThumbsSwiper] = useState(null)
@@ -31,6 +33,9 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     const [activeRequest, setActiveRequest] = useState({})
     const [quantity, setQuantity] = useState(1)
     const [mounted, setMounted] = useState(false)
+    const [isRequestingContact, setIsRequestingContact] = useState(false)
+    const [selectedProject, setSelectedProject] = useState(null)
+    const [showProjectSelector, setShowProjectSelector] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -42,9 +47,14 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     const [selectedVariant, setSelectedVariant] = useState(null)
     const [selectedAttributes, setSelectedAttributes] = useState({})
 
-    const { isAuthenticated } = useAuth()
+    const { user, isAuthenticated } = useAuth()
+    const isArchitect = user?.role === 'architect'
     const { data: wishlistData } = useGetWishlist(isAuthenticated)
+    const { data: projectsData } = useGetProjects({ enabled: isArchitect })
+    const projects = projectsData?.data?.data || []
+
     const { mutate: addToCartBackend } = useAddToCart();
+    const { mutate: createNotification } = useCreateNotification()
 
 
     const isInWishlist = React.useMemo(() => {
@@ -217,6 +227,43 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
             item_or_variant: selectedVariant ? 'variant' : 'item'
         })
         setIsWishlisted(true)
+    }
+
+    const handleRequestContact = async () => {
+        if (!selectedProject && projects.length > 0) {
+            setShowProjectSelector(true)
+            return
+        }
+
+        setIsRequestingContact(true)
+        const retailerId = selectedVariant?.retailer_id || product.retailer_id || product.retailerId || product.userId || product.createdBy?._id;
+
+        if (!retailerId) {
+            toast.error("Retailer information not found for this product.");
+            setIsRequestingContact(false);
+            return;
+        }
+
+        const projectName = selectedProject?.name || "a project";
+        const city = selectedProject?.location || "Gurgaon"; // Dynamic city or fallback
+
+        createNotification({
+            recipient: retailerId,
+            type: 'RETAILER_CONTACT_REQUEST',
+            message: `An architect is using ${name} for a project in ${city}. Your contact may be shared with the architect.`,
+            actionStatus: 'pending',
+            relatedData: {
+                productId: product._id,
+                projectId: selectedProject?._id,
+                city: city
+            }
+        }, {
+            onSuccess: () => {
+                toast.success("Contact request sent to retailer!");
+                setShowProjectSelector(false);
+            },
+            onSettled: () => setIsRequestingContact(false)
+        });
     }
 
     // Specifications
@@ -542,60 +589,99 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     )}
                                 </div>
 
-                                <div className="flex flex-col gap-2">
-                                    {/* PRIMARY CTA */}
+                                <div className="flex flex-col gap-2 mb-4">
+                                    {/* PRIMARY COMMERCE ACTIONS */}
                                     {showPrimaryAddToCart && (
                                         <Button
                                             text={isAdded ? "ADDED TO CART" : "ADD TO CART"}
                                             onClick={handleAddToCart}
-                                            className={`w-full ${isAdded ? "bg-green-600 text-white" : "bg-black text-white hover:bg-gray-800"} font-medium py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2`}
+                                            className={`w-full ${isAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]"} font-bold py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2 shadow-sm`}
                                             icon={isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                                         />
                                     )}
 
-                                    {/* OUT OF STOCK OR NO PRICE → GET QUOTATION */}
+                                    {mounted && isArchitect && (
+                                        <div className="flex flex-col gap-2">
+                                            <Button
+                                                text={isRequestingContact ? "SENDING REQUEST..." : "REQUEST RETAILER CONTACT"}
+                                                onClick={handleRequestContact}
+                                                disabled={isRequestingContact}
+                                                className="w-full bg-[#e09a74]/80 text-white hover:bg-[#e09a74] py-3 px-5 rounded-full text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2"
+                                                icon={<User className="w-4 h-4" />}
+                                            />
+
+                                            {showProjectSelector && projects.length > 0 && (
+                                                <div className="mt-1 p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2 shadow-inner">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Select Project for Context</p>
+                                                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto no-scrollbar">
+                                                        {projects.map(p => (
+                                                            <button
+                                                                key={p._id}
+                                                                onClick={() => setSelectedProject(p)}
+                                                                className={`text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedProject?._id === p._id ? 'bg-[#e09a74] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                                                            >
+                                                                {p.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        onClick={handleRequestContact}
+                                                        disabled={!selectedProject || isRequestingContact}
+                                                        className="w-full mt-3 py-2 bg-[#e09a74] text-white rounded-lg text-xs font-bold disabled:opacity-50 transition-all hover:bg-[#d98b63] shadow-sm"
+                                                    >
+                                                        Confirm Request
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* FALLBACK PRIMARY ACTIONS */}
                                     {showOutOfStockQuote && (
                                         <Button
                                             text="REQUEST QUOTATION"
-                                            className="w-full bg-black text-white py-2.5 px-5 rounded-full text-sm"
+                                            className="w-full bg-black text-white py-3 px-5 rounded-full text-sm font-bold shadow-sm"
                                             onClick={() => handleOpenModal({ priceList: true, contactRepresentative: true })}
                                         />
                                     )}
 
-                                    {/* SECONDARY CTA */}
-                                    <div className="flex flex-col gap-1.5 mt-1">
-                                        <Button
-                                            text="REQUEST CATALOGUE"
+                                    {/* SECONDARY INFO ACTIONS - COMPACT GRID */}
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                        <button
                                             onClick={() => handleOpenModal({ catalogue: true, contactRepresentative: true })}
-                                            className="w-full bg-[#e09a74] hover:bg-[#E09A74] text-black py-2 px-5 rounded-full text-sm"
-                                        />
-                                        <Button
-                                            text="REQUEST BIM / CAD"
+                                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[11px] font-bold transition-all bg-[#e09a74]/5 text-[#e09a74] border border-[#e09a74]/20 hover:bg-[#e09a74]/10"
+                                        >
+                                            <Package className="w-3.5 h-3.5" /> CATALOGUE
+                                        </button>
+                                        <button
                                             onClick={() => handleOpenModal({ bimCad: true })}
-                                            className="w-full bg-[#e09a74] hover:bg-[#E09A74] text-black py-2 px-5 rounded-full text-sm"
-                                        />
-                                        {!showOutOfStockQuote && (
-                                            <Button
-                                                text="RETAILERS LIST"
+                                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[11px] font-bold transition-all bg-[#e09a74]/5 text-[#e09a74] border border-[#e09a74]/20 hover:bg-[#e09a74]/10"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" /> BIM / CAD
+                                        </button>
+                                        {/* {!showOutOfStockQuote && (
+                                            <button
                                                 onClick={() => handleOpenModal({ retailersList: true })}
-                                                className="w-full bg-[#e09a74] hover:bg-[#E09A74] text-black py-2 px-5 rounded-full text-sm"
-                                            />
-                                        )}
+                                                className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[11px] font-bold transition-all bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100"
+                                            >
+                                                <MapPin className="w-3.5 h-3.5" /> VIEW NEARBY RETAILERS
+                                            </button>
+                                        )} */}
                                     </div>
-
-                                    <button
-                                        onClick={handleAddToWishlist}
-                                        className={`
-                                            mt-2 w-full py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 border
-                                            ${isWishlisted
-                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                                : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-                                            }
-                                        `}>
-                                        <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
-                                        {isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}
-                                    </button>
                                 </div>
+
+                                <button
+                                    onClick={handleAddToWishlist}
+                                    className={`
+                                            w-full py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 border
+                                            ${isWishlisted
+                                            ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                            : 'bg-white text-[#e09a74] border-[#e09a74]/20 hover:bg-[#e09a74]/10'
+                                        }
+                                        `}>
+                                    <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+                                    {isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -713,37 +799,38 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
                     {/* GLOBAL SWIPER STYLES */}
                     <style jsx global>{`
-        .product-detail-swiper .swiper-button-next,
-        .product-detail-swiper .swiper-button-prev {
-          color: #666;
-          background: white;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .product-detail-swiper .swiper-button-next:after,
-        .product-detail-swiper .swiper-button-prev:after {
-          font-size: 14px;
-          font-weight: bold;
-        }
-        .product-detail-swiper .swiper-pagination-bullet {
-          width: 8px;
-          height: 8px;
-          background: #d1d5db;
-          opacity: 1;
-        }
-        .product-detail-swiper .swiper-pagination-bullet-active {
-          background: #333;
-          width: 20px;
-          border-radius: 4px;
-        }
-        .product-thumbs-swiper .swiper-slide-thumb-active .relative {
-          border-color: #333 !important;
-        }
-      `}</style>
+                        .product-detail-swiper .swiper-button-next,
+                        .product-detail-swiper .swiper-button-prev {
+                        color: #666;
+                        background: white;
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        }
+                        .product-detail-swiper .swiper-button-next:after,
+                        .product-detail-swiper .swiper-button-prev:after {
+                        font-size: 14px;
+                        font-weight: bold;
+                        }
+                        .product-detail-swiper .swiper-pagination-bullet {
+                        width: 8px;
+                        height: 8px;
+                        background: #d1d5db;
+                        opacity: 1;
+                        }
+                        .product-detail-swiper .swiper-pagination-bullet-active {
+                        background: #333;
+                        width: 20px;
+                        border-radius: 4px;
+                        }
+                        .product-thumbs-swiper .swiper-slide-thumb-active .relative {
+                        border-color: #333 !important;
+                        }
+                    `}</style>
                 </div>
-            </Container >
+            </Container>
+
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <RequestInfo
                     product={product}
