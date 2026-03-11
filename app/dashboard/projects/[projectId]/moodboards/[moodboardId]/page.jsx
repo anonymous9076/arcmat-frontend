@@ -265,10 +265,10 @@ export default function MoodboardDetailPage() {
         setStagedMaterial(null);
     }, []);
 
-    const handleAddText = useCallback((x, y) => {
+    const handleAddText = useCallback((x, y, type = 'text') => {
         const newId = Date.now() + Math.random();
         setBoardItems(prev => {
-            const next = [...prev, { id: newId, type: 'text', text: '', fontSize: 32, fontWeight: 'bold', textColor: '#1a1a1a', x, y }];
+            const next = [...prev, { id: newId, type: type, text: '', fontSize: 32, fontWeight: 'bold', textColor: '#1a1a1a', x, y }];
             return next;
         });
         return newId;
@@ -757,14 +757,14 @@ export default function MoodboardDetailPage() {
                     <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
                         {TABS.filter(tab => {
                             if (tab.id === 'download' && !isArchitect) return false;
-                            
+
                             // Client View Permissions Check
                             if (!isArchitect && project?.privacyControls) {
                                 if (tab.id === 'overview' && project.privacyControls.showMaterials === false) return false;
                                 if (tab.id === 'designDesk' && project.privacyControls.showMoodboards === false) return false;
                                 if (tab.id === 'renders' && project.privacyControls.showRenders === false) return false;
                             }
-                            
+
                             return true;
                         }).map(tab => {
                             const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.data?.generalDiscussions > 0;
@@ -843,7 +843,7 @@ export default function MoodboardDetailPage() {
                                 />
                             )}
                             {isArchitect && (
-                                <div className={`absolute md:relative z-50 h-full shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[280px] md:w-[260px] shadow-2xl md:shadow-none' : 'w-0'}`}>
+                                <div className={`absolute md:relative z-20 h-full shrink-0 border-r border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-in-out ${isPanelOpen ? 'w-[280px] md:w-[260px] shadow-2xl md:shadow-none' : 'w-0'}`}>
                                     <MaterialPanel
                                         materials={materials}
                                         selectedMaterial={selectedMaterial}
@@ -861,7 +861,7 @@ export default function MoodboardDetailPage() {
                                     ref={canvasRef}
                                     projectName={project?.projectName}
                                     roomName={moodboard?.moodboard_name}
-                                    boardItems={boardItems}
+                                    boardItems={isArchitect ? boardItems : boardItems.filter(i => i.type !== 'internal-note')}
                                     canvasBg={canvasBg}
                                     onBgChange={setCanvasBg}
                                     autoSaving={isSaving}
@@ -930,13 +930,19 @@ export default function MoodboardDetailPage() {
                                             </button>
                                         </div>
                                     )}
-
                                     <div
                                         onClick={() => setSelectedFullScreenImage(photo)}
                                         className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6"
                                     >
-                                        <p className="text-white font-bold text-lg">{photo.title}</p>
-                                        <p className="text-white/80 text-sm line-clamp-1">{photo.description}</p>
+                                        {/* Trim title to max 15 characters */}
+                                        <p className="text-white font-bold text-lg">
+                                            {photo.title.length > 10 ? photo.title.slice(0, 10) + "..." : photo.title}
+                                        </p>
+
+                                        {/* Trim description to max 40 characters */}
+                                        <p className="text-white/80 text-sm">
+                                            {photo.description.length > 20 ? photo.description.slice(0, 20) + "..." : photo.description}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -1040,9 +1046,9 @@ export default function MoodboardDetailPage() {
                         {/* Overlay Metadata */}
                         <div className="absolute bottom-0 left-0 right-0 p-12 bg-linear-to-t from-black/80 to-transparent pointer-events-none">
                             <div className="max-w-4xl mx-auto space-y-2">
-                                <h2 className="text-4xl font-black text-white drop-shadow-lg">{selectedFullScreenImage.title}</h2>
+                                <h2 className="text-4xl font-black text-white drop-shadow-lg">{selectedFullScreenImage.title.length > 10 ? selectedFullScreenImage.title.slice(0, 10) + "..." : selectedFullScreenImage.title}</h2>
                                 {selectedFullScreenImage.description && (
-                                    <p className="text-xl text-white/80 font-medium max-w-2xl drop-shadow-md">{selectedFullScreenImage.description}</p>
+                                    <p className="text-xl text-white/80 font-medium max-w-2xl drop-shadow-md">{selectedFullScreenImage.description.length > 20 ? selectedFullScreenImage.description.slice(0, 20) + "..." : selectedFullScreenImage.description}</p>
                                 )}
                             </div>
                         </div>

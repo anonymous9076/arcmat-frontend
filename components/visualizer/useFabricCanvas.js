@@ -184,12 +184,12 @@ export function useFabricCanvas({
                 if (e.cancelable) e.preventDefault(); // Prevent page scroll
                 const t1 = e.touches[0];
                 const t2 = e.touches[1];
-                
+
                 const currentCenter = {
                     x: (t1.clientX + t2.clientX) / 2,
                     y: (t1.clientY + t2.clientY) / 2
                 };
-                
+
                 // Pan
                 if (initialPanCenter) {
                     const deltaX = currentCenter.x - initialPanCenter.x;
@@ -207,7 +207,7 @@ export function useFabricCanvas({
                     let newZoom = initialPinchZoom * scale;
                     if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM;
                     if (newZoom < MIN_ZOOM) newZoom = MIN_ZOOM;
-                    
+
                     const rect = canvas.wrapperEl.getBoundingClientRect();
                     canvas.zoomToPoint({ x: currentCenter.x - rect.left, y: currentCenter.y - rect.top }, newZoom);
                     setZoom(newZoom);
@@ -285,7 +285,7 @@ export function useFabricCanvas({
                 const tr = obj.oCoords.tr;
                 setActiveMenuConfig({
                     id: obj.id,
-                    type: obj.type === 'i-text' || obj.type === 'text' ? 'text' : 'material',
+                    type: obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox' ? 'text' : 'material',
                     left: tr.x + 10,
                     top: tr.y,
                     quantity: obj.materialData?.quantity || 1,
@@ -344,7 +344,7 @@ export function useFabricCanvas({
                     h: obj.height * obj.scaleY
                 };
 
-                if (obj.type === 'i-text' || obj.type === 'text') {
+                if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
                     updates.text = obj.text;
                 }
 
@@ -355,14 +355,14 @@ export function useFabricCanvas({
 
         canvas.on('text:changed', (e) => {
             const obj = e.target;
-            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text')) {
+            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox')) {
                 onUpdateItem(obj.id, { text: obj.text });
             }
         });
 
         canvas.on('text:editing:exited', (e) => {
             const obj = e.target;
-            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text')) {
+            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox')) {
                 onUpdateItem(obj.id, { text: obj.text });
             }
         });
@@ -412,20 +412,20 @@ export function useFabricCanvas({
 
     useEffect(() => {
         if (!fabricRef.current || !canvasReady || initialCenterDone.current || boardItems.length === 0) return;
-        
+
         const canvas = fabricRef.current;
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        
+
         boardItems.forEach(item => {
             const w = (item.w || DEFAULT_CARD_W) * (item.scaleX || item.scale || 1);
             const h = (item.h || DEFAULT_CARD_H) * (item.scaleY || item.scale || 1);
             const x = item.x;
             const y = item.y;
-            
-            if (x - w/2 < minX) minX = x - w/2;
-            if (x + w/2 > maxX) maxX = x + w/2;
-            if (y - h/2 < minY) minY = y - h/2;
-            if (y + h/2 > maxY) maxY = y + h/2;
+
+            if (x - w / 2 < minX) minX = x - w / 2;
+            if (x + w / 2 > maxX) maxX = x + w / 2;
+            if (y - h / 2 < minY) minY = y - h / 2;
+            if (y + h / 2 > maxY) maxY = y + h / 2;
         });
 
         if (isFinite(minX) && isFinite(maxX)) {
@@ -433,10 +433,10 @@ export function useFabricCanvas({
             const contentHeight = maxY - minY;
             const contentCenterX = minX + contentWidth / 2;
             const contentCenterY = minY + contentHeight / 2;
-            
+
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
-            
+
             // Calculate scale to fit
             const padding = 40;
             const expectedScaleX = (canvasWidth - padding * 2) / Math.max(contentWidth, 1);
@@ -445,8 +445,8 @@ export function useFabricCanvas({
             if (targetZoom < MIN_ZOOM) targetZoom = MIN_ZOOM;
 
             canvas.setViewportTransform([
-                targetZoom, 0, 0, targetZoom, 
-                (canvasWidth / 2) - (contentCenterX * targetZoom), 
+                targetZoom, 0, 0, targetZoom,
+                (canvasWidth / 2) - (contentCenterX * targetZoom),
                 (canvasHeight / 2) - (contentCenterY * targetZoom)
             ]);
             setZoom(targetZoom);
@@ -463,7 +463,28 @@ export function useFabricCanvas({
             if (renderedIds.current.has(item.id)) return;
             renderedIds.current.add(item.id);
 
-            if (item.type === 'text') {
+            if (item.type === 'internal-note') {
+                const textObj = new fabric.Textbox(item.text || 'Internal Note', {
+                    id: item.id,
+                    left: item.x,
+                    top: item.y,
+                    fontFamily: 'Helvetica',
+                    fill: item.textColor || '#6b4c10',
+                    backgroundColor: '#ffeaa7',
+                    padding: 16,
+                    width: 200,
+                    fontSize: item.fontSize || 20,
+                    fontWeight: '500',
+                    angle: item.rotation || 0,
+                    scaleX: item.scale || 1,
+                    scaleY: item.scale || 1,
+                    lockMovementX: lockedIds.has(item.id),
+                    lockMovementY: lockedIds.has(item.id),
+                    selectable: !lockedIds.has(item.id),
+                    isInternal: true
+                });
+                canvas.add(textObj);
+            } else if (item.type === 'text') {
                 const textObj = new fabric.IText(item.text || 'Add text', {
                     id: item.id,
                     left: item.x,
@@ -644,10 +665,11 @@ export function useFabricCanvas({
         const originalVPT = [...canvas.viewportTransform];
         const originalSelection = canvas.selection;
 
-        // Temporarily reset to identity for accurate world-space bounding box
-        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-        canvas.discardActiveObject();
-        canvas.selection = false;
+        // Find and selectively hide internal notes from being exported
+        const internalObjs = objects.filter(o => o.isInternal);
+        internalObjs.forEach(o => o.set('opacity', 0));
+
+        // Let canvas update opacity visually before data capture
         canvas.renderAll();
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -692,6 +714,7 @@ export function useFabricCanvas({
             alert("High-Res export failed (possibly due to CORS images). Please try again.");
         } finally {
             // Restore original view and state
+            internalObjs.forEach(o => o.set('opacity', 1));
             canvas.viewportTransform = originalVPT;
             canvas.selection = originalSelection;
             canvas.renderAll();
@@ -844,7 +867,20 @@ export function useFabricCanvas({
             if (!fObj.id) return null;
             const existingMeta = boardItems.find(i => i.id === fObj.id) || {};
 
-            if (fObj.type === 'i-text' || fObj.type === 'text') {
+            if (fObj.isInternal || fObj.type === 'textbox') {
+                return {
+                    ...existingMeta,
+                    id: fObj.id,
+                    type: 'internal-note',
+                    text: fObj.text,
+                    textColor: fObj.fill,
+                    fontSize: fObj.fontSize,
+                    x: fObj.left,
+                    y: fObj.top,
+                    scale: fObj.scaleX,
+                    rotation: fObj.angle,
+                };
+            } else if (fObj.type === 'i-text' || fObj.type === 'text') {
                 return {
                     ...existingMeta,
                     id: fObj.id,

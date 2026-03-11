@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHand
 import {
     Lock, LockOpen, Trash, Trash2, Save, Download, Move, CornerUpLeft,
     Type, ImagePlus, ArrowUpToLine, ArrowDownToLine, Focus,
-    Plus, Minus, Wand2, Loader2, FileOutput, Grid3x3
+    Plus, Minus, Wand2, Loader2, FileOutput, Grid3x3, StickyNote
 } from 'lucide-react';
 import { getProductName, getProductCategory } from '@/lib/productUtils';
 import { useFabricCanvas } from './useFabricCanvas';
@@ -174,7 +174,13 @@ const CanvasPreview = forwardRef((props, ref) => {
     const handleAddTextAtCenter = () => {
         const x = containerRef.current.width / 2;
         const y = containerRef.current.height / 2;
-        onAddText(x, y);
+        onAddText(x, y, 'text');
+    };
+
+    const handleAddInternalNote = () => {
+        const x = containerRef.current.width / 2;
+        const y = containerRef.current.height / 2;
+        onAddText(x, y, 'internal-note');
     };
 
     /* ── Object Drop logic etc. ──────────────────────── */
@@ -335,6 +341,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                             <div className="w-px h-5 bg-gray-200 mx-1" />
 
                             <BottomBtn onClick={handleAddTextAtCenter} title="Add Text"><Type className="w-4 h-4" /></BottomBtn>
+                            <BottomBtn onClick={handleAddInternalNote} title="Add Internal Note (Hidden from Export and Clients)"><StickyNote className="w-4 h-4" /></BottomBtn>
                             <BottomBtn onClick={() => photoInputRef.current?.click()} title="Add Photo"><ImagePlus className="w-4 h-4" /></BottomBtn>
                             <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
 
