@@ -12,6 +12,7 @@ export const useGetComments = (projectId, spaceId = null) => {
         queryKey: DISCUSSION_KEYS.project(projectId, spaceId),
         queryFn: () => discussionService.getComments(projectId, spaceId),
         enabled: !!projectId,
+        refetchInterval: 5000, // Poll every 5 seconds for new messages
     });
 };
 
@@ -20,7 +21,8 @@ export const usePostComment = (projectId) => {
     return useMutation({
         mutationFn: (data) => discussionService.postComment(projectId, data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: DISCUSSION_KEYS.project(projectId) });
+            // Invalidate all queries starting with the project ID to catch space-specific discussions
+            queryClient.invalidateQueries({ queryKey: [...DISCUSSION_KEYS.all, projectId] });
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to post comment');
@@ -33,7 +35,8 @@ export const useDeleteComment = (projectId) => {
     return useMutation({
         mutationFn: (commentId) => discussionService.deleteComment(commentId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: DISCUSSION_KEYS.project(projectId) });
+            // Invalidate all queries starting with the project ID to catch space-specific discussions
+            queryClient.invalidateQueries({ queryKey: [...DISCUSSION_KEYS.all, projectId] });
             toast.success('Comment deleted');
         },
         onError: (error) => {

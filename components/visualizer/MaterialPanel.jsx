@@ -122,7 +122,7 @@ export default function MaterialPanel({ materials, selectedMaterial, stagedMater
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-2">
-                            {filtered.map((v) => {
+                            {filtered.map((v, index) => {
                                 const isSelected = selectedMaterial?._id === v._id;
                                 const isStaged = stagedMaterial?._id === v._id;
                                 const imgUrl = getImgUrl(v);
@@ -132,7 +132,7 @@ export default function MaterialPanel({ materials, selectedMaterial, stagedMater
 
                                 return (
                                     <button
-                                        key={v._id}
+                                        key={`${v._id}-${index}`}
                                         draggable
                                         onDragStart={(e) => {
                                             e.dataTransfer.setData('application/json', JSON.stringify(v));
