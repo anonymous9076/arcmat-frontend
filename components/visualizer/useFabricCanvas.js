@@ -3,55 +3,49 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { removeBackground, preload } from '@imgly/background-removal';
-
-/**
- * Helper to resize image for faster AI processing
- */
-const resizeImageForAI = (src, maxDim = 1024) => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            const width = img.width;
-            const height = img.height;
-
-            if (width <= maxDim && height <= maxDim) {
-                resolve(src); // No need to resize
-                return;
-            }
-
-            let newWidth, newHeight;
-            if (width > height) {
-                newWidth = maxDim;
-                newHeight = (height / width) * maxDim;
-            } else {
-                newHeight = maxDim;
-                newWidth = (width / height) * maxDim;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
-            resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => resolve(src); // Fallback to original
-        img.src = src;
-    });
-};
-
-/**
- * Custom hook to manage the Fabric.js canvas
- */
 import { getProductImageUrl, getVariantImageUrl, getProductName, getProductCategory } from '@/lib/productUtils';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 const DEFAULT_CARD_W = 148;
 const DEFAULT_CARD_H = 172;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.1;
 
+// ─── Helper: resize image for AI processing ───────────────────────────────────
+const resizeImageForAI = (src, maxDim = 1024) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const { width, height } = img;
+            if (width <= maxDim && height <= maxDim) return resolve(src);
+
+            const ratio = width > height ? maxDim / width : maxDim / height;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(width * ratio);
+            canvas.height = Math.round(height * ratio);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(src); // fallback to original on error
+        img.src = src;
+    });
+};
+
+// ─── Helper: get image URL from material object ───────────────────────────────
+const getUrl = (v) => {
+    if (!v) return null;
+    if (v.isCustomPhoto && v.photoUrl) return v.photoUrl;
+    const first = v.images?.[0];
+    if (first) return first.startsWith('blob:') || first.startsWith('data:') ? first : getProductImageUrl(first);
+    if (v.variant_images?.length) return getVariantImageUrl(v.variant_images[0]);
+    if (typeof v.productId === 'object' && v.productId?.product_images?.length)
+        return getProductImageUrl(v.productId.product_images[0]);
+    return null;
+};
+
+// ─── Main Hook ────────────────────────────────────────────────────────────────
 export function useFabricCanvas({
     canvasContainerRef,
     boardItems,
@@ -65,40 +59,45 @@ export function useFabricCanvas({
 }) {
     const canvasRef = useRef(null);
     const fabricRef = useRef(null);
+    const renderedIds = useRef(new Set());
+    const initialCenterDone = useRef(false);
+    const panModeRef = useRef(false);
+    const showGridRef = useRef(false);
 
-    // Update background color when canvasBg changes
-    useEffect(() => {
-        if (fabricRef.current) {
-            fabricRef.current.set({ backgroundColor: canvasBg });
-            fabricRef.current.requestRenderAll();
-        }
-    }, [canvasBg]);
     const [zoom, setZoom] = useState(1);
     const [panMode, setPanMode] = useState(false);
-    const panModeRef = useRef(panMode);
-    useEffect(() => { panModeRef.current = panMode; }, [panMode]);
     const [lockedIds, setLockedIds] = useState(new Set());
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [activeMenuConfig, setActiveMenuConfig] = useState(null);
     const [canvasReady, setCanvasReady] = useState(false);
     const [showGrid, setShowGrid] = useState(false);
-    const showGridRef = useRef(false);
+    const [isProcessingBg, setIsProcessingBg] = useState(false);
+    const [bgProgress, setBgProgress] = useState(0);
+
+    // Keep refs in sync with state for use inside event handlers
+    useEffect(() => { panModeRef.current = panMode; }, [panMode]);
     useEffect(() => {
         showGridRef.current = showGrid;
         if (fabricRef.current) fabricRef.current.requestRenderAll();
     }, [showGrid]);
 
-    // --- Initialize Fabric Canvas ---
+    // ── BUG FIX: Apply background color changes to existing canvas ──────────
+    useEffect(() => {
+        if (!fabricRef.current) return;
+        fabricRef.current.set({ backgroundColor: canvasBg });
+        fabricRef.current.requestRenderAll();
+    }, [canvasBg]);
+
+    // ─── Initialize Fabric Canvas ─────────────────────────────────────────────
     useEffect(() => {
         if (!canvasRef.current) return;
-
-        // Clean up old instance
         if (fabricRef.current) fabricRef.current.dispose();
 
         const canvas = new fabric.Canvas(canvasRef.current, {
+            // ── BUG FIX: Use canvasBg prop instead of hardcoded color ──────
             width: initialWidth || window.innerWidth - 300,
             height: initialHeight || window.innerHeight - 150,
-            backgroundColor: '#f0eee9',
+            backgroundColor: canvasBg,
             preserveObjectStacking: true,
             selection: true,
             uniformScaling: false
@@ -106,14 +105,55 @@ export function useFabricCanvas({
 
         fabricRef.current = canvas;
 
-        // --- Panning ---
+
+        canvas.on('after:render', function () {
+            if (!showGridRef.current) return;
+
+            const lowerEl = canvas.lowerCanvasEl ?? canvas.getElement?.();
+            if (!lowerEl) return;
+            const ctx = lowerEl.getContext('2d');
+            if (!ctx) return;
+
+            const vpt = canvas.viewportTransform;
+            const currentZoom = canvas.getZoom();
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Work in screen space (ignore viewport transform for positioning)
+            // but scale the grid cell size with zoom so it feels natural
+            const gridSize = 40 * currentZoom;
+            const offsetX = ((vpt[4] % gridSize) + gridSize) % gridSize; // always positive
+            const offsetY = ((vpt[5] % gridSize) + gridSize) % gridSize;
+
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // screen space
+
+            ctx.beginPath();
+            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+
+            for (let x = offsetX; x <= w; x += gridSize) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+            }
+            for (let y = offsetY; y <= h; y += gridSize) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+            }
+
+            ctx.stroke();
+            ctx.restore();
+        });
+
+        // ── Panning ──────────────────────────────────────────────────────────
         canvas.on('mouse:down', function (opt) {
             const evt = opt.e;
             const isTouch = evt.type === 'touchstart';
             const clientX = isTouch && evt.touches ? evt.touches[0].clientX : evt.clientX;
             const clientY = isTouch && evt.touches ? evt.touches[0].clientY : evt.clientY;
 
-            if (panModeRef.current || evt.altKey || (evt.code === 'Space')) {
+            if (panModeRef.current || evt.altKey) {
                 this.isDragging = true;
                 this.selection = false;
                 this.lastPosX = clientX;
@@ -122,20 +162,19 @@ export function useFabricCanvas({
         });
 
         canvas.on('mouse:move', function (opt) {
-            if (this.isDragging) {
-                const evt = opt.e;
-                const isTouch = evt.type === 'touchmove';
-                const clientX = isTouch && evt.touches ? evt.touches[0].clientX : evt.clientX;
-                const clientY = isTouch && evt.touches ? evt.touches[0].clientY : evt.clientY;
+            if (!this.isDragging) return;
+            const evt = opt.e;
+            const isTouch = evt.type === 'touchmove';
+            const clientX = isTouch && evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = isTouch && evt.touches ? evt.touches[0].clientY : evt.clientY;
 
-                const vpt = this.viewportTransform;
-                vpt[4] += clientX - this.lastPosX;
-                vpt[5] += clientY - this.lastPosY;
-                this.requestRenderAll();
-                this.lastPosX = clientX;
-                this.lastPosY = clientY;
-                updateMenu();
-            }
+            const vpt = this.viewportTransform;
+            vpt[4] += clientX - this.lastPosX;
+            vpt[5] += clientY - this.lastPosY;
+            this.requestRenderAll();
+            this.lastPosX = clientX;
+            this.lastPosY = clientY;
+            updateMenu();
         });
 
         canvas.on('mouse:up', function () {
@@ -143,12 +182,11 @@ export function useFabricCanvas({
             this.selection = true;
         });
 
+        // ── Scroll-to-zoom ───────────────────────────────────────────────────
         canvas.on('mouse:wheel', function (opt) {
             const delta = opt.e.deltaY;
-            let newZoom = canvas.getZoom();
-            newZoom *= 0.999 ** delta;
-            if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM;
-            if (newZoom < MIN_ZOOM) newZoom = MIN_ZOOM;
+            let newZoom = canvas.getZoom() * (0.999 ** delta);
+            newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
             canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, newZoom);
             opt.e.preventDefault();
             opt.e.stopPropagation();
@@ -156,66 +194,53 @@ export function useFabricCanvas({
             updateMenu();
         });
 
-        // --- Multi-touch Gestures (Pinch to Zoom & Two-Finger Pan) ---
+        // ── Pinch to zoom & two-finger pan ───────────────────────────────────
         let isPinching = false;
         let initialPinchDistance = null;
         let initialPinchZoom = null;
         let initialPanCenter = null;
 
         const handleTouchStart = (e) => {
-            if (e.touches.length === 2) {
-                isPinching = true;
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-                initialPinchZoom = canvas.getZoom();
-                initialPanCenter = {
-                    x: (t1.clientX + t2.clientX) / 2,
-                    y: (t1.clientY + t2.clientY) / 2
-                };
-                canvas.discardActiveObject(); // Deselect to cleanly zoom/pan
-                canvas.requestRenderAll();
-                if (e.cancelable) e.preventDefault();
-            }
+            if (e.touches.length !== 2) return;
+            isPinching = true;
+            const [t1, t2] = e.touches;
+            initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            initialPinchZoom = canvas.getZoom();
+            initialPanCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+            canvas.discardActiveObject();
+            canvas.requestRenderAll();
+            if (e.cancelable) e.preventDefault();
         };
 
         const handleTouchMove = (e) => {
-            if (isPinching && e.touches.length === 2) {
-                if (e.cancelable) e.preventDefault(); // Prevent page scroll
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
+            if (!isPinching || e.touches.length !== 2) return;
+            if (e.cancelable) e.preventDefault();
 
-                const currentCenter = {
-                    x: (t1.clientX + t2.clientX) / 2,
-                    y: (t1.clientY + t2.clientY) / 2
-                };
+            const [t1, t2] = e.touches;
+            const currentCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
 
-                // Pan
-                if (initialPanCenter) {
-                    const deltaX = currentCenter.x - initialPanCenter.x;
-                    const deltaY = currentCenter.y - initialPanCenter.y;
-                    const vpt = canvas.viewportTransform;
-                    vpt[4] += deltaX;
-                    vpt[5] += deltaY;
-                    initialPanCenter = currentCenter;
-                }
-
-                // Zoom
-                const currentDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-                if (initialPinchDistance && initialPinchZoom) {
-                    const scale = currentDistance / initialPinchDistance;
-                    let newZoom = initialPinchZoom * scale;
-                    if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM;
-                    if (newZoom < MIN_ZOOM) newZoom = MIN_ZOOM;
-
-                    const rect = canvas.wrapperEl.getBoundingClientRect();
-                    canvas.zoomToPoint({ x: currentCenter.x - rect.left, y: currentCenter.y - rect.top }, newZoom);
-                    setZoom(newZoom);
-                }
-
-                canvas.requestRenderAll();
-                updateMenu();
+            // Pan
+            if (initialPanCenter) {
+                const vpt = canvas.viewportTransform;
+                vpt[4] += currentCenter.x - initialPanCenter.x;
+                vpt[5] += currentCenter.y - initialPanCenter.y;
+                initialPanCenter = currentCenter;
             }
+
+            // Zoom
+            if (initialPinchDistance && initialPinchZoom) {
+                const scale = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY) / initialPinchDistance;
+                const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, initialPinchZoom * scale));
+                const rect = canvas.wrapperEl.getBoundingClientRect();
+                canvas.zoomToPoint(
+                    { x: currentCenter.x - rect.left, y: currentCenter.y - rect.top },
+                    newZoom
+                );
+                setZoom(newZoom);
+            }
+
+            canvas.requestRenderAll();
+            updateMenu();
         };
 
         const handleTouchEnd = (e) => {
@@ -234,104 +259,63 @@ export function useFabricCanvas({
             wrapper.addEventListener('touchend', handleTouchEnd);
         }
 
-        // --- Grid Rendering ---
-        canvas.on('after:render', function (opt) {
-            if (!showGridRef.current) return;
-            const ctx = opt.ctx;
-            const vpt = canvas.viewportTransform;
-            const zoom = canvas.getZoom();
-
-            // Get current viewport bounds in canvas coordinates
-            const w = canvas.width;
-            const h = canvas.height;
-            const left = -vpt[4] / zoom;
-            const top = -vpt[5] / zoom;
-            const right = (w - vpt[4]) / zoom;
-            const bottom = (h - vpt[5]) / zoom;
-
-            const gridSize = 40;
-
-            ctx.save();
-            // In after:render, the context is already transformed by the viewport.
-            // We just need to draw the lines in canvas space.
-
-            ctx.beginPath();
-            ctx.lineWidth = 1 / zoom;
-            ctx.strokeStyle = 'rgba(0,0,0,0.12)'; // Slightly darker for better visibility
-
-            const startX = Math.floor(left / gridSize) * gridSize;
-            const endX = Math.ceil(right / gridSize) * gridSize;
-            const startY = Math.floor(top / gridSize) * gridSize;
-            const endY = Math.ceil(bottom / gridSize) * gridSize;
-
-            for (let x = startX; x <= endX; x += gridSize) {
-                ctx.moveTo(x, top);
-                ctx.lineTo(x, bottom);
-            }
-            for (let y = startY; y <= endY; y += gridSize) {
-                ctx.moveTo(left, y);
-                ctx.lineTo(right, y);
-            }
-            ctx.stroke();
-            ctx.restore();
-        });
-
-        // --- Active Menu ---
+        // ── Active object floating menu ───────────────────────────────────────
         const updateMenu = () => {
             const activeObjects = canvas.getActiveObjects();
-            if (activeObjects.length === 1) {
-                const obj = activeObjects[0];
-                obj.setCoords();
-                const tr = obj.oCoords.tr;
-                setActiveMenuConfig({
-                    id: obj.id,
-                    type: obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox' ? 'text' : 'material',
-                    left: tr.x + 10,
-                    top: tr.y,
-                    quantity: obj.materialData?.quantity || 1,
-                    price: obj.materialData?.price || 0,
-                    scale: obj.scaleX,
-                    rotation: obj.angle,
-                    textColor: obj.fill,
-                    fontSize: obj.fontSize
-                });
-            } else {
+            if (activeObjects.length !== 1) {
                 setActiveMenuConfig(null);
+                return;
             }
+            const obj = activeObjects[0];
+            obj.setCoords();
+            const tr = obj.oCoords?.tr;
+            if (!tr) return;
+
+            const isText = ['i-text', 'text', 'textbox'].includes(obj.type);
+            setActiveMenuConfig({
+                id: obj.id,
+                type: isText ? 'text' : 'material',
+                left: tr.x + 10,
+                top: tr.y,
+                quantity: obj.materialData?.quantity || 1,
+                price: obj.materialData?.price || 0,
+                scale: obj.scaleX,
+                rotation: obj.angle,
+                // ── BUG FIX: expose textColor and fontSize for text objects ──
+                textColor: obj.fill,
+                fontSize: obj.fontSize
+            });
         };
 
-        // --- Selection syncing ---
+        // ── Selection syncing ─────────────────────────────────────────────────
         const syncSelection = () => {
             const activeObjects = canvas.getActiveObjects();
             updateMenu();
             if (activeObjects.length > 0) {
-                const newSelected = new Set(activeObjects.map(obj => obj.id).filter(Boolean));
-                setSelectedIds(newSelected);
+                setSelectedIds(new Set(activeObjects.map(o => o.id).filter(Boolean)));
                 if (activeObjects.length === 1 && activeObjects[0].materialData) {
                     onMaterialSelect(activeObjects[0].materialData);
                 }
-            } else setSelectedIds(new Set());
+            } else {
+                setSelectedIds(new Set());
+            }
         };
 
         canvas.on('selection:created', syncSelection);
         canvas.on('selection:updated', syncSelection);
         canvas.on('selection:cleared', syncSelection);
 
-        // --- Object modification syncing ---
+        // ── Object modification syncing ───────────────────────────────────────
         canvas.on('object:modified', (e) => {
             const obj = e.target;
             if (!obj) return;
+
             if (obj.type === 'activeSelection') {
                 obj.getObjects().forEach(item => {
                     const center = item.getCenterPoint();
-                    if (item.id) {
-                        onReposition(item.id, center.x, center.y);
-                        onUpdateItem(item.id, {
-                            scaleX: item.scaleX,
-                            scaleY: item.scaleY,
-                            rotation: item.angle
-                        });
-                    }
+                    if (!item.id) return;
+                    onReposition(item.id, center.x, center.y);
+                    onUpdateItem(item.id, { scaleX: item.scaleX, scaleY: item.scaleY, rotation: item.angle });
                 });
             } else if (obj.id) {
                 onReposition(obj.id, obj.left, obj.top);
@@ -344,8 +328,11 @@ export function useFabricCanvas({
                     h: obj.height * obj.scaleY
                 };
 
-                if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
+                // ── BUG FIX: also persist textColor and fontSize on modify ──
+                if (['i-text', 'text', 'textbox'].includes(obj.type)) {
                     updates.text = obj.text;
+                    updates.textColor = obj.fill;
+                    updates.fontSize = obj.fontSize;
                 }
 
                 onUpdateItem(obj.id, updates);
@@ -353,39 +340,40 @@ export function useFabricCanvas({
             updateMenu();
         });
 
-        canvas.on('text:changed', (e) => {
+        // ── Text change events ─────────────────────────────────────────────────
+        const handleTextChanged = (e) => {
             const obj = e.target;
-            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox')) {
-                onUpdateItem(obj.id, { text: obj.text });
+            if (obj?.id && ['i-text', 'text', 'textbox'].includes(obj.type)) {
+                onUpdateItem(obj.id, {
+                    text: obj.text,
+                    // ── BUG FIX: persist color and size when text changes ──
+                    textColor: obj.fill,
+                    fontSize: obj.fontSize
+                });
             }
-        });
+        };
 
-        canvas.on('text:editing:exited', (e) => {
-            const obj = e.target;
-            if (obj && obj.id && (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox')) {
-                onUpdateItem(obj.id, { text: obj.text });
-            }
-        });
+        canvas.on('text:changed', handleTextChanged);
+        canvas.on('text:editing:exited', handleTextChanged);
 
         canvas.on('object:moving', updateMenu);
         canvas.on('object:scaling', updateMenu);
         canvas.on('object:rotating', updateMenu);
 
-        // --- Responsive resize ---
+        // ── Responsive resize ─────────────────────────────────────────────────
         const handleResize = () => {
-            const wrapper = canvasContainerRef?.current || canvas.wrapperEl?.parentElement || canvasRef.current?.parentElement;
-            if (wrapper && wrapper.clientWidth > 0 && wrapper.clientHeight > 0) {
-                canvas.setDimensions({ width: wrapper.clientWidth, height: wrapper.clientHeight });
+            const container = canvasContainerRef?.current
+                || canvas.wrapperEl?.parentElement
+                || canvasRef.current?.parentElement;
+            if (container?.clientWidth > 0 && container?.clientHeight > 0) {
+                canvas.setDimensions({ width: container.clientWidth, height: container.clientHeight });
+                canvas.requestRenderAll();
             }
         };
 
         const resizeObserver = new ResizeObserver(handleResize);
-        if (canvasContainerRef?.current) {
-            resizeObserver.observe(canvasContainerRef.current);
-        } else if (canvas.wrapperEl?.parentElement) {
-            resizeObserver.observe(canvas.wrapperEl.parentElement);
-        }
-
+        const observeTarget = canvasContainerRef?.current || canvas.wrapperEl?.parentElement;
+        if (observeTarget) resizeObserver.observe(observeTarget);
         window.addEventListener('resize', handleResize);
         handleResize();
 
@@ -404,70 +392,83 @@ export function useFabricCanvas({
             setCanvasReady(false);
             renderedIds.current.clear();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // --- Sync boardItems to Fabric ---
-    const renderedIds = useRef(new Set());
-    const initialCenterDone = useRef(false);
-
+    // ─── Auto-center all items on first load ──────────────────────────────────
     useEffect(() => {
         if (!fabricRef.current || !canvasReady || initialCenterDone.current || boardItems.length === 0) return;
-
         const canvas = fabricRef.current;
+
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         boardItems.forEach(item => {
             const w = (item.w || DEFAULT_CARD_W) * (item.scaleX || item.scale || 1);
             const h = (item.h || DEFAULT_CARD_H) * (item.scaleY || item.scale || 1);
-            const x = item.x;
-            const y = item.y;
-
-            if (x - w / 2 < minX) minX = x - w / 2;
-            if (x + w / 2 > maxX) maxX = x + w / 2;
-            if (y - h / 2 < minY) minY = y - h / 2;
-            if (y + h / 2 > maxY) maxY = y + h / 2;
+            if (item.x - w / 2 < minX) minX = item.x - w / 2;
+            if (item.x + w / 2 > maxX) maxX = item.x + w / 2;
+            if (item.y - h / 2 < minY) minY = item.y - h / 2;
+            if (item.y + h / 2 > maxY) maxY = item.y + h / 2;
         });
 
-        if (isFinite(minX) && isFinite(maxX)) {
-            const contentWidth = maxX - minX;
-            const contentHeight = maxY - minY;
-            const contentCenterX = minX + contentWidth / 2;
-            const contentCenterY = minY + contentHeight / 2;
+        if (!isFinite(minX)) return;
 
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
+        const contentW = maxX - minX;
+        const contentH = maxY - minY;
+        const padding = 40;
+        const targetZoom = Math.min(
+            (canvas.width - padding * 2) / Math.max(contentW, 1),
+            (canvas.height - padding * 2) / Math.max(contentH, 1),
+            1
+        );
+        const clampedZoom = Math.max(MIN_ZOOM, targetZoom);
+        const cx = minX + contentW / 2;
+        const cy = minY + contentH / 2;
 
-            // Calculate scale to fit
-            const padding = 40;
-            const expectedScaleX = (canvasWidth - padding * 2) / Math.max(contentWidth, 1);
-            const expectedScaleY = (canvasHeight - padding * 2) / Math.max(contentHeight, 1);
-            let targetZoom = Math.min(expectedScaleX, expectedScaleY, 1); // Don't scale up past 1
-            if (targetZoom < MIN_ZOOM) targetZoom = MIN_ZOOM;
-
-            canvas.setViewportTransform([
-                targetZoom, 0, 0, targetZoom,
-                (canvasWidth / 2) - (contentCenterX * targetZoom),
-                (canvasHeight / 2) - (contentCenterY * targetZoom)
-            ]);
-            setZoom(targetZoom);
-            initialCenterDone.current = true;
-            canvas.requestRenderAll();
-        }
+        canvas.setViewportTransform([
+            clampedZoom, 0, 0, clampedZoom,
+            canvas.width / 2 - cx * clampedZoom,
+            canvas.height / 2 - cy * clampedZoom
+        ]);
+        setZoom(clampedZoom);
+        initialCenterDone.current = true;
+        canvas.requestRenderAll();
     }, [boardItems, canvasReady]);
 
+    // ─── Sync boardItems → Fabric objects ────────────────────────────────────
     useEffect(() => {
         if (!fabricRef.current || !canvasReady) return;
         const canvas = fabricRef.current;
 
         boardItems.forEach(item => {
-            if (renderedIds.current.has(item.id)) return;
+            // ── BUG FIX: update existing objects instead of silently skipping ──
+            if (renderedIds.current.has(item.id)) {
+                const existing = canvas.getObjects().find(o => o.id === item.id);
+                if (existing) {
+                    const isText = ['i-text', 'text', 'textbox'].includes(existing.type);
+                    if (isText) {
+                        // Sync all text properties that might have changed externally
+                        let dirty = false;
+                        if (item.text !== undefined && existing.text !== item.text) { existing.set('text', item.text); dirty = true; }
+                        if (item.textColor !== undefined && existing.fill !== item.textColor) { existing.set('fill', item.textColor); dirty = true; }
+                        if (item.fontSize !== undefined && existing.fontSize !== item.fontSize) { existing.set('fontSize', item.fontSize); dirty = true; }
+                        if (item.rotation !== undefined && existing.angle !== item.rotation) { existing.set('angle', item.rotation); dirty = true; }
+                        if (dirty) canvas.requestRenderAll();
+                    }
+                }
+                return;
+            }
+
             renderedIds.current.add(item.id);
 
+            // ── Internal note (sticky note style) ────────────────────────────
             if (item.type === 'internal-note') {
                 const textObj = new fabric.Textbox(item.text || 'Internal Note', {
                     id: item.id,
                     left: item.x,
                     top: item.y,
+                    originX: 'center',
+                    originY: 'center',
                     fontFamily: 'Helvetica',
                     fill: item.textColor || '#6b4c10',
                     backgroundColor: '#ffeaa7',
@@ -476,101 +477,130 @@ export function useFabricCanvas({
                     fontSize: item.fontSize || 20,
                     fontWeight: '500',
                     angle: item.rotation || 0,
-                    scaleX: item.scale || 1,
-                    scaleY: item.scale || 1,
+                    scaleX: item.scaleX || item.scale || 1,
+                    scaleY: item.scaleY || item.scale || 1,
                     lockMovementX: lockedIds.has(item.id),
                     lockMovementY: lockedIds.has(item.id),
                     selectable: !lockedIds.has(item.id),
-                    isInternal: true
+                    isInternal: true,
+                    cornerColor: '#e09a74',
+                    cornerStyle: 'rect',
+                    transparentCorners: false,
+                    borderColor: '#e09a74'
                 });
                 canvas.add(textObj);
+
+                // ── Regular text ──────────────────────────────────────────────────
             } else if (item.type === 'text') {
                 const textObj = new fabric.IText(item.text || 'Add text', {
                     id: item.id,
                     left: item.x,
                     top: item.y,
+                    // ── BUG FIX: consistent origin so x/y means center ────────
+                    originX: 'center',
+                    originY: 'center',
                     fontFamily: 'Helvetica',
                     fill: item.textColor || '#1a1a1a',
                     fontSize: item.fontSize || 32,
                     fontWeight: 'bold',
                     angle: item.rotation || 0,
-                    scaleX: item.scale || 1,
-                    scaleY: item.scale || 1,
+                    scaleX: item.scaleX || item.scale || 1,
+                    scaleY: item.scaleY || item.scale || 1,
                     lockMovementX: lockedIds.has(item.id),
                     lockMovementY: lockedIds.has(item.id),
-                    selectable: !lockedIds.has(item.id)
+                    selectable: !lockedIds.has(item.id),
+                    cornerColor: '#e09a74',
+                    cornerStyle: 'rect',
+                    transparentCorners: false,
+                    borderColor: '#e09a74'
                 });
                 canvas.add(textObj);
+
+                // ── Material / product image ───────────────────────────────────────
             } else {
                 const imgUrl = getUrl(item.material);
                 const targetW = item.w || DEFAULT_CARD_W;
                 const targetH = item.h || DEFAULT_CARD_H;
-                const nameStr = getProductName(item.material);
-                const catStr = getProductCategory(item.material);
 
                 if (imgUrl) {
-                    fabric.Image.fromURL(imgUrl, { crossOrigin: 'anonymous' }).then((img) => {
-                        const halfW = targetW / 2;
-                        const halfH = targetH / 2;
+                    fabric.Image.fromURL(imgUrl, { crossOrigin: 'anonymous' })
+                        .then((img) => {
+                            const scaleMath = Math.min(targetW / img.width, targetH / img.height);
 
-                        // --- FIXED SCALE: fit inside card safely ---
-                        const scaleX = targetW / img.width;
-                        const scaleY = targetH / img.height;
-                        const scaleMath = Math.min(scaleX, scaleY) * 1.0;
+                            img.set({
+                                originX: 'center',
+                                originY: 'center',
+                                left: 0,
+                                top: 0,
+                                scaleX: scaleMath,
+                                scaleY: scaleMath
+                            });
 
-                        img.set({
-                            originX: 'center',
-                            originY: 'center',
-                            left: 0,
-                            top: 0,
-                            scaleX: scaleMath,
-                            scaleY: scaleMath
+                            const bgRect = new fabric.Rect({
+                                originX: 'center',
+                                originY: 'center',
+                                left: 0,
+                                top: 0,
+                                width: targetW,
+                                height: targetH,
+                                fill: 'transparent',
+                                rx: 10,
+                                ry: 10
+                            });
+
+                            const group = new fabric.Group([bgRect, img], {
+                                id: item.id,
+                                left: item.x,
+                                top: item.y,
+                                originX: 'center',
+                                originY: 'center',
+                                angle: item.rotation || 0,
+                                scaleX: item.scaleX || item.scale || 1,
+                                scaleY: item.scaleY || item.scale || 1,
+                                lockMovementX: lockedIds.has(item.id),
+                                lockMovementY: lockedIds.has(item.id),
+                                selectable: !lockedIds.has(item.id),
+                                materialData: item.material,
+                                cornerColor: '#e09a74',
+                                cornerStyle: 'rect',
+                                transparentCorners: false,
+                                borderColor: '#e09a74'
+                            });
+
+                            canvas.add(group);
+                            canvas.requestRenderAll();
+                        })
+                        .catch(err => {
+                            console.error(`Failed to load image for item ${item.id}:`, err);
+                            // Fallback placeholder
+                            const rect = new fabric.Rect({
+                                id: item.id,
+                                left: item.x,
+                                top: item.y,
+                                originX: 'center',
+                                originY: 'center',
+                                width: targetW,
+                                height: targetH,
+                                fill: '#ddd',
+                                rx: 10,
+                                ry: 10,
+                                materialData: item.material
+                            });
+                            canvas.add(rect);
+                            canvas.requestRenderAll();
                         });
-
-                        // Background rect with rounded corners
-                        const bgRect = new fabric.Rect({
-                            originX: 'center',
-                            originY: 'center',
-                            left: 0,
-                            top: 0,
-                            width: targetW,
-                            height: targetH,
-                            fill: 'transparent',
-                            rx: 10,
-                            ry: 10,
-                        });
-
-                        const group = new fabric.Group([bgRect, img], {
-                            id: item.id,
-                            left: item.x,
-                            top: item.y,
-                            originX: 'center',
-                            originY: 'center',
-                            angle: item.rotation || 0,
-                            scaleX: item.scaleX || item.scale || 1,
-                            scaleY: item.scaleY || item.scale || 1,
-                            lockMovementX: lockedIds.has(item.id),
-                            lockMovementY: lockedIds.has(item.id),
-                            selectable: !lockedIds.has(item.id),
-                            materialData: item.material,
-                            cornerColor: '#e09a74',
-                            cornerStyle: 'rect',
-                            transparentCorners: false,
-                            borderColor: '#e09a74'
-                        });
-
-                        canvas.add(group);
-                        canvas.requestRenderAll();
-                    });
                 } else {
-                    // fallback placeholder rect
                     const rect = new fabric.Rect({
                         id: item.id,
                         left: item.x,
                         top: item.y,
+                        originX: 'center',
+                        originY: 'center',
                         width: targetW,
                         height: targetH,
-                        fill: '#ccc',
+                        fill: '#ddd',
+                        rx: 10,
+                        ry: 10,
                         materialData: item.material
                     });
                     canvas.add(rect);
@@ -578,53 +608,46 @@ export function useFabricCanvas({
             }
         });
 
-        // --- Remove deleted items ---
+        // ── Remove deleted items ───────────────────────────────────────────────
         const currentIds = new Set(boardItems.map(i => i.id));
-        const toRemove = [];
-        canvas.getObjects().forEach(obj => {
-            if (obj.id && !currentIds.has(obj.id)) {
-                toRemove.push(obj);
+        const toRemove = canvas.getObjects().filter(o => o.id && !currentIds.has(o.id));
+        if (toRemove.length) {
+            toRemove.forEach(obj => {
+                canvas.remove(obj);
                 renderedIds.current.delete(obj.id);
                 setSelectedIds(prev => { const n = new Set(prev); n.delete(obj.id); return n; });
-            }
-        });
-        if (toRemove.length) {
-            toRemove.forEach(obj => canvas.remove(obj));
+            });
             canvas.requestRenderAll();
         }
     }, [boardItems, lockedIds, canvasReady]);
 
-    // --- Helpers ---
-    const getUrl = (v) => {
-        if (!v) return null;
-        if (v.isCustomPhoto && v.photoUrl) return v.photoUrl;
-        const first = v.images?.[0];
-        if (first) return first.startsWith('blob:') || first.startsWith('data:') ? first : getProductImageUrl(first);
-        if (v.variant_images?.length) return getVariantImageUrl(v.variant_images[0]);
-        if (typeof v.productId === 'object' && v.productId?.product_images?.length) return getProductImageUrl(v.productId.product_images[0]);
-        return null;
-    };
+    // ─── Preload AI assets ────────────────────────────────────────────────────
+    useEffect(() => {
+        preload({ model: 'small' }).catch(err => console.warn('AI Preload failed:', err));
+    }, []);
 
-    // --- Toolbar Actions ---
+    // ─── Toolbar Actions ──────────────────────────────────────────────────────
 
     const toggleLock = useCallback(() => {
-        if (!fabricRef.current) return;
         const canvas = fabricRef.current;
+        if (!canvas) return;
         const activeObjects = canvas.getActiveObjects();
         if (!activeObjects.length) return;
 
         setLockedIds(prev => {
             const next = new Set(prev);
             activeObjects.forEach(obj => {
-                const id = obj.id;
-                if (!id) return;
-                if (next.has(id)) {
-                    next.delete(id);
-                    obj.set({ lockMovementX: false, lockMovementY: false, lockRotation: false, lockScalingX: false, lockScalingY: false, hasControls: true });
-                } else {
-                    next.add(id);
-                    obj.set({ lockMovementX: true, lockMovementY: true, lockRotation: true, lockScalingX: true, lockScalingY: true, hasControls: false });
-                }
+                if (!obj.id) return;
+                const locked = next.has(obj.id);
+                next[locked ? 'delete' : 'add'](obj.id);
+                obj.set({
+                    lockMovementX: !locked,
+                    lockMovementY: !locked,
+                    lockRotation: !locked,
+                    lockScalingX: !locked,
+                    lockScalingY: !locked,
+                    hasControls: locked // show controls only when unlocked
+                });
             });
             canvas.requestRenderAll();
             return next;
@@ -632,44 +655,88 @@ export function useFabricCanvas({
     }, []);
 
     const bringForward = useCallback(() => {
-        if (!fabricRef.current) return;
-        const activeObjects = fabricRef.current.getActiveObjects();
-        if (activeObjects.length) {
-            activeObjects.forEach(obj => fabricRef.current.bringObjectForward(obj));
-            fabricRef.current.requestRenderAll();
-        }
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        canvas.getActiveObjects().forEach(obj => canvas.bringObjectForward(obj));
+        canvas.requestRenderAll();
     }, []);
 
     const sendBackward = useCallback(() => {
-        if (!fabricRef.current) return;
-        const activeObjects = fabricRef.current.getActiveObjects();
-        if (activeObjects.length) {
-            activeObjects.forEach(obj => fabricRef.current.sendObjectBackwards(obj));
-            fabricRef.current.requestRenderAll();
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        canvas.getActiveObjects().forEach(obj => canvas.sendObjectBackwards(obj));
+        canvas.requestRenderAll();
+    }, []);
+
+    const groupSelection = useCallback(() => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        const active = canvas.getActiveObject();
+        if (active?.type === 'activeSelection') {
+            active.toGroup();
+            canvas.requestRenderAll();
         }
     }, []);
-    const groupSelection = useCallback(() => { if (!fabricRef.current) return; const canvas = fabricRef.current; if (canvas.getActiveObject()?.type === 'activeSelection') { canvas.getActiveObject().toGroup(); canvas.requestRenderAll(); } }, []);
-    const ungroupSelection = useCallback(() => { if (!fabricRef.current) return; const activeObj = fabricRef.current.getActiveObject(); if (activeObj?.type === 'group') { activeObj.toActiveSelection(); fabricRef.current.requestRenderAll(); } }, []);
-    const zoomIn = useCallback(() => { if (!fabricRef.current) return; let newZoom = fabricRef.current.getZoom() + ZOOM_STEP; if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM; fabricRef.current.setZoom(newZoom); setZoom(newZoom); }, []);
-    const zoomOut = useCallback(() => { if (!fabricRef.current) return; let newZoom = fabricRef.current.getZoom() - ZOOM_STEP; if (newZoom < MIN_ZOOM) newZoom = MIN_ZOOM; fabricRef.current.setZoom(newZoom); setZoom(newZoom); }, []);
-    const resetZoom = useCallback(() => { if (!fabricRef.current) return; fabricRef.current.setViewportTransform([1, 0, 0, 1, 0, 0]); setZoom(1); }, []);
 
-    // --- Export High-Res ---
-    const exportHighRes = useCallback((fileName = 'moodboard', format = 'jpeg') => {
-        if (!fabricRef.current) return;
+    const ungroupSelection = useCallback(() => {
         const canvas = fabricRef.current;
+        if (!canvas) return;
+        const active = canvas.getActiveObject();
+        if (active?.type === 'group') {
+            active.toActiveSelection();
+            canvas.requestRenderAll();
+        }
+    }, []);
+
+    const zoomIn = useCallback(() => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        const newZoom = Math.min(MAX_ZOOM, canvas.getZoom() + ZOOM_STEP);
+        canvas.setZoom(newZoom);
+        setZoom(newZoom);
+    }, []);
+
+    const zoomOut = useCallback(() => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        const newZoom = Math.max(MIN_ZOOM, canvas.getZoom() - ZOOM_STEP);
+        canvas.setZoom(newZoom);
+        setZoom(newZoom);
+    }, []);
+
+    const resetZoom = useCallback(() => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+        setZoom(1);
+    }, []);
+
+    const deleteSelection = useCallback(() => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        const activeObjects = canvas.getActiveObjects();
+        if (!activeObjects.length) return;
+        activeObjects.forEach(obj => {
+            if (obj.id) onRemoveItem(obj.id);
+            canvas.remove(obj);
+        });
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+    }, [onRemoveItem]);
+
+    // ─── Export High-Res ──────────────────────────────────────────────────────
+    const exportHighRes = useCallback((fileName = 'moodboard', format = 'jpeg') => {
+        const canvas = fabricRef.current;
+        if (!canvas) return;
         const objects = canvas.getObjects();
         if (!objects.length) return;
 
-        // Save current state
         const originalVPT = [...canvas.viewportTransform];
         const originalSelection = canvas.selection;
 
-        // Find and selectively hide internal notes from being exported
+        // Hide internal notes from export
         const internalObjs = objects.filter(o => o.isInternal);
         internalObjs.forEach(o => o.set('opacity', 0));
-
-        // Let canvas update opacity visually before data capture
         canvas.renderAll();
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -681,25 +748,18 @@ export function useFabricCanvas({
             if (br.top + br.height > maxY) maxY = br.top + br.height;
         });
 
-        // Add padding if finite, else use current dimensions
-        let padding = 60;
-        let left = isFinite(minX) ? minX - padding : 0;
-        let top = isFinite(minY) ? minY - padding : 0;
-        let width = isFinite(maxX) && isFinite(minX) ? (maxX - minX) + (padding * 2) : canvas.width;
-        let height = isFinite(maxY) && isFinite(minY) ? (maxY - minY) + (padding * 2) : canvas.height;
-
-        // High resolution multiplier (300 DPI approx)
-        const multiplier = 2;
+        const padding = 60;
+        const left = isFinite(minX) ? minX - padding : 0;
+        const top = isFinite(minY) ? minY - padding : 0;
+        const width = isFinite(maxX) ? (maxX - minX) + padding * 2 : canvas.width;
+        const height = isFinite(maxY) ? (maxY - minY) + padding * 2 : canvas.height;
 
         try {
             const dataURL = canvas.toDataURL({
                 format,
                 quality: 1.0,
-                multiplier,
-                left,
-                top,
-                width,
-                height,
+                multiplier: 2,
+                left, top, width, height,
                 enableRetinaScaling: true
             });
 
@@ -710,10 +770,9 @@ export function useFabricCanvas({
             link.click();
             document.body.removeChild(link);
         } catch (err) {
-            console.error("Export failed:", err);
-            alert("High-Res export failed (possibly due to CORS images). Please try again.");
+            console.error('Export failed:', err);
+            alert('High-res export failed (possibly CORS). Try again or check image sources.');
         } finally {
-            // Restore original view and state
             internalObjs.forEach(o => o.set('opacity', 1));
             canvas.viewportTransform = originalVPT;
             canvas.selection = originalSelection;
@@ -721,73 +780,61 @@ export function useFabricCanvas({
         }
     }, []);
 
+    // ─── Update single Fabric object properties ───────────────────────────────
     const updateFabricObject = useCallback((id, props) => {
-        if (!fabricRef.current) return;
-        const obj = fabricRef.current.getObjects().find(o => o.id === id);
+        const canvas = fabricRef.current;
+        if (!canvas) return;
+        const obj = canvas.getObjects().find(o => o.id === id);
         if (!obj) return;
-        if (props.textColor) props.fill = props.textColor;
-        if (props.scale) { props.scaleX = props.scale; props.scaleY = props.scale; delete props.scale; }
-        obj.set(props);
-        fabricRef.current.requestRenderAll();
+
+        const mapped = { ...props };
+        if (mapped.textColor) { mapped.fill = mapped.textColor; delete mapped.textColor; }
+        if (mapped.scale) { mapped.scaleX = mapped.scale; mapped.scaleY = mapped.scale; delete mapped.scale; }
+
+        obj.set(mapped);
+        canvas.requestRenderAll();
         onUpdateItem(id, props);
     }, [onUpdateItem]);
 
-    /* ── Background Removal ──────────────────────────── */
-    const [isProcessingBg, setIsProcessingBg] = useState(false);
-    const [bgProgress, setBgProgress] = useState(0);
-
-    // Preload AI assets on mount
-    useEffect(() => {
-        console.log("Preloading AI background removal assets...");
-        preload({ model: 'small' }).catch(err => console.warn("AI Preload failed", err));
-    }, []);
-
-    const removeSelectedBackground = async () => {
-        const activeObj = fabricRef.current?.getActiveObject();
+    // ─── Background Removal ───────────────────────────────────────────────────
+    const removeSelectedBackground = useCallback(async () => {
+        const canvas = fabricRef.current;
+        const activeObj = canvas?.getActiveObject();
         if (!activeObj || isProcessingBg) return;
 
-        // Find the image inside the group or if it's a direct image
         let imgObj = null;
         if (activeObj.type === 'group') {
-            imgObj = activeObj._objects.find(o => o.type === 'image' || o.constructor.name.includes('Image'));
-        } else if (activeObj.type === 'image' || activeObj.constructor.name.includes('Image')) {
+            imgObj = activeObj._objects.find(o =>
+                o.type === 'image' || o.constructor?.name?.includes('Image')
+            );
+        } else if (activeObj.type === 'image' || activeObj.constructor?.name?.includes('Image')) {
             imgObj = activeObj;
         }
 
-        if (!imgObj || !imgObj.getSrc) return;
+        if (!imgObj?.getSrc) return;
 
         try {
             setIsProcessingBg(true);
-            setBgProgress(1); // Start with 1% to show it's alive
+            setBgProgress(1);
 
             let src = imgObj.getSrc();
-
-            // 0. Resize image if too large (speeds up processing significantly)
-            setBgProgress(5); // Resizing...
+            setBgProgress(5);
             src = await resizeImageForAI(src);
 
-            // 1. Remove background
             const blob = await removeBackground(src, {
                 progress: (key, current, total) => {
-                    const p = Math.round((current / total) * 100);
-                    // Map progress to 10-90 range to account for setup/finalize
-                    setBgProgress(10 + Math.round(p * 0.8));
-                    console.log(`AI Progress [${key}]: ${p}%`);
+                    setBgProgress(10 + Math.round((current / total) * 80));
                 },
-                model: 'small',
+                model: 'small'
             });
 
-            setBgProgress(95); // Finalizing...
+            setBgProgress(95);
 
-            // 2. Convert result to DataURL
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const dataUrl = e.target.result;
-
-                // 3. Update the image source
                 const newImg = await fabric.Image.fromURL(dataUrl, { crossOrigin: 'anonymous' });
 
-                // Keep same scale/flip properties but reset filter-related ones
                 newImg.set({
                     scaleX: imgObj.scaleX,
                     scaleY: imgObj.scaleY,
@@ -800,70 +847,58 @@ export function useFabricCanvas({
                 });
 
                 if (activeObj.type === 'group') {
-                    // Update image inside group
                     const idx = activeObj._objects.indexOf(imgObj);
                     if (idx > -1) {
                         activeObj.removeWithUpdate(imgObj);
                         activeObj.insertAt(newImg, idx);
-                        fabricRef.current.requestRenderAll();
                     }
                 } else {
-                    // Replace direct image
-                    fabricRef.current.remove(imgObj);
-                    fabricRef.current.add(newImg);
-                    fabricRef.current.setActiveObject(newImg);
+                    canvas.remove(imgObj);
+                    canvas.add(newImg);
+                    canvas.setActiveObject(newImg);
                 }
 
-                // Trigger persistent save
                 const objId = activeObj.id || imgObj.id;
                 if (objId) {
-                    onUpdateItem(objId, { material: { ...activeObj.material || imgObj.material, photoUrl: dataUrl, images: [dataUrl] } });
+                    onUpdateItem(objId, {
+                        material: {
+                            ...(activeObj.materialData || imgObj.materialData || {}),
+                            photoUrl: dataUrl,
+                            images: [dataUrl],
+                            isCustomPhoto: true
+                        }
+                    });
                 }
 
-                fabricRef.current.requestRenderAll();
+                canvas.requestRenderAll();
                 setIsProcessingBg(false);
                 setBgProgress(0);
             };
             reader.readAsDataURL(blob);
 
         } catch (error) {
-            console.error("Background removal failed:", error);
+            console.error('Background removal failed:', error);
             setIsProcessingBg(false);
             setBgProgress(0);
-            alert("Background removal failed. This usually happens if the image is corrupt or device memory is low. Try with a smaller image!");
+            alert('Background removal failed. Try with a smaller image or check your connection.');
         }
-    };
+    }, [isProcessingBg, onUpdateItem]);
 
-    const deleteSelection = useCallback(() => {
-        if (!fabricRef.current) return;
-        const canvas = fabricRef.current;
-        const activeObjects = canvas.getActiveObjects();
-        if (activeObjects.length) {
-            activeObjects.forEach(obj => {
-                if (obj.id) onRemoveItem(obj.id);
-                canvas.remove(obj); // Force instant visual clear and engine clear
-            });
-            canvas.discardActiveObject();
-            canvas.requestRenderAll();
-        }
-    }, [onRemoveItem]);
-
+    // ─── Serialize canvas state ───────────────────────────────────────────────
+    // ── BUG FIX: was incorrectly multiplying w/h by scaleX/scaleY in serialization ──
     const getSerializedState = useCallback(() => {
-        if (!fabricRef.current) return boardItems;
+        const canvas = fabricRef.current;
+        if (!canvas) return boardItems;
 
-        // FabricJS removes grouped active selections from the main canvas object tree.
-        // We must temporarily discard the selection so items return to absolute canvas coordinates.
+        // Temporarily discard active selection so grouped items return to canvas tree
         let activeSelectionObjs = null;
-        const active = fabricRef.current.getActiveObject();
-        if (active && active.type === 'activeSelection') {
+        const active = canvas.getActiveObject();
+        if (active?.type === 'activeSelection') {
             activeSelectionObjs = active.getObjects();
-            fabricRef.current.discardActiveObject();
+            canvas.discardActiveObject();
         }
 
-        const canvasObjects = fabricRef.current.getObjects();
-
-        // The absolute source of truth is what currently exists in the FabricJS engine
-        const serialized = canvasObjects.map(fObj => {
+        const serialized = canvas.getObjects().map(fObj => {
             if (!fObj.id) return null;
             const existingMeta = boardItems.find(i => i.id === fObj.id) || {};
 
@@ -877,10 +912,13 @@ export function useFabricCanvas({
                     fontSize: fObj.fontSize,
                     x: fObj.left,
                     y: fObj.top,
+                    // ── BUG FIX: store scaleX/scaleY consistently ──────────
+                    scaleX: fObj.scaleX,
+                    scaleY: fObj.scaleY,
                     scale: fObj.scaleX,
-                    rotation: fObj.angle,
+                    rotation: fObj.angle
                 };
-            } else if (fObj.type === 'i-text' || fObj.type === 'text') {
+            } else if (['i-text', 'text'].includes(fObj.type)) {
                 return {
                     ...existingMeta,
                     id: fObj.id,
@@ -890,8 +928,10 @@ export function useFabricCanvas({
                     fontSize: fObj.fontSize,
                     x: fObj.left,
                     y: fObj.top,
+                    scaleX: fObj.scaleX,
+                    scaleY: fObj.scaleY,
                     scale: fObj.scaleX,
-                    rotation: fObj.angle,
+                    rotation: fObj.angle
                 };
             } else {
                 return {
@@ -903,23 +943,23 @@ export function useFabricCanvas({
                     scaleX: fObj.scaleX,
                     scaleY: fObj.scaleY,
                     rotation: fObj.angle,
-                    // DO NOT multiply by scaleX here. 
-                    // The base width is intrinsic, scaleX handles the sizing independently!
+                    // ── BUG FIX: store raw width, scale is separate ─────────
                     w: fObj.width,
                     h: fObj.height
                 };
             }
         }).filter(Boolean);
 
-        // Restore active selection transparently
+        // Restore selection
         if (activeSelectionObjs) {
-            const newSel = new fabric.ActiveSelection(activeSelectionObjs, { canvas: fabricRef.current });
-            fabricRef.current.setActiveObject(newSel);
+            const newSel = new fabric.ActiveSelection(activeSelectionObjs, { canvas });
+            canvas.setActiveObject(newSel);
         }
 
         return serialized;
     }, [boardItems]);
 
+    // ─── Return public API ────────────────────────────────────────────────────
     return {
         canvasRef,
         zoom,
@@ -945,6 +985,6 @@ export function useFabricCanvas({
         activeMenuConfig,
         showGrid,
         setShowGrid,
-        getSerializedState // Exported here
+        getSerializedState
     };
 }
