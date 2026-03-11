@@ -15,11 +15,13 @@ export default function MaterialDiscussionModal({ isOpen, onClose, projectId, sp
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
-    // Mark as read when the modal opens
+    // Mark as read when the modal closes
     useEffect(() => {
-        if (isOpen && materialId && projectId && user) {
-            markNotificationsRead({ id: projectId, spaceId, materialId });
-        }
+        return () => {
+            if (isOpen && materialId && projectId && user) {
+                markNotificationsRead({ id: projectId, spaceId, materialId });
+            }
+        };
     }, [isOpen, materialId, projectId, spaceId, user, markNotificationsRead]);
 
     if (!isOpen || !materialId) return null;

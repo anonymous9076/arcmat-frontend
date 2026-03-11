@@ -14,20 +14,22 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
     const approveMutation = useApproveMaterialVersion(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
-    // Mark as read when the modal opens
+    // Mark as read when the modal closes
     useEffect(() => {
-        if (isOpen && projectId && spaceId && user) {
-            markNotificationsRead({ id: projectId, spaceId, materialId });
-        }
+        return () => {
+            if (isOpen && projectId && spaceId && user) {
+                markNotificationsRead({ id: projectId, spaceId, materialId });
+            }
+        };
     }, [isOpen, projectId, spaceId, materialId, user, markNotificationsRead]);
 
     const history = data?.data || [];
-    
+
     // Reconstruct the full history chain for the selected material with safety guards
     let filteredHistory = [];
     if (materialId && history.length > 0) {
         let currentEntry = history.find(h => h.materialId === materialId || h.previousMaterialId === materialId);
-        
+
         if (currentEntry) {
             // Step 1: Find the absolute head (the newest version) of the chain
             let head = currentEntry;
@@ -35,7 +37,7 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
             while (head && head.materialId) {
                 if (forwardVisited.has(head._id)) break; // Cycle protection
                 forwardVisited.add(head._id);
-                
+
                 const nextEntry = history.find(h => h.previousMaterialId === head.materialId);
                 if (nextEntry) {
                     head = nextEntry;
@@ -43,14 +45,14 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                     break;
                 }
             }
-            
+
             // Step 2: Traverse backward from the head to collect the entire chain
             let cursor = head;
             const backwardVisited = new Set();
             while (cursor) {
                 if (backwardVisited.has(cursor._id)) break; // Cycle protection
                 backwardVisited.add(cursor._id);
-                
+
                 filteredHistory.push(cursor);
                 if (cursor.previousMaterialId) {
                     // Look for the version that was the source of this replacement

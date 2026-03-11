@@ -202,12 +202,14 @@ export default function ExportTab({
                             <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">Choose template</span><span className="sm:hidden">Template</span>
                         </button>
                     )}
-                    <button
-                        onClick={exportAsCSV}
-                        className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-2.5 md:py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
-                    >
-                        <Download className="w-4 h-4" /> Export
-                    </button>
+                    {isArchitect && (
+                        <button
+                            onClick={exportAsCSV}
+                            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-6 py-2.5 md:py-3 bg-[#1a1a2e] text-white rounded-2xl text-sm font-black hover:bg-[#2d2d4a] transition-all shadow-md active:scale-95"
+                        >
+                            <Download className="w-4 h-4" /> Export
+                        </button>
+                    )}
                     {isArchitect && (
                         <div className="relative">
                             <button
