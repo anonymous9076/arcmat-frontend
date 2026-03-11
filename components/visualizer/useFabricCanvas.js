@@ -109,23 +109,31 @@ export function useFabricCanvas({
         // --- Panning ---
         canvas.on('mouse:down', function (opt) {
             const evt = opt.e;
+            const isTouch = evt.type === 'touchstart';
+            const clientX = isTouch && evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = isTouch && evt.touches ? evt.touches[0].clientY : evt.clientY;
+
             if (panModeRef.current || evt.altKey || (evt.code === 'Space')) {
                 this.isDragging = true;
                 this.selection = false;
-                this.lastPosX = evt.clientX;
-                this.lastPosY = evt.clientY;
+                this.lastPosX = clientX;
+                this.lastPosY = clientY;
             }
         });
 
         canvas.on('mouse:move', function (opt) {
             if (this.isDragging) {
-                const e = opt.e;
+                const evt = opt.e;
+                const isTouch = evt.type === 'touchmove';
+                const clientX = isTouch && evt.touches ? evt.touches[0].clientX : evt.clientX;
+                const clientY = isTouch && evt.touches ? evt.touches[0].clientY : evt.clientY;
+
                 const vpt = this.viewportTransform;
-                vpt[4] += e.clientX - this.lastPosX;
-                vpt[5] += e.clientY - this.lastPosY;
+                vpt[4] += clientX - this.lastPosX;
+                vpt[5] += clientY - this.lastPosY;
                 this.requestRenderAll();
-                this.lastPosX = e.clientX;
-                this.lastPosY = e.clientY;
+                this.lastPosX = clientX;
+                this.lastPosY = clientY;
                 updateMenu();
             }
         });
@@ -147,6 +155,84 @@ export function useFabricCanvas({
             setZoom(newZoom);
             updateMenu();
         });
+
+        // --- Multi-touch Gestures (Pinch to Zoom & Two-Finger Pan) ---
+        let isPinching = false;
+        let initialPinchDistance = null;
+        let initialPinchZoom = null;
+        let initialPanCenter = null;
+
+        const handleTouchStart = (e) => {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                initialPinchZoom = canvas.getZoom();
+                initialPanCenter = {
+                    x: (t1.clientX + t2.clientX) / 2,
+                    y: (t1.clientY + t2.clientY) / 2
+                };
+                canvas.discardActiveObject(); // Deselect to cleanly zoom/pan
+                canvas.requestRenderAll();
+                if (e.cancelable) e.preventDefault();
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (isPinching && e.touches.length === 2) {
+                if (e.cancelable) e.preventDefault(); // Prevent page scroll
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                
+                const currentCenter = {
+                    x: (t1.clientX + t2.clientX) / 2,
+                    y: (t1.clientY + t2.clientY) / 2
+                };
+                
+                // Pan
+                if (initialPanCenter) {
+                    const deltaX = currentCenter.x - initialPanCenter.x;
+                    const deltaY = currentCenter.y - initialPanCenter.y;
+                    const vpt = canvas.viewportTransform;
+                    vpt[4] += deltaX;
+                    vpt[5] += deltaY;
+                    initialPanCenter = currentCenter;
+                }
+
+                // Zoom
+                const currentDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                if (initialPinchDistance && initialPinchZoom) {
+                    const scale = currentDistance / initialPinchDistance;
+                    let newZoom = initialPinchZoom * scale;
+                    if (newZoom > MAX_ZOOM) newZoom = MAX_ZOOM;
+                    if (newZoom < MIN_ZOOM) newZoom = MIN_ZOOM;
+                    
+                    const rect = canvas.wrapperEl.getBoundingClientRect();
+                    canvas.zoomToPoint({ x: currentCenter.x - rect.left, y: currentCenter.y - rect.top }, newZoom);
+                    setZoom(newZoom);
+                }
+
+                canvas.requestRenderAll();
+                updateMenu();
+            }
+        };
+
+        const handleTouchEnd = (e) => {
+            if (e.touches.length < 2) {
+                isPinching = false;
+                initialPinchDistance = null;
+                initialPinchZoom = null;
+                initialPanCenter = null;
+            }
+        };
+
+        const wrapper = canvas.wrapperEl;
+        if (wrapper) {
+            wrapper.addEventListener('touchstart', handleTouchStart, { passive: false });
+            wrapper.addEventListener('touchmove', handleTouchMove, { passive: false });
+            wrapper.addEventListener('touchend', handleTouchEnd);
+        }
 
         // --- Grid Rendering ---
         canvas.on('after:render', function (opt) {
@@ -308,6 +394,11 @@ export function useFabricCanvas({
         return () => {
             resizeObserver.disconnect();
             window.removeEventListener('resize', handleResize);
+            if (wrapper) {
+                wrapper.removeEventListener('touchstart', handleTouchStart);
+                wrapper.removeEventListener('touchmove', handleTouchMove);
+                wrapper.removeEventListener('touchend', handleTouchEnd);
+            }
             canvas.dispose();
             fabricRef.current = null;
             setCanvasReady(false);
@@ -317,6 +408,53 @@ export function useFabricCanvas({
 
     // --- Sync boardItems to Fabric ---
     const renderedIds = useRef(new Set());
+    const initialCenterDone = useRef(false);
+
+    useEffect(() => {
+        if (!fabricRef.current || !canvasReady || initialCenterDone.current || boardItems.length === 0) return;
+        
+        const canvas = fabricRef.current;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        boardItems.forEach(item => {
+            const w = (item.w || DEFAULT_CARD_W) * (item.scaleX || item.scale || 1);
+            const h = (item.h || DEFAULT_CARD_H) * (item.scaleY || item.scale || 1);
+            const x = item.x;
+            const y = item.y;
+            
+            if (x - w/2 < minX) minX = x - w/2;
+            if (x + w/2 > maxX) maxX = x + w/2;
+            if (y - h/2 < minY) minY = y - h/2;
+            if (y + h/2 > maxY) maxY = y + h/2;
+        });
+
+        if (isFinite(minX) && isFinite(maxX)) {
+            const contentWidth = maxX - minX;
+            const contentHeight = maxY - minY;
+            const contentCenterX = minX + contentWidth / 2;
+            const contentCenterY = minY + contentHeight / 2;
+            
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            // Calculate scale to fit
+            const padding = 40;
+            const expectedScaleX = (canvasWidth - padding * 2) / Math.max(contentWidth, 1);
+            const expectedScaleY = (canvasHeight - padding * 2) / Math.max(contentHeight, 1);
+            let targetZoom = Math.min(expectedScaleX, expectedScaleY, 1); // Don't scale up past 1
+            if (targetZoom < MIN_ZOOM) targetZoom = MIN_ZOOM;
+
+            canvas.setViewportTransform([
+                targetZoom, 0, 0, targetZoom, 
+                (canvasWidth / 2) - (contentCenterX * targetZoom), 
+                (canvasHeight / 2) - (contentCenterY * targetZoom)
+            ]);
+            setZoom(targetZoom);
+            initialCenterDone.current = true;
+            canvas.requestRenderAll();
+        }
+    }, [boardItems, canvasReady]);
+
     useEffect(() => {
         if (!fabricRef.current || !canvasReady) return;
         const canvas = fabricRef.current;

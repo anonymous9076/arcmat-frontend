@@ -242,7 +242,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                 )}
                 {isArchitect && activeMenuConfig && (
                     <div
-                        className="absolute z-50 bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-gray-200 flex flex-col items-center p-1.5 gap-1 transition-opacity pointer-events-auto"
+                        className="absolute z-50 bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-gray-200 flex flex-col sm:flex-row items-center p-1.5 gap-1 transition-opacity pointer-events-auto max-h-[200px] sm:max-h-none overflow-y-auto sm:overflow-visible"
                         style={{
                             left: Math.max(10, activeMenuConfig.left),
                             top: Math.max(10, activeMenuConfig.top),
@@ -251,18 +251,18 @@ const CanvasPreview = forwardRef((props, ref) => {
                         onMouseDown={(e) => e.stopPropagation()}
                         onWheel={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-col sm:flex-row items-center gap-1">
                             <MenuBtn onClick={bringForward} title="Bring Forward (Ctrl+]">
                                 <ArrowUpToLine className="w-4 h-4" />
                             </MenuBtn>
                             <MenuBtn onClick={sendBackward} title="Send Backward (Ctrl+[">
                                 <ArrowDownToLine className="w-4 h-4" />
                             </MenuBtn>
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <div className="w-4 h-px sm:w-px sm:h-4 bg-gray-200 my-1 sm:mx-1 sm:my-0" />
 
                             {activeMenuConfig.type === 'text' && (
                                 <>
-                                    <div className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-all cursor-pointer overflow-hidden p-[2px]" title="Text Color">
+                                    <div className="relative flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-gray-100 transition-all cursor-pointer overflow-hidden p-[2px]" title="Text Color">
                                         <input
                                             type="color"
                                             className="w-full h-full cursor-pointer rounded-sm border-0 p-0 block"
@@ -270,7 +270,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                                             onChange={(e) => updateFabricObject(activeMenuConfig.id, { textColor: e.target.value })}
                                         />
                                     </div>
-                                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                                    <div className="w-4 h-px sm:w-px sm:h-4 bg-gray-200 my-1 sm:mx-1 sm:my-0" />
                                 </>
                             )}
 
@@ -294,7 +294,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                                     <Wand2 className="w-4 h-4" />
                                 )}
                             </MenuBtn>
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <div className="w-4 h-px sm:w-px sm:h-4 bg-gray-200 my-1 sm:mx-1 sm:my-0" />
 
                             <MenuBtn
                                 onClick={toggleLock}
@@ -307,7 +307,7 @@ const CanvasPreview = forwardRef((props, ref) => {
                                     <LockOpen className="w-4 h-4" />
                                 )}
                             </MenuBtn>
-                            <div className="w-px h-4 bg-gray-200 mx-1" />
+                            <div className="w-4 h-px sm:w-px sm:h-4 bg-gray-200 my-1 sm:mx-1 sm:my-0" />
                             <MenuBtn onClick={deleteSelection} title="Delete (Del)" isDanger>
                                 <Trash className="w-4 h-4 text-red-500" />
                             </MenuBtn>
@@ -380,7 +380,7 @@ export default CanvasPreview;
 function BottomBtn({ onClick, title, children, active, disabled }) {
     return (
         <button onClick={onClick} title={title} disabled={disabled}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors
+            className={`w-10 h-10 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-colors shrink-0
                 ${disabled ? 'opacity-30 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
             style={active ? { backgroundColor: 'rgba(224, 154, 116, 0.1)', color: '#e09a74' } : {}}
         >
@@ -394,7 +394,7 @@ function MenuBtn({ onClick, title, children, active, isDanger }) {
         <button
             onClick={onClick}
             title={title}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all
+            className={`w-10 h-10 md:w-8 md:h-8 rounded-lg flex items-center justify-center transition-all shrink-0
                 ${active
                     ? 'bg-[#e09a74]/10 text-[#e09a74]'
                     : isDanger
