@@ -651,7 +651,7 @@ export default function MoodboardDetailPage() {
     }
 
     return (
-        <div className={`flex flex-col bg-white ${activeTab === 'designdesk' ? 'h-screen overflow-hidden' : 'min-h-[calc(100vh-64px)]'}`}>
+        <div className={`flex flex-col bg-white ${activeTab === 'designDesk' ? 'h-screen overflow-hidden' : 'min-h-[calc(100vh-64px)]'}`}>
             {/* ── Header ───────────────────────────────── */}
             <div className="border-b border-gray-100 bg-white">
                 <Container className="pt-4 md:pt-6 pb-0">
@@ -791,7 +791,7 @@ export default function MoodboardDetailPage() {
             </div>
 
             {/* ── Tab Content ─────────────────────────── */}
-            <div className={`flex-1 ${activeTab === 'designdesk' ? 'overflow-hidden' : 'pb-8 md:pb-0'}`}>
+            <div className={`flex-1 ${activeTab === 'designDesk' ? 'overflow-hidden' : 'pb-8 md:pb-0'}`}>
 
                 {/* OVERVIEW */}
                 {activeTab === 'overview' && (
