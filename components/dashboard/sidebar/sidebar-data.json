@@ -84,6 +84,12 @@
             "href": "/dashboard/retailer/orders"
         },
         {
+            "id": "architect-requests",
+            "label": "Architect Requests",
+            "icon": "MessageSquare",
+            "href": "/dashboard/retailer/requests"
+        },
+        {
             "id": "profile",
             "label": "Profile",
             "icon": "User",
@@ -146,6 +152,18 @@
             "label": "Spaces",
             "icon": "PlayCircle",
             "href": "/dashboard/boards"
+        },
+        {
+            "id": "sample-requests",
+            "label": "Sample Requests",
+            "icon": "Package",
+            "href": "/dashboard/sample-requests"
+        },
+        {
+            "id": "retailer-contacts",
+            "label": "Retailer Contacts",
+            "icon": "MessageSquare",
+            "href": "/dashboard/retailer-contacts"
         },
         {
             "id": "help",

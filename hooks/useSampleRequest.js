@@ -37,3 +37,30 @@ export const useCreateSampleRequest = (projectId) => {
         },
     });
 };
+export const useDeleteSampleRequest = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (requestId) => sampleRequestService.deleteRequest(requestId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: SAMPLE_KEYS.all });
+            toast.success('Sample request deleted');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to delete sample request');
+        },
+    });
+};
+
+export const useUpdateSampleRequest = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ requestId, ...data }) => sampleRequestService.updateRequest(requestId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: SAMPLE_KEYS.all });
+            toast.success('Sample request updated');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to update sample request');
+        },
+    });
+};

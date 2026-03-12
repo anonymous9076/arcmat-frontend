@@ -20,4 +20,14 @@ export const sampleRequestService = {
         const response = await api.patch(`/sample-request/${requestId}/status`, data);
         return response.data;
     },
+
+    deleteRequest: async (requestId) => {
+        const response = await api.delete(`/sample-request/active/${requestId}`);
+        return response.data;
+    },
+
+    updateRequest: async (requestId, data) => {
+        const response = await api.patch(`/sample-request/active/${requestId}`, data);
+        return response.data;
+    },
 };

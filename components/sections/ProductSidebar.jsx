@@ -6,6 +6,7 @@ const filterCategories = [
     "Brand",
     "Price Range",
     "Color",
+    "City",
     "Availability",
 ]
 
@@ -67,10 +68,29 @@ const ProductSidebar = ({
         }))
     }
 
+    const handleCityChange = (city, checked) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            cities: checked
+                ? [...prev.cities, city]
+                : (prev.cities || []).filter(c => c !== city)
+        }))
+    }
+
+    const handleAvailabilityChange = (status, checked) => {
+        setActiveFilters(prev => ({
+            ...prev,
+            availability: checked
+                ? [...prev.availability, status]
+                : prev.availability.filter(s => s !== status)
+        }))
+    }
+
     const clearAll = () => {
         setActiveFilters({
             brands: [],
             colors: [],
+            cities: [],
             availability: [],
             priceRange: [minPrice, maxPrice],
             toggles: {
@@ -202,36 +222,45 @@ const ProductSidebar = ({
                             </div>
                         )}
 
-                        {cat === "Color" && (
+                        {cat === "City" && (
                             <div className="flex flex-col gap-2.5 mt-1">
-                                {availableColors.length > 0 ? (
-                                    availableColors.map(color => (
-                                        <label key={color} className="flex items-center gap-3 cursor-pointer group">
-                                            <div className="relative flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
-                                                    checked={activeFilters.colors.includes(color)}
-                                                    onChange={(e) => handleColorChange(color, e.target.checked)}
-                                                />
-                                                <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className="w-4 h-4 rounded-full border border-gray-100 shadow-sm"
-                                                    style={{ backgroundColor: getColorCode(color) }}
-                                                />
-                                                <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors capitalize">{color}</span>
-                                            </div>
-                                        </label>
-                                    ))
-                                ) : (
-                                    <p className="text-xs text-gray-400 italic">No colors available</p>
-                                )}
+                                {["Mumbai", "Delhi", "Bangalore", "Gurgaon", "Pune", "Hyderabad"].map(city => (
+                                    <label key={city} className="flex items-center gap-3 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
+                                                checked={(activeFilters.cities || []).includes(city)}
+                                                onChange={(e) => handleCityChange(city, e.target.checked)}
+                                            />
+                                            <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors">{city}</span>
+                                    </label>
+                                ))}
                             </div>
                         )}
 
-                        {cat !== "Brand" && cat !== "Price Range" && cat !== "Color" && (
+                        {cat === "Availability" && (
+                            <div className="flex flex-col gap-2.5 mt-1">
+                                {["In Stock", "On Order", "Limited"].map(status => (
+                                    <label key={status} className="flex items-center gap-3 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
+                                                checked={activeFilters.availability.includes(status)}
+                                                onChange={(e) => handleAvailabilityChange(status, e.target.checked)}
+                                            />
+                                            <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors uppercase tracking-tight font-bold">{status}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+
+                        {cat !== "Brand" && cat !== "Price Range" && cat !== "Color" && cat !== "City" && cat !== "Availability" && (
                             <div className="flex flex-col gap-2 italic text-gray-400 text-[13px]">
                                 coming soon!!
                             </div>

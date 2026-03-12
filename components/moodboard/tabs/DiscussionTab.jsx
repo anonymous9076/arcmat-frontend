@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGetComments, usePostComment, useDeleteComment } from '@/hooks/useDiscussion';
 import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,10 +12,17 @@ export default function DiscussionTab({ projectId, spaceId }) {
     const [isInternal, setIsInternal] = useState(false);
     const isArchitect = user?.role === 'architect';
 
+    const messagesEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
+
     const { data, isLoading } = useGetComments(projectId, spaceId);
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     // Mark general discussions as read when the tab is opened or new messages arrive
     useEffect(() => {
@@ -23,6 +30,13 @@ export default function DiscussionTab({ projectId, spaceId }) {
             markNotificationsRead({ id: projectId, spaceId, type: 'general' });
         }
     }, [projectId, spaceId, user, markNotificationsRead, data]);
+
+    // Auto-scroll to bottom
+    useEffect(() => {
+        if (!isLoading) {
+            scrollToBottom();
+        }
+    }, [data, isLoading]);
 
     const comments = data?.data || [];
 
@@ -51,65 +65,71 @@ export default function DiscussionTab({ projectId, spaceId }) {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-4xl mx-auto bg-white border-x border-gray-100">
+        <div className="flex flex-col h-[calc(100vh-280px)] min-h-[500px] max-w-4xl mx-auto bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <div className="px-6 py-4 border-b border-gray-100 bg-white shrink-0">
                 <h2 className="text-xl font-bold text-[#1a1a2e]">Project Discussion</h2>
                 <p className="text-sm text-gray-500">Communicate directly with your architect/client.</p>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+            <div
+                ref={scrollContainerRef}
+                className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 custom-scrollbar"
+            >
                 {comments.length === 0 ? (
-                    <div className="text-center py-20">
-                        <UserCircle2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                        <UserCircle2 className="w-16 h-16 text-gray-300 mb-4" />
                         <h3 className="text-lg font-bold text-gray-600">No messages yet</h3>
                         <p className="text-gray-400">Start the conversation by sending a message below.</p>
                     </div>
                 ) : (
-                    comments.map(comment => {
-                        const isMe = comment.authorId?._id === user?._id;
-                        const authorName = comment.authorId?.name || 'Unknown User';
-                        const authorRole = comment.authorId?.role || 'User';
+                    <>
+                        {comments.map(comment => {
+                            const isMe = comment.authorId?._id === user?._id || comment.authorId === user?._id;
+                            const authorName = comment.authorId?.name || (isMe ? user?.name : 'User');
+                            const authorRole = comment.authorId?.role || (isMe ? user?.role : 'User');
 
-                        return (
-                            <div key={comment._id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-xs font-bold text-gray-500">{authorName}</span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${authorRole === 'architect' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                                        {authorRole}
-                                    </span>
-                                    {comment.isInternal && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-amber-100 text-amber-700">
-                                            Private Note
+                            return (
+                                <div key={comment._id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{isMe ? 'You' : authorName}</span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${authorRole === 'architect' ? 'bg-indigo-50 text-indigo-600' : 'bg-green-50 text-green-600'}`}>
+                                            {authorRole}
                                         </span>
-                                    )}
-                                    {comment.referencedMaterialName && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-[#fef7f2] text-[#d9a88a] border border-[#d9a88a]/20 truncate max-w-[150px]" title={comment.referencedMaterialName}>
-                                            {comment.referencedMaterialName}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="group relative flex items-start gap-2 max-w-[80%]">
-                                    <div className={`px-4 py-3 rounded-2xl text-sm ${isMe ? 'bg-[#1a1a2e] text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-700 rounded-tl-sm shadow-sm'}`}>
-                                        <p className="whitespace-pre-wrap">{comment.message}</p>
+                                        {comment.isInternal && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-amber-50 text-amber-600">
+                                                Private Note
+                                            </span>
+                                        )}
+                                        {comment.referencedMaterialName && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase bg-[#fef7f2] text-[#e09a74] border border-[#e09a74]/20 truncate max-w-[150px]" title={comment.referencedMaterialName}>
+                                                {comment.referencedMaterialName}
+                                            </span>
+                                        )}
                                     </div>
-                                    {(isMe || user?.role === 'architect') && (
-                                        <button
-                                            onClick={() => deleteMutation.mutate(comment._id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Delete message"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                    <div className="group relative flex items-start gap-2 max-w-[85%]">
+                                        <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-[#1a1a2e] text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm shadow-sm'}`}>
+                                            <p className="whitespace-pre-wrap">{comment.message}</p>
+                                        </div>
+                                        {(isMe || user?.role === 'architect') && (
+                                            <button
+                                                onClick={() => deleteMutation.mutate(comment._id)}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 mt-1"
+                                                title="Delete message"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 mt-1 font-medium">
+                                        {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                 </div>
-                                <span className="text-[10px] text-gray-400 mt-1">
-                                    {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </>
                 )}
             </div>
 
@@ -136,10 +156,7 @@ export default function DiscussionTab({ projectId, spaceId }) {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder={isInternal ? "Type a private note..." : "Type a message..."}
-                            className={`flex-1 resize-none min-h-[50px] max-h-[150px] p-3 border rounded-2xl focus:ring-1 outline-none text-sm transition-all ${isInternal
-                                ? 'bg-amber-50/30 border-amber-200 focus:border-amber-400 focus:ring-amber-400'
-                                : 'bg-gray-50 border-gray-200 focus:border-[#d9a88a] focus:ring-[#d9a88a]'
-                                }`}
+                            className={`flex-1 resize-none min-h-[50px] max-h-[150px] p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 focus:ring-[#e09a74] focus:border-[#e09a74] outline-none text-sm transition-all leading-relaxed ${isInternal ? 'bg-amber-50/50 border-amber-100' : ''}`}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();

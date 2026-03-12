@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
@@ -7,6 +7,7 @@ import { Navigation, Pagination, Thumbs, FreeMode } from 'swiper/modules'
 import Button from '@/components/ui/Button'
 import Accordion from '@/components/ui/Accordion'
 import RequestInfo from './RequestInfo'
+import RequestSampleModal from './RequestSampleModal'
 import Link from 'next/link'
 import Modal from '@/components/ui/ProductDetailPageModal'
 import Container from '../ui/Container'
@@ -23,7 +24,8 @@ import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, c
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
 import { useCreateNotification } from '@/hooks/useNotification'
-import { useGetProjects } from '@/hooks/useProject'
+import { useGetProjects, useCreateProject } from '@/hooks/useProject'
+import { useCreateRetailerRequest } from '@/hooks/useRetailerRequest'
 
 const ProductDetailView = ({ product, initialVariantId, categories = [], childCategories = [] }) => {
     const [thumbsSwiper, setThumbsSwiper] = useState(null)
@@ -34,8 +36,10 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     const [quantity, setQuantity] = useState(1)
     const [mounted, setMounted] = useState(false)
     const [isRequestingContact, setIsRequestingContact] = useState(false)
+    const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
     const [selectedProject, setSelectedProject] = useState(null)
     const [showProjectSelector, setShowProjectSelector] = useState(false)
+    const [showSampleProjectSelector, setShowSampleProjectSelector] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -229,6 +233,19 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
         setIsWishlisted(true)
     }
 
+    const { mutate: createRetailerRequest } = useCreateRetailerRequest(selectedProject?._id)
+
+    const resolveId = (val) => {
+        if (!val) return null;
+        return typeof val === 'object' ? (val._id || val.id) : val;
+    };
+
+    const currentRetailerId = useMemo(() => {
+        return selectedVariant?.isRetailerManaged ? (resolveId(selectedVariant?.retailerId) || resolveId(selectedVariant?.retailer_id)) : 
+               product.isRetailerDetail ? (resolveId(product.retailerId) || resolveId(product.retailer_id)) : 
+               null;
+    }, [selectedVariant, product]);
+
     const handleRequestContact = async () => {
         if (!selectedProject && projects.length > 0) {
             setShowProjectSelector(true)
@@ -236,30 +253,37 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
         }
 
         setIsRequestingContact(true)
-        const retailerId = selectedVariant?.retailer_id || product.retailer_id || product.retailerId || product.userId || product.createdBy?._id;
 
-        if (!retailerId) {
-            toast.error("Retailer information not found for this product.");
-            setIsRequestingContact(false);
-            return;
-        }
+        const cityName = selectedProject?.location || "Gurgaon";
 
-        const projectName = selectedProject?.name || "a project";
-        const city = selectedProject?.location || "Gurgaon"; // Dynamic city or fallback
+        console.log('Creating Retailer Request with data:', {
+            materialId: product._id,
+            retailerId: currentRetailerId,
+            city: cityName
+        });
 
-        createNotification({
-            recipient: retailerId,
-            type: 'RETAILER_CONTACT_REQUEST',
-            message: `An architect is using ${name} for a project in ${city}. Your contact may be shared with the architect.`,
-            actionStatus: 'pending',
-            relatedData: {
-                productId: product._id,
-                projectId: selectedProject?._id,
-                city: city
-            }
+        createRetailerRequest({
+            materialId: product._id,
+            materialName: name,
+            retailerId: currentRetailerId,
+            city: cityName,
+            notes: `Architect is interested in using ${name} for project ${selectedProject?.name || 'a project'}.`
         }, {
             onSuccess: () => {
-                toast.success("Contact request sent to retailer!");
+                // Also send a real-time notification
+                if (currentRetailerId) {
+                    createNotification({
+                        recipient: currentRetailerId,
+                        type: 'RETAILER_CONTACT_REQUEST',
+                        message: `An architect is using ${name} for a project in ${cityName}. Your contact may be shared with the architect.`,
+                        actionStatus: 'pending',
+                        relatedData: {
+                            productId: product._id,
+                            projectId: selectedProject?._id,
+                            city: cityName
+                        }
+                    });
+                }
                 setShowProjectSelector(false);
             },
             onSettled: () => setIsRequestingContact(false)
@@ -560,12 +584,12 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                         <div className="mt-5 border-t border-dashed border-gray-200 pt-5">
                                             <div className="flex items-baseline gap-3 flex-wrap">
                                                 <span className="text-3xl md:text-4xl font-bold text-gray-900">
-                                                    ₹{Number(price).toLocaleString()}
+                                                    â‚¹{Number(price).toLocaleString()}
                                                 </span>
                                                 {discountPercentage > 0 && (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-lg text-gray-400 line-through decoration-gray-300">
-                                                            ₹{Number(mrp).toLocaleString()}
+                                                            â‚¹{Number(mrp).toLocaleString()}
                                                         </span>
                                                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-200 uppercase tracking-wider">
                                                             {discountPercentage}% OFF
@@ -575,7 +599,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                             </div>
                                             {discountPercentage > 0 && (
                                                 <p className="text-[10px] text-green-600 font-medium mt-1 uppercase tracking-tight">
-                                                    You save ₹{(Number(mrp) - Number(price)).toLocaleString()}
+                                                    You save â‚¹{(Number(mrp) - Number(price)).toLocaleString()}
                                                 </p>
                                             )}
                                         </div>
@@ -602,6 +626,41 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
                                     {mounted && isArchitect && (
                                         <div className="flex flex-col gap-2">
+                                            {/* Request Sample Action */}
+                                            <Button
+                                                text="REQUEST SAMPLE"
+                                                onClick={() => {
+                                                    if (!selectedProject && projects.length > 0) {
+                                                        setShowSampleProjectSelector(true)
+                                                    } else {
+                                                        setIsSampleModalOpen(true)
+                                                    }
+                                                }}
+                                                className="w-full bg-[#2d3142] text-white hover:bg-black py-3 px-5 rounded-full text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2"
+                                                icon={<Package className="w-4 h-4" />}
+                                            />
+
+                                            {showSampleProjectSelector && (
+                                                <div className="mt-1 p-3 bg-gray-50 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-top-2 shadow-inner">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 text-center">Select project to request sample for</p>
+                                                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto no-scrollbar">
+                                                        {projects.map(p => (
+                                                            <button
+                                                                key={p._id}
+                                                                onClick={() => {
+                                                                    setSelectedProject(p);
+                                                                    setShowSampleProjectSelector(false);
+                                                                    setIsSampleModalOpen(true);
+                                                                }}
+                                                                className={`text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${selectedProject?._id === p._id ? 'bg-[#e09a74] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+                                                            >
+                                                                {p.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <Button
                                                 text={isRequestingContact ? "SENDING REQUEST..." : "REQUEST RETAILER CONTACT"}
                                                 onClick={handleRequestContact}
@@ -796,6 +855,15 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                             <RequestInfo product={product} />
                         </aside>
                     </div>
+
+                    {/* Request Sample Modal */}
+                    <RequestSampleModal 
+                        isOpen={isSampleModalOpen}
+                        onClose={() => setIsSampleModalOpen(false)}
+                        product={product}
+                        projectId={selectedProject?._id}
+                        retailerId={currentRetailerId}
+                    />
 
                     {/* GLOBAL SWIPER STYLES */}
                     <style jsx global>{`

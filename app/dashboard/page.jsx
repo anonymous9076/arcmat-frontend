@@ -18,6 +18,8 @@ import { getProductImageUrl } from '@/lib/productUtils';
 import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase } from 'lucide-react';
 import { useGetProjects } from '@/hooks/useProject';
 import { useGetAllMoodboards } from '@/hooks/useMoodboard';
+import { useGetMySampleRequests } from '@/hooks/useSampleRequest';
+import { useGetNotifications } from '@/hooks/useNotification';
 import useProjectStore from '@/store/useProjectStore';
 
 const SEARCH_CATEGORIES = [
@@ -109,7 +111,8 @@ const RolePieChart = ({ data }) => {
                 </svg>
 
                 {/* Center Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 bg-linear-to-r from-purple-600/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center mb-0.5">Total User</p>
                     <h4 className="text-3xl font-black text-gray-900 leading-none">{total}</h4>
                     <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-2 border border-emerald-100/50">ACTIVE</span>
@@ -245,6 +248,10 @@ export default function DashboardPage() {
         enabled: mounted && !!user
     });
     const { data: boardsData, isLoading: boardsLoading } = useGetAllMoodboards();
+    const { data: samplesData, isLoading: samplesLoading } = useGetMySampleRequests();
+    const { data: notificationsData } = useGetNotifications({
+        enabled: mounted && !!user
+    });
 
     const projects = projectsData?.data || [];
     const boards = boardsData?.data || [];
@@ -614,6 +621,32 @@ export default function DashboardPage() {
                         See New
                     </button>
                 </div>
+            </div>
+
+            {/* Dashboard Stats for Architect */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Projects</p>
+                    <h3 className="text-2xl font-black text-gray-900">{projects.length}</h3>
+                </div>
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Spaces</p>
+                    <h3 className="text-2xl font-black text-gray-900">{boards.length}</h3>
+                </div>
+                <Link href="/dashboard/sample-requests" className="bg-orange-50 p-5 rounded-3xl border border-orange-100 shadow-sm hover:shadow-md transition-all group">
+                    <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Sample Requests</p>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-black text-orange-700">{samplesData?.data?.length || 0}</h3>
+                        <ArrowRight className="w-5 h-5 text-orange-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </Link>
+                <Link href="/dashboard/notifications" className="bg-purple-50 p-5 rounded-3xl border border-purple-100 shadow-sm hover:shadow-md transition-all group">
+                    <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">New Messages</p>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-2xl font-black text-purple-700">{notificationsData?.data?.filter(n => !n.isRead)?.length || 0}</h3>
+                        <ArrowRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </Link>
             </div>
 
             {/* Main Content Grid */}

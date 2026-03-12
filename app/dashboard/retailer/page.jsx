@@ -3,6 +3,7 @@ import { Package, ShoppingBag, TrendingUp, Store, ChevronRight, Star, UserPlus, 
 import useAuthStore from '@/store/useAuthStore';
 import Link from 'next/link';
 import { useGetRetailerBrands, useGetRetailerProducts } from '@/hooks/useRetailer';
+import { useGetRetailerAssignedRequests } from '@/hooks/useRetailerRequest';
 import { useGetOrders } from '@/hooks/useOrder';
 import { useGetNotifications, useNotificationAction } from '@/hooks/useNotification';
 import { getBrandImageUrl } from '@/lib/productUtils';
@@ -15,6 +16,7 @@ export default function RetailerDashboardPage() {
 
     const { data: brandsData, isLoading: brandsLoading } = useGetRetailerBrands();
     const { data: productsData, isLoading: productsLoading } = useGetRetailerProducts({ limit: 1 });
+    const { data: requestsData, isLoading: requestsLoading } = useGetRetailerAssignedRequests();
     const { data: notificationsData, isLoading: notificationsLoading } = useGetNotifications();
 
     const handleAction = (id, status) => {
@@ -23,9 +25,10 @@ export default function RetailerDashboardPage() {
 
     const brandsList = Array.isArray(brandsData?.data) ? brandsData.data : Array.isArray(brandsData?.data?.data) ? brandsData.data.data : [];
     const productsPagination = productsData?.data?.pagination || productsData?.data?.data?.pagination;
+    const requests = requestsData?.data || [];
     const notifications = notificationsData?.data || [];
     const contactRequests = notifications.filter(n => n.type === 'RETAILER_CONTACT_REQUEST');
-    const uniqueProjects = new Set(contactRequests.map(n => n.relatedData?.projectId).filter(Boolean));
+    const uniqueProjects = new Set(requests.map(r => r.projectId?._id).filter(Boolean));
 
     const stats = [
         {
@@ -38,19 +41,19 @@ export default function RetailerDashboardPage() {
         },
         {
             label: 'Architect Requests',
-            value: contactRequests.length,
-            loading: notificationsLoading,
+            value: requests.length,
+            loading: requestsLoading,
             icon: UserPlus,
             color: 'bg-purple-50 text-purple-600',
-            href: '/dashboard/notifications',
+            href: '/dashboard/retailer/requests',
         },
         {
             label: 'Active Projects',
             value: uniqueProjects.size,
-            loading: notificationsLoading,
+            loading: requestsLoading,
             icon: Briefcase,
             color: 'bg-orange-50 text-orange-600',
-            href: '/dashboard/notifications',
+            href: '/dashboard/retailer/requests',
         },
         {
             label: 'Supply Rating',

@@ -25,4 +25,14 @@ export const retailerRequestService = {
         const response = await api.patch(`/retailer-request/${requestId}`, data);
         return response.data;
     },
+    
+    getAssignedRequests: async () => {
+        const response = await api.get('/retailer-request/assigned');
+        return response.data;
+    },
+
+    updateStatus: async (requestId, data) => {
+        const response = await api.patch(`/retailer-request/${requestId}/status`, data);
+        return response.data;
+    },
 };
