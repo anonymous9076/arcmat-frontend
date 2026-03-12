@@ -12,7 +12,6 @@ export default function DiscussionTab({ projectId, spaceId }) {
     const [isInternal, setIsInternal] = useState(false);
     const isArchitect = user?.role === 'architect';
 
-    const messagesEndRef = useRef(null);
     const scrollContainerRef = useRef(null);
 
     const { data, isLoading } = useGetComments(projectId, spaceId);
@@ -21,7 +20,9 @@ export default function DiscussionTab({ projectId, spaceId }) {
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
     };
 
     // Mark general discussions as read when the tab is opened or new messages arrive
@@ -128,7 +129,6 @@ export default function DiscussionTab({ projectId, spaceId }) {
                                 </div>
                             );
                         })}
-                        <div ref={messagesEndRef} />
                     </>
                 )}
             </div>
