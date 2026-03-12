@@ -111,26 +111,59 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                         <div className="space-y-6 relative before:absolute before:inset-0 before:ml-6 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-linear-to-b before:from-transparent before:via-gray-200 before:to-transparent">
                             {filteredHistory.map((entry, index) => (
                                 <div key={entry._id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                                    <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-white bg-[#fef7f2] text-[#d9a88a] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-black">
+                                    <div className="flex items-center justify-center w-12 h-12 rounded-full border-4 border-white bg-white text-[#d9a88a] shadow-lg ring-1 ring-gray-100 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-black text-xs">
                                         V{entry.version}
                                     </div>
 
                                     <div className="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] p-4 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center justify-between gap-2 mb-2">
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${entry.isFinal ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {entry.isFinal ? 'Current' : 'Replaced'}
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md w-fit mb-1 ${
+                                                    entry.status === 'Replaced' ? 'bg-gray-100 text-gray-500' :
+                                                    entry.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                    entry.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                                    'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    {entry.status || (entry.isFinal ? 'Current' : 'Replaced')}
+                                                </span>
+                                                <span className="text-[11px] font-black text-[#d9a88a] uppercase tracking-tighter">
+                                                    {entry.phase || 'Concept Design'}
+                                                </span>
+                                            </div>
                                             <span className="text-[11px] font-bold text-gray-400">
                                                 {new Date(entry.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
 
-                                        <h4 className="font-bold text-[#2d3142] mb-1">{entry.materialName || 'Unknown Material'}</h4>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            {entry.materialImage && (
+                                                <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-100 shrink-0">
+                                                    <img src={entry.materialImage} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-[#2d3142] truncate">{entry.materialName || 'Unknown Material'}</h4>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                    <p className="text-[10px] text-gray-400 font-medium tracking-tight">
+                                                        By: <span className="font-bold text-gray-500">{entry.changedBy?.name || 'Unknown'}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         {entry.previousMaterialName && (
-                                            <p className="text-xs text-gray-500 mb-2">
-                                                Replaced: <span className="line-through">{entry.previousMaterialName}</span>
-                                            </p>
+                                            <div className="bg-gray-50/50 rounded-xl p-2.5 mb-3 border border-dashed border-gray-100 flex items-center gap-3">
+                                                {entry.previousMaterialImage && (
+                                                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-200 opacity-60 grayscale shrink-0">
+                                                        <img src={entry.previousMaterialImage} alt="" className="w-full h-full object-cover" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Replaced</p>
+                                                    <p className="text-xs text-gray-500 font-bold truncate line-through decoration-gray-300">{entry.previousMaterialName}</p>
+                                                </div>
+                                            </div>
                                         )}
 
                                         <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between">

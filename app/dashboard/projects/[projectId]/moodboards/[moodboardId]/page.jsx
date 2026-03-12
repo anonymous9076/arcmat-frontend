@@ -568,16 +568,22 @@ export default function MoodboardDetailPage() {
             data: { productIds: finalIds }
         }, {
             onSuccess: () => {
-                // 3. Record Material History & Notify Approvals
-                addMaterialVersionMutation.mutate({
-                    spaceId: moodboardId,
-                    spaceName: moodboard?.moodboard_name || 'Space',
-                    materialId: retailerProductId,
-                    materialName: getProductName(newProduct),
-                    previousMaterialId: oldProductId,
-                    previousMaterialName: oldProductName,
-                    reason: reason
-                }, {
+        // 3. Record Material History & Notify Approvals
+        const oldProduct = products.find(p => String(p._id) === String(oldProductId));
+        const newImage = newProduct.variant_images?.[0]?.secure_url || newProduct.productId?.product_images?.[0]?.secure_url || newProduct.secure_url;
+        const oldImage = oldProduct?.variant_images?.[0]?.secure_url || oldProduct?.productId?.product_images?.[0]?.secure_url || oldProduct?.secure_url;
+
+        addMaterialVersionMutation.mutate({
+            spaceId: moodboardId,
+            spaceName: moodboard?.moodboard_name || 'Space',
+            materialId: retailerProductId,
+            materialName: getProductName(newProduct),
+            materialImage: newImage,
+            previousMaterialId: oldProductId,
+            previousMaterialName: oldProductName,
+            previousMaterialImage: oldImage,
+            reason: reason
+        }, {
                     onSuccess: (historyRes) => {
                         const historyId = historyRes?.history?._id;
 
