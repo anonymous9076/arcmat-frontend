@@ -37,6 +37,7 @@ export default function ProductListPage() {
         brands: [],
         colors: [],
         availability: [],
+        attributes: {}, // Dynamic attributes
         priceRange: [0, 500000],
         toggles: {
             commercial: false,
@@ -58,6 +59,13 @@ export default function ProductListPage() {
         color: activeFilters.colors.join(','),
         min_price: activeFilters.priceRange[0],
         max_price: activeFilters.priceRange[1],
+        // Spread dynamic attributes with attr_ prefix
+        ...Object.entries(activeFilters.attributes || {}).reduce((acc, [key, values]) => {
+            if (values && values.length > 0) {
+                acc[`attr_${key}`] = values.join(',');
+            }
+            return acc;
+        }, {}),
         enabled: isInitialized
     });
 
@@ -144,6 +152,10 @@ export default function ProductListPage() {
         return Array.from(colors).sort();
     }, [products, metadata]);
 
+    const availableAttributes = useMemo(() => {
+        return metadata?.availableAttributes || [];
+    }, [metadata]);
+
     return (
         <div className="min-h-screen">
             <div className="sticky top-16 z-40">
@@ -162,6 +174,7 @@ export default function ProductListPage() {
                         setActiveFilters={handleFiltersChange}
                         brands={brands}
                         availableColors={availableColors}
+                        availableAttributes={availableAttributes}
                         minPrice={minPrice}
                         maxPrice={maxPrice}
                         priceStep={priceStep}
@@ -235,6 +248,7 @@ export default function ProductListPage() {
                                 setActiveFilters={handleFiltersChange}
                                 brands={brands}
                                 availableColors={availableColors}
+                                availableAttributes={availableAttributes}
                                 minPrice={minPrice}
                                 maxPrice={maxPrice}
                                 priceStep={priceStep}

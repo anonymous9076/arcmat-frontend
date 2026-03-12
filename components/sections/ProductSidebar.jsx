@@ -30,6 +30,7 @@ const ProductSidebar = ({
     setActiveFilters,
     brands = [],
     availableColors = [],
+    availableAttributes = [], // New prop
     minPrice = 0,
     maxPrice = 100000,
     priceStep = 100
@@ -92,6 +93,7 @@ const ProductSidebar = ({
             colors: [],
             cities: [],
             availability: [],
+            attributes: {}, // Reset attributes
             priceRange: [minPrice, maxPrice],
             toggles: {
                 commercial: false,
@@ -110,10 +112,20 @@ const ProductSidebar = ({
         }))
     }
 
+    // Combine static and dynamic categories
+    const allCategories = React.useMemo(() => {
+        const dynamicCats = availableAttributes.map(attr => attr.key);
+        // Avoid duplicates if a dynamic attribute has the same name as a static one
+        const filteredDynamic = dynamicCats.filter(cat => !filterCategories.includes(cat));
+        return [...filterCategories, ...filteredDynamic];
+    }, [availableAttributes]);
+
     return (
         <aside className="w-full h-full border-r-2 border-gray-200 overflow-y-auto no-scrollbar py-2 pr-6 pb-20">
             <div className="flex items-center justify-end mb-2">
                 {(activeFilters.brands.length > 0 ||
+                    activeFilters.colors.length > 0 ||
+                    Object.keys(activeFilters.attributes || {}).some(key => activeFilters.attributes[key].length > 0) ||
                     Object.values(activeFilters.toggles).some(v => v) ||
                     activeFilters.priceRange[0] !== minPrice ||
                     activeFilters.priceRange[1] !== maxPrice) && (
@@ -145,7 +157,7 @@ const ProductSidebar = ({
             </div>
 
             <div className="mt-2">
-                {filterCategories.map((cat, idx) => (
+                {allCategories.map((cat, idx) => (
                     <AccordionItem
                         key={idx}
                         title={cat}
@@ -203,22 +215,6 @@ const ProductSidebar = ({
                                         />
                                     </div>
                                 </div>
-
-                                {/* <div className="space-y-2">
-                                    <input
-                                        type="range"
-                                        min={minPrice}
-                                        max={maxPrice}
-                                        step={priceStep}
-                                        value={activeFilters.priceRange[1]}
-                                        onChange={(e) => handlePriceChange(1, e.target.value)}
-                                        className="w-full accent-[#e09a74]"
-                                    />
-                                    <div className="flex justify-between text-[11px] font-bold text-gray-500">
-                                        <span>{formatCurrency(activeFilters.priceRange[0])}</span>
-                                        <span>{formatCurrency(activeFilters.priceRange[1])}</span>
-                                    </div>
-                                </div> */}
                             </div>
                         )}
 
@@ -260,7 +256,7 @@ const ProductSidebar = ({
                             </div>
                         )}
 
-                        {cat !== "Brand" && cat !== "Price Range" && cat !== "Color" && cat !== "City" && cat !== "Availability" && (
+                        {cat === "Availability" && (
                             <div className="flex flex-col gap-2 italic text-gray-400 text-[13px]">
                                 coming soon!!
                             </div>
