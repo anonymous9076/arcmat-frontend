@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { useGetMyRetailerRequests, RETAILER_REQ_KEYS } from '@/hooks/useRetailerRequest';
-import { useMarkNotificationsRead } from '@/hooks/useProject';
+import { useMarkRetailerChatRead } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import { User, MessageSquare, MapPin, Calendar, Clock, CheckCircle, Package, Phone, Mail } from 'lucide-react';
 import { format } from 'date-fns';
@@ -12,7 +12,6 @@ import { Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { getProductThumbnail } from '@/lib/productUtils';
 import MessageModal from '@/components/sections/MessageModal';
-import { isValidId } from '@/services/discussionService';
 
 const STATUS_CONFIG = {
     'Pending': { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
@@ -24,7 +23,7 @@ const STATUS_CONFIG = {
 export default function RetailerContactsPage() {
     const queryClient = useQueryClient();
     const { data: requestsData, isLoading } = useGetMyRetailerRequests();
-    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+    const { mutate: markRetailerChatRead } = useMarkRetailerChatRead();
     const [messagingRequest, setMessagingRequest] = React.useState(null);
     const requests = requestsData?.data || [];
 
@@ -34,30 +33,17 @@ export default function RetailerContactsPage() {
     const handleOpenChat = (request) => {
         setMessagingRequest(request);
 
-        const targetProjectId = (request.projectId?._id || request.projectId);
-        const resolvedProjectId = isValidId(targetProjectId) ? targetProjectId : 'null';
-
-        // Optimistically clear unread on this specific request in the cache
+        // Optimistically clear unread badge immediately on click
         queryClient.setQueryData(RETAILER_REQ_KEYS.mine(), (old) => {
             if (!old?.data) return old;
-            return {
-                ...old,
-                data: old.data.map(r =>
-                    r._id === request._id ? { ...r, unreadMessages: 0 } : r
-                )
-            };
+            return { ...old, data: old.data.map(r => r._id === request._id ? { ...r, unreadMessages: 0 } : r) };
         });
 
-        // BUG FIX 3: Mark the retailer messages as read via the shared mutation
-        // so the sidebar's Retailer Contacts badge also clears immediately.
-        // Previously the page never called markNotificationsRead at all,
-        // so the sidebar badge stayed at its old count even after reading.
-        if (targetMaterialId) {
-            markNotificationsRead({
-                id: resolvedProjectId,
-                materialId: targetMaterialId,
-                type: 'retailer',
-            });
+        // Call the dedicated retailer-chat mark-read endpoint
+        const targetRetailerId = request.retailerId?._id || request.retailerId;
+        const targetMaterialId = request.materialId?._id || request.materialId;
+        if (targetRetailerId && targetMaterialId) {
+            markRetailerChatRead({ retailerId: targetRetailerId, materialId: targetMaterialId });
         }
     };
 

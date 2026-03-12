@@ -9,6 +9,9 @@ import Button from '@/components/ui/Button';
 import { getProductThumbnail } from '@/lib/productUtils';
 import MessageModal from '@/components/sections/MessageModal';
 import Link from 'next/link';
+import { useMarkRetailerChatRead } from '@/hooks/useProject';
+import { useQueryClient } from '@tanstack/react-query';
+import { RETAILER_REQ_KEYS } from '@/hooks/useRetailerRequest';
 
 const STATUS_CONFIG = {
     'Pending': {
@@ -38,13 +41,30 @@ const STATUS_CONFIG = {
 };
 
 export default function RetailerRequestsPage() {
+    const queryClient = useQueryClient();
     const { data: requestsData, isLoading } = useGetRetailerAssignedRequests();
     const { mutate: updateStatus, isLoading: isUpdating } = useUpdateRetailerRequestStatus();
+    const { mutate: markRetailerChatRead } = useMarkRetailerChatRead();
     const [messagingRequest, setMessagingRequest] = React.useState(null);
     const requests = requestsData?.data || [];
 
     const handleCall = (mobile) => {
         if (mobile) window.location.href = `tel:${mobile}`;
+    };
+
+    const handleOpenChat = (request) => {
+        setMessagingRequest(request);
+        // Optimistically clear badge
+        queryClient.setQueryData(RETAILER_REQ_KEYS.assigned(), (old) => {
+            if (!old?.data) return old;
+            return { ...old, data: old.data.map(r => r._id === request._id ? { ...r, unreadMessages: 0 } : r) };
+        });
+        // Fire mark-read on the server
+        const targetRetailerId = request.retailerId?._id || request.retailerId;
+        const targetMaterialId = request.materialId?._id || request.materialId;
+        if (targetRetailerId && targetMaterialId) {
+            markRetailerChatRead({ retailerId: targetRetailerId, materialId: targetMaterialId });
+        }
     };
 
     const handleMarkProcessed = (requestId) => {
@@ -167,7 +187,7 @@ export default function RetailerRequestsPage() {
                                             Call Architect
                                         </Button>
                                         <Button 
-                                            onClick={() => setMessagingRequest(request)}
+                                            onClick={() => handleOpenChat(request)}
                                             className="relative flex-1 border-2 border-gray-100 text-gray-500 hover:bg-gray-50 font-black rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
                                         >
                                             <MessageSquare className="w-4 h-4" />

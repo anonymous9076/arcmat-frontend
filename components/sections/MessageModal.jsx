@@ -5,7 +5,7 @@ import { discussionService, isValidId } from '@/services/discussionService';
 import { X, Send, User, MessageSquare, Loader2, Paperclip, Image as ImageIcon, FileX } from 'lucide-react';
 import { format } from 'date-fns';
 import Button from '@/components/ui/Button';
-import { useMarkNotificationsRead } from '@/hooks/useProject';
+import { useMarkRetailerChatRead } from '@/hooks/useProject';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 
@@ -16,7 +16,7 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
     const [attachments, setAttachments] = useState([]);
     const scrollRef = useRef(null);
     const fileInputRef = useRef(null);
-    const { mutate: markRead } = useMarkNotificationsRead();
+    const { mutate: markRetailerChatRead } = useMarkRetailerChatRead();
 
     const { data: commentsData, isLoading } = useQuery({
         queryKey: ['project-comments', projectId, materialId, retailerId, 'internal'],
@@ -36,12 +36,12 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
         }
     });
 
-    // Mark as read when opened
+    // Mark as read when opened — always fires regardless of projectId
     useEffect(() => {
-        if (isOpen && isValidId(projectId)) {
-            markRead({ id: projectId, materialId });
+        if (isOpen && retailerId && materialId) {
+            markRetailerChatRead({ retailerId, materialId });
         }
-    }, [isOpen, projectId, materialId, markRead]);
+    }, [isOpen, retailerId, materialId, markRetailerChatRead]);
 
     useEffect(() => {
         if (scrollRef.current) {

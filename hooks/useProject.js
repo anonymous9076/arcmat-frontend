@@ -111,6 +111,24 @@ export const useMarkNotificationsRead = () => {
     });
 };
 
+export const useMarkRetailerChatRead = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ retailerId, materialId }) =>
+            projectService.markRetailerChatRead(retailerId, materialId),
+        onSuccess: () => {
+            // Invalidate both retailer-side and architect-side request caches
+            // so unread badges update immediately across the whole app
+            queryClient.invalidateQueries({ queryKey: RETAILER_REQ_KEYS.assigned() });
+            queryClient.invalidateQueries({ queryKey: RETAILER_REQ_KEYS.mine() });
+        },
+        onError: (error) => {
+            // Non-fatal: silently log - badge will be cleared on next poll
+            console.warn('Failed to mark retailer chat as read:', error.response?.data?.message || error.message);
+        }
+    });
+};
+
 export const useGetProductNotifications = (projectId, spaceId) => {
     return useQuery({
         queryKey: [...PROJECT_KEYS.detail(projectId), 'space', spaceId, 'notifications'],

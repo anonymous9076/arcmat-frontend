@@ -40,5 +40,11 @@ export const projectService = {
         const payload = { spaceId, materialId, type };
         const response = await api.post(`/project/${id}/mark-read`, payload);
         return response.data;
+    },
+
+    // Dedicated endpoint for retailer chat messages — no projectId required
+    markRetailerChatRead: async (retailerId, materialId) => {
+        const response = await api.post('/project/mark-retailer-read', { retailerId, materialId });
+        return response.data;
     }
 };
