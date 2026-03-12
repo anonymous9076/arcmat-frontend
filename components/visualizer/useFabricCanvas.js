@@ -734,13 +734,18 @@ export function useFabricCanvas({
         const originalVPT = [...canvas.viewportTransform];
         const originalSelection = canvas.selection;
 
+        // ── BUG FIX: Reset zoom/pan before calculating bounds for export ──────
+        // This ensures export is zoom-independent
+        canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+
         // Hide internal notes from export
         const internalObjs = objects.filter(o => o.isInternal);
         internalObjs.forEach(o => o.set('opacity', 0));
         canvas.renderAll();
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        objects.forEach(obj => {
+        // Filter out internal objects from bounds calculation
+        objects.filter(o => !o.isInternal).forEach(obj => {
             const br = obj.getBoundingRect(true, true);
             if (br.left < minX) minX = br.left;
             if (br.top < minY) minY = br.top;
@@ -774,7 +779,8 @@ export function useFabricCanvas({
             alert('High-res export failed (possibly CORS). Try again or check image sources.');
         } finally {
             internalObjs.forEach(o => o.set('opacity', 1));
-            canvas.viewportTransform = originalVPT;
+            // Restore original zoom and pan
+            canvas.setViewportTransform(originalVPT);
             canvas.selection = originalSelection;
             canvas.renderAll();
         }
