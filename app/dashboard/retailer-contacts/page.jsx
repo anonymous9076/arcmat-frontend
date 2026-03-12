@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { getProductThumbnail } from '@/lib/productUtils';
 import MessageModal from '@/components/sections/MessageModal';
+import { isValidId } from '@/services/discussionService';
 
 const STATUS_CONFIG = {
     'Pending': { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
@@ -33,6 +34,9 @@ export default function RetailerContactsPage() {
     const handleOpenChat = (request) => {
         setMessagingRequest(request);
 
+        const targetProjectId = (request.projectId?._id || request.projectId);
+        const resolvedProjectId = isValidId(targetProjectId) ? targetProjectId : 'null';
+
         // Optimistically clear unread on this specific request in the cache
         queryClient.setQueryData(RETAILER_REQ_KEYS.mine(), (old) => {
             if (!old?.data) return old;
@@ -48,10 +52,10 @@ export default function RetailerContactsPage() {
         // so the sidebar's Retailer Contacts badge also clears immediately.
         // Previously the page never called markNotificationsRead at all,
         // so the sidebar badge stayed at its old count even after reading.
-        if (request.projectId && request.materialId) {
+        if (targetMaterialId) {
             markNotificationsRead({
-                id: request.projectId?._id || request.projectId,
-                materialId: request.materialId?._id || request.materialId,
+                id: resolvedProjectId,
+                materialId: targetMaterialId,
                 type: 'retailer',
             });
         }

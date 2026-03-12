@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { discussionService } from '@/services/discussionService';
+import { discussionService, isValidId } from '@/services/discussionService';
 import { X, Send, User, MessageSquare, Loader2, Paperclip, Image as ImageIcon, FileX } from 'lucide-react';
 import { format } from 'date-fns';
 import Button from '@/components/ui/Button';
 import { useMarkNotificationsRead } from '@/hooks/useProject';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-
-const isValidId = (id) => !!(id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
 
 export default function MessageModal({ isOpen, onClose, projectId, materialName, materialId, retailerId }) {
     const { user } = useAuthStore();
@@ -23,7 +21,7 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
     const { data: commentsData, isLoading } = useQuery({
         queryKey: ['project-comments', projectId, materialId, retailerId, 'internal'],
         queryFn: () => discussionService.getComments(projectId, null, retailerId, materialId, 'true'),
-        enabled: isOpen && isValidId(projectId)
+        enabled: isOpen && (isValidId(projectId) || (!!materialId && !!retailerId))
     });
 
     const sendMutation = useMutation({
@@ -74,8 +72,8 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
     const handleSend = (e) => {
         e.preventDefault();
         if (!message.trim() && attachments.length === 0) return;
-        if (!isValidId(projectId)) {
-            toast.error("Cannot send message: Invalid Project ID.");
+        if (!isValidId(projectId) && (!materialId || !retailerId)) {
+            toast.error("Cannot send message: Missing context.");
             return;
         }
 
@@ -114,7 +112,7 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
                         </div>
-                    ) : !isValidId(projectId) ? (
+                    ) : (!isValidId(projectId) && (!materialId || !retailerId)) ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-8 text-red-400">
                             <FileX className="w-12 h-12 mb-4" />
                             <p className="font-bold">Invalid Project Context</p>

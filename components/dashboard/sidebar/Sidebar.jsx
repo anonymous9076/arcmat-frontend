@@ -18,7 +18,7 @@ import sidebarData from './sidebar-data.json';
 import CreateProjectModal from './CreateProjectModal';
 import Button from '@/components/ui/Button';
 import { useGetProjects } from '@/hooks/useProject';
-import { useGetRetailerAssignedRequests } from '@/hooks/useRetailerRequest';
+import { useGetRetailerAssignedRequests, useGetMyRetailerRequests } from '@/hooks/useRetailerRequest';
 
 const ICON_MAP = {
   Package, Tags, Layers, HelpCircle, ShoppingBag, Heart,
@@ -46,18 +46,21 @@ export default function Sidebar() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const { data: projectsData } = useGetProjects();
-  const { data: retailerRequestsData } = useGetRetailerAssignedRequests({ enabled: isRetailer });
+  const { data: assignedRequestsData } = useGetRetailerAssignedRequests({ enabled: isRetailer });
+  const { data: myRequestsData } = useGetMyRetailerRequests({ enabled: isArchitect });
 
   const projects = projectsData?.data || [];
-  const retailerRequests = retailerRequestsData?.data || [];
+  const assignedRequests = assignedRequestsData?.data || [];
+  const myRequests = myRequestsData?.data || [];
 
   // BUG FIX 2: Explicitly sum only `unreadMessages` (non-retailer general messages)
   // so architect's retailer chat unread count never bleeds into the projects badge
   const totalUnread = projects.reduce((acc, p) => acc + (p.unreadMessages || 0), 0);
 
   const totalRetailerUnread = isArchitect
-    ? projects.reduce((acc, p) => acc + (p.unreadRetailerMessages || 0), 0)
-    : retailerRequests.reduce((acc, r) => acc + (r.unreadMessages || 0), 0);
+    ? (projects.reduce((acc, p) => acc + (p.unreadRetailerMessages || 0), 0) + 
+       myRequests.reduce((acc, r) => acc + (r.unreadMessages || 0), 0))
+    : assignedRequests.reduce((acc, r) => acc + (r.unreadMessages || 0), 0);
 
   useEffect(() => {
     setMounted(true);
