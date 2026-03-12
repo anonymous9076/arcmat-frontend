@@ -46,12 +46,14 @@ export const useGetProjectRetailerRequests = (projectId) => {
     });
 };
 
-export const useCreateRetailerRequest = (projectId) => {
+export const useCreateRetailerRequest = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data) => retailerRequestService.createRequest(projectId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: RETAILER_REQ_KEYS.project(projectId) });
+        mutationFn: ({ projectId, ...data }) => retailerRequestService.createRequest(projectId, data),
+        onSuccess: (data, variables) => {
+            if (variables.projectId) {
+                queryClient.invalidateQueries({ queryKey: RETAILER_REQ_KEYS.project(variables.projectId) });
+            }
             queryClient.invalidateQueries({ queryKey: RETAILER_REQ_KEYS.mine() });
             toast.success('Retailer contact request submitted! Arcmat will connect you shortly.');
         },

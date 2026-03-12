@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
@@ -233,7 +233,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
         setIsWishlisted(true)
     }
 
-    const { mutate: createRetailerRequest } = useCreateRetailerRequest(selectedProject?._id)
+    const { mutate: createRetailerRequest } = useCreateRetailerRequest()
 
     const resolveId = (val) => {
         if (!val) return null;
@@ -254,15 +254,18 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
         setIsRequestingContact(true)
 
+        const projectId = selectedProject?._id;
         const cityName = selectedProject?.location || "Gurgaon";
 
         console.log('Creating Retailer Request with data:', {
+            projectId,
             materialId: product._id,
             retailerId: currentRetailerId,
             city: cityName
         });
 
         createRetailerRequest({
+            projectId,
             materialId: product._id,
             materialName: name,
             retailerId: currentRetailerId,

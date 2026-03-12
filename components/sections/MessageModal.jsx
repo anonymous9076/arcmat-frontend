@@ -9,6 +9,8 @@ import { useMarkNotificationsRead } from '@/hooks/useProject';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 
+const isValidId = (id) => !!(id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
+
 export default function MessageModal({ isOpen, onClose, projectId, materialName, materialId, retailerId }) {
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
@@ -21,7 +23,7 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
     const { data: commentsData, isLoading } = useQuery({
         queryKey: ['project-comments', projectId, materialId, retailerId, 'internal'],
         queryFn: () => discussionService.getComments(projectId, null, retailerId, materialId, 'true'),
-        enabled: isOpen && !!projectId
+        enabled: isOpen && isValidId(projectId)
     });
 
     const sendMutation = useMutation({
@@ -38,7 +40,7 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
 
     // Mark as read when opened
     useEffect(() => {
-        if (isOpen && projectId) {
+        if (isOpen && isValidId(projectId)) {
             markRead({ id: projectId, materialId });
         }
     }, [isOpen, projectId, materialId, markRead]);
@@ -72,6 +74,10 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
     const handleSend = (e) => {
         e.preventDefault();
         if (!message.trim() && attachments.length === 0) return;
+        if (!isValidId(projectId)) {
+            toast.error("Cannot send message: Invalid Project ID.");
+            return;
+        }
 
         const formData = new FormData();
         formData.append('message', message.trim());
@@ -107,6 +113,12 @@ export default function MessageModal({ isOpen, onClose, projectId, materialName,
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
+                        </div>
+                    ) : !isValidId(projectId) ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-8 text-red-400">
+                            <FileX className="w-12 h-12 mb-4" />
+                            <p className="font-bold">Invalid Project Context</p>
+                            <p className="text-sm opacity-70">We couldn't identify the project for this request.</p>
                         </div>
                     ) : comments.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-8">

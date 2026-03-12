@@ -4,7 +4,7 @@ import { Loader2, X, Users2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 export default function RetailerContactModal({ isOpen, onClose, projectId, materialId, materialName }) {
-    const createMutation = useCreateRetailerRequest(projectId);
+    const createMutation = useCreateRetailerRequest();
     const [city, setCity] = useState('');
     const [notes, setNotes] = useState('');
 
@@ -14,6 +14,7 @@ export default function RetailerContactModal({ isOpen, onClose, projectId, mater
         e.preventDefault();
         createMutation.mutate(
             {
+                projectId,
                 materialId,
                 materialName,
                 city,

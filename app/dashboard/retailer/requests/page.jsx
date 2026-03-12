@@ -203,7 +203,7 @@ export default function RetailerRequestsPage() {
                 <MessageModal 
                     isOpen={!!messagingRequest}
                     onClose={() => setMessagingRequest(null)}
-                    projectId={messagingRequest.projectId?._id}
+                    projectId={messagingRequest.projectId?._id || messagingRequest.projectId}
                     materialName={messagingRequest.materialName}
                     materialId={messagingRequest.materialId?._id || messagingRequest.materialId}
                     retailerId={messagingRequest.retailerId?._id || messagingRequest.retailerId}

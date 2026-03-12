@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { getProductThumbnail } from '@/lib/productUtils';
+import DeleteConfirmationModal from '@/components/moodboard/DeleteConfirmationModal';
 
 const STATUS_CONFIG = {
     'Sample Requested': {
@@ -47,6 +48,8 @@ export default function SampleRequestsPage() {
     const { mutate: updateRequest, isLoading: isUpdating } = useUpdateSampleRequest();
 
     const [editingRequest, setEditingRequest] = React.useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+    const [requestToDelete, setRequestToDelete] = React.useState(null);
 
     const requests = requestsData?.data || [];
 
@@ -170,9 +173,8 @@ export default function SampleRequestsPage() {
                                         <div className="flex gap-2 w-full">
                                             <Button
                                                 onClick={() => {
-                                                    if (window.confirm('Are you sure you want to delete this sample request?')) {
-                                                        deleteRequest(request._id);
-                                                    }
+                                                    setRequestToDelete(request._id);
+                                                    setIsDeleteModalOpen(true);
                                                 }}
                                                 disabled={isDeleting}
                                                 className="flex-1 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 font-bold rounded-xl py-2 px-3 text-xs transition-all"
@@ -214,6 +216,21 @@ export default function SampleRequestsPage() {
                     isLoading={isUpdating}
                 />
             )}
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setRequestToDelete(null);
+                }}
+                onConfirm={() => {
+                    if (requestToDelete) {
+                        deleteRequest(requestToDelete);
+                    }
+                }}
+                title="Delete Sample Request?"
+                message="Are you sure you want to delete this sample request? This action cannot be undone."
+            />
         </div>
     );
 }
