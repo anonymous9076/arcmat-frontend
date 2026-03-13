@@ -7,7 +7,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/pagination'
-import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount } from '@/lib/productUtils'
+import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount, formatCurrency } from '@/lib/productUtils'
 import { Heart, ShoppingCart, X, Check, Plus, CheckCircle } from 'lucide-react'
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
@@ -435,11 +435,11 @@ const ProductCard = ({ product }) => {
 
                 <div className="flex items-center gap-2 mb-3">
                     {price && (
-                        <span className="text-[16px] font-bold text-[#e09a74]">₹{price.toLocaleString()}</span>
+                        <span className="text-[16px] font-bold text-[#e09a74]">{formatCurrency(price)}</span>
                     )}
                     {mrp && mrp > price && (
                         <>
-                            <span className="text-[12px] text-gray-400 line-through font-medium">₹{mrp.toLocaleString()}</span>
+                            <span className="text-[12px] text-gray-400 line-through font-medium">{formatCurrency(mrp)}</span>
                             <span className="text-[11px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">-{discountPercentage}%</span>
                         </>
                     )}
