@@ -16,6 +16,11 @@ export const sampleRequestService = {
         return response.data;
     },
 
+    getRetailerRequests: async () => {
+        const response = await api.get('/sample-request/retailer/mine');
+        return response.data;
+    },
+
     updateStatus: async (requestId, data) => {
         const response = await api.patch(`/sample-request/${requestId}/status`, data);
         return response.data;

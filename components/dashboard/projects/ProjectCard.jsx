@@ -9,6 +9,7 @@ import useAuthStore from '@/store/useAuthStore';
 import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
+import RetailerRatingModal from './RetailerRatingModal';
 
 export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const { user } = useAuthStore();
@@ -31,6 +32,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
     const dropdownRef = useRef(null);
     const phaseDropdownRef = useRef(null);
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const updateProjectMutation = useUpdateProject();
 
     useEffect(() => {
@@ -80,6 +82,9 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 onSuccess: () => {
                     toast.success('Project phase updated');
                     setIsPhaseDropdownOpen(false);
+                    if (newPhase === 'Project Completed') {
+                        setIsRatingModalOpen(true);
+                    }
                 },
                 onError: () => {
                     setCurrentPhase(previousPhase);
@@ -105,6 +110,9 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 onSuccess: () => {
                     toast.success('Project status updated');
                     setIsStatusDropdownOpen(false);
+                    if (newStatus === 'Completed') {
+                        setIsRatingModalOpen(true);
+                    }
                 },
                 onError: () => {
                     setCurrentStatus(previousStatus); // Revert on failure
@@ -302,6 +310,13 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                 onClose={() => setIsCoverModalOpen(false)}
                 onSelect={handleCoverSelect}
                 isUploading={updateProjectMutation.isPending}
+            />
+
+            <RetailerRatingModal
+                isOpen={isRatingModalOpen}
+                onClose={() => setIsRatingModalOpen(false)}
+                project={project}
+                retailerId={project.retailers?.[0]?._id || project.retailers?.[0]}
             />
         </div>
     );

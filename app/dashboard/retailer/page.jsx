@@ -1,13 +1,15 @@
 'use client';
-import { Package, ShoppingBag, TrendingUp, Store, ChevronRight, Star, UserPlus, Briefcase, Check, MapPin, Activity, User } from 'lucide-react';
+import { Package, TrendingUp, Store, ChevronRight, Star, UserPlus, Briefcase, Check, MapPin, Activity, User } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import Link from 'next/link';
 import { useGetRetailerBrands, useGetRetailerProducts } from '@/hooks/useRetailer';
 import { useGetRetailerAssignedRequests } from '@/hooks/useRetailerRequest';
 import { useGetOrders } from '@/hooks/useOrder';
 import { useGetNotifications, useNotificationAction } from '@/hooks/useNotification';
+import { useGetUserRatings } from '@/hooks/useRating';
 import { getBrandImageUrl } from '@/lib/productUtils';
 import clsx from 'clsx';
+import { formatDistanceToNow } from 'date-fns';
 
 
 export default function RetailerDashboardPage() {
@@ -18,6 +20,7 @@ export default function RetailerDashboardPage() {
     const { data: productsData, isLoading: productsLoading } = useGetRetailerProducts({ limit: 1 });
     const { data: requestsData, isLoading: requestsLoading } = useGetRetailerAssignedRequests();
     const { data: notificationsData, isLoading: notificationsLoading } = useGetNotifications();
+    const { data: ratingsSnapshot, isLoading: ratingsLoading } = useGetUserRatings(user?._id);
 
     const handleAction = (id, status) => {
         performAction({ id, status });
@@ -27,6 +30,15 @@ export default function RetailerDashboardPage() {
     const productsPagination = productsData?.data?.pagination || productsData?.data?.data?.pagination;
     const requests = requestsData?.data || [];
     const notifications = notificationsData?.data || [];
+    const ratings = ratingsSnapshot?.data?.ratings || [];
+
+    const getAverageRating = (label) => {
+        const scores = ratings.flatMap(r => r.ratings || []).filter(r => r.label === label);
+        if (scores.length === 0) return '0.0';
+        const sum = scores.reduce((acc, curr) => acc + curr.rating, 0);
+        return (sum / scores.length).toFixed(1);
+    };
+
     const contactRequests = notifications.filter(n => n.type === 'RETAILER_CONTACT_REQUEST');
     const uniqueProjects = new Set(requests.map(r => r.projectId?._id).filter(Boolean));
 
@@ -57,16 +69,16 @@ export default function RetailerDashboardPage() {
         },
         {
             label: 'Supply Rating',
-            value: '4.8/5.0',
-            loading: false,
+            value: `${getAverageRating('Supply Reliability')}/5.0`,
+            loading: ratingsLoading,
             icon: Star,
             color: 'bg-green-50 text-green-600',
             href: '#',
         },
         {
             label: 'Delivery Rating',
-            value: '4.5/5.0',
-            loading: false,
+            value: `${getAverageRating('Delivery Time')}/5.0`,
+            loading: ratingsLoading,
             icon: TrendingUp,
             color: 'bg-emerald-50 text-emerald-600',
             href: '#',
@@ -119,9 +131,7 @@ export default function RetailerDashboardPage() {
                         </div>
                     </Link>
                 ))}
-            </div>
-
-            {/* Architect Connection Requests */}
+            </div>            {/* 
             <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -138,13 +148,13 @@ export default function RetailerDashboardPage() {
                     </Link>
                 </div>
 
-                {notificationsLoading ? (
+                {notificationsLoading || requestsLoading ? (
                     <div className="space-y-4">
                         {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-50 animate-pulse rounded-2xl" />)}
                     </div>
-                ) : contactRequests.length > 0 ? (
+                ) : requests.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                        {contactRequests.slice(0, 5).map((req) => (
+                        {requests.slice(0, 5).map((req) => (
                             <div key={req._id} className="group relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl border border-gray-100 bg-gray-50/30 hover:bg-white hover:shadow-md transition-all">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center shrink-0 shadow-sm">
@@ -152,54 +162,41 @@ export default function RetailerDashboardPage() {
                                     </div>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-bold text-gray-900">{req.sender?.fullName || req.sender?.name || 'Architect'}</h3>
+                                            <h3 className="font-bold text-gray-900">{req.professionalId?.name || 'Architect'}</h3>
                                             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-full">Architect</span>
-                                            {req.actionStatus !== 'pending' && (
-                                                <span className={clsx(
-                                                    "px-2 py-0.5 text-[10px] font-black uppercase rounded-full",
-                                                    req.actionStatus === 'confirmed' ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
-                                                )}>
-                                                    {req.actionStatus}
-                                                </span>
-                                            )}
+                                            <span className={clsx(
+                                                "px-2 py-0.5 text-[10px] font-black uppercase rounded-full",
+                                                req.status === 'Confirmed' ? "bg-green-50 text-green-600" :
+                                                    req.status === 'Pending' ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-400"
+                                            )}>
+                                                {req.status}
+                                            </span>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-1 gap-x-6">
                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                 <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="truncate">{req.relatedData?.city || req.relatedData?.projectId?.location?.city || 'Not specified'}</span>
+                                                <span className="truncate">{req.city || 'Not specified'}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                 <Package className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="font-medium text-gray-700 truncate">{req.relatedData?.productId?.product_name || 'Generic Inquiry'}</span>
+                                                <span className="font-medium text-gray-700 truncate">{req.materialName || 'Generic Inquiry'}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                 <Activity className="w-3.5 h-3.5 text-gray-400" />
                                                 <span className="px-2 py-0.5 bg-orange-50 text-orange-600 rounded text-[10px] font-bold">
-                                                    {req.relatedData?.projectId?.phase || 'Concept Design'}
+                                                    {req.projectId?.projectName || 'No Project'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {req.actionStatus === 'pending' && (
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <button
-                                            onClick={() => handleAction(req._id, 'confirmed')}
-                                            disabled={isActionLoading}
-                                            className="px-4 py-2 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                        >
-                                            <Check className="w-3.5 h-3.5" /> Accept
-                                        </button>
-                                        <button
-                                            onClick={() => handleAction(req._id, 'declined')}
-                                            disabled={isActionLoading}
-                                            className="px-4 py-2 bg-white text-gray-500 border border-gray-200 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
-                                        >
-                                            Ignore
-                                        </button>
-                                    </div>
-                                )}
+                                <Link
+                                    href="/dashboard/retailer/requests"
+                                    className="px-4 py-2 bg-black text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5 shrink-0"
+                                >
+                                    Manage Request
+                                </Link>
                             </div>
                         ))}
                     </div>
@@ -213,8 +210,9 @@ export default function RetailerDashboardPage() {
                     </div>
                 )}
             </div>
+            */}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Recent Activity / Brands */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -230,14 +228,13 @@ export default function RetailerDashboardPage() {
                                 {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-xl" />)}
                             </div>
                         ) : brandsList.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 {brandsList.slice(0, 4).map((brand) => (
                                     <div key={brand._id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-50 bg-gray-50/30">
                                         <div className="w-12 h-12 rounded-lg bg-white border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                                             {brand.logo ? (
                                                 <img src={getBrandImageUrl(brand.logo)} alt={brand.name} className="w-full h-full object-contain p-1" />
                                             ) : (
-
                                                 <Store className="w-6 h-6 text-gray-300" />
                                             )}
                                         </div>
@@ -260,36 +257,60 @@ export default function RetailerDashboardPage() {
                     </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="space-y-6">
-                    <div className="bg-[#1a202c] rounded-2xl p-6 shadow-lg text-white">
-                        <h2 className="text-lg font-bold mb-4">Quick Actions</h2>
-                        <div className="space-y-3">
-                            <Link
-                                href="/dashboard/retailer/inventory"
-                                className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-[#e09a74] flex items-center justify-center">
-                                        <Package className="w-4 h-4 text-white" />
-                                    </div>
-                                    <span className="text-sm font-medium">Browse Materials</span>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                            </Link>
-                            <Link
-                                href="/dashboard/retailer/orders"
-                                className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                                        <ShoppingBag className="w-4 h-4 text-white" />
-                                    </div>
-                                    <span className="text-sm font-medium">My Orders</span>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                {/* Performance Feedback */}
+                <div className="lg:col-span-3 space-y-6">
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm h-full">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Recent Performance Feedback</h2>
+                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mt-0.5">Insights from architects</p>
+                            </div>
+                            <Link href="/dashboard/retailer/ratings" className="text-sm font-bold text-[#e09a74] hover:underline uppercase tracking-widest">
+                                View All
                             </Link>
                         </div>
+
+                        {ratingsLoading ? (
+                            <div className="space-y-4">
+                                {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-50 animate-pulse rounded-2xl" />)}
+                            </div>
+                        ) : ratings.length > 0 ? (
+                            <div className="space-y-3">
+                                {ratings.slice(0, 5).map((rating) => (
+                                    <div key={rating._id} className="flex items-center justify-between p-4 rounded-xl border border-gray-50 bg-gray-50/30 hover:bg-white hover:shadow-sm transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                                                {rating.who_rates?.profile ? (
+                                                    <img src={rating.who_rates.profile} alt="" className="w-full h-full rounded-full object-cover" />
+                                                ) : (
+                                                    <User className="w-5 h-5 text-gray-400" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900 text-sm">{rating.who_rates?.name || 'Architect'}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">
+                                                    {formatDistanceToNow(new Date(rating.createdAt), { addSuffix: true })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
+                                            <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                            <span className="text-sm font-black text-gray-900">
+                                                {(rating.ratings.reduce((acc, r) => acc + r.rating, 0) / rating.ratings.length).toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Star className="w-8 h-8 text-gray-200" />
+                                </div>
+                                <h3 className="text-gray-900 font-bold">No Ratings Yet</h3>
+                                <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">When architects rate your performance after project completion, they will appear here.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

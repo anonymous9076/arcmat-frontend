@@ -6,6 +6,7 @@ export const SAMPLE_KEYS = {
     all: ['sampleRequests'],
     project: (projectId) => [...SAMPLE_KEYS.all, projectId],
     mine: () => [...SAMPLE_KEYS.all, 'mine'],
+    retailer: () => [...SAMPLE_KEYS.all, 'retailer'],
 };
 
 export const useGetProjectSampleRequests = (projectId) => {
@@ -61,6 +62,27 @@ export const useUpdateSampleRequest = () => {
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to update sample request');
+        },
+    });
+};
+
+export const useGetRetailerSampleRequests = () => {
+    return useQuery({
+        queryKey: SAMPLE_KEYS.retailer(),
+        queryFn: () => sampleRequestService.getRetailerRequests(),
+    });
+};
+
+export const useUpdateSampleStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ requestId, status }) => sampleRequestService.updateStatus(requestId, { status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: SAMPLE_KEYS.all });
+            toast.success('Status updated successfully');
+        },
+        onError: (error) => {
+            toast.error(error.response?.data?.message || 'Failed to update status');
         },
     });
 };

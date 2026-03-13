@@ -84,10 +84,16 @@
             "href": "/dashboard/retailer/orders"
         },
         {
-            "id": "architect-requests",
-            "label": "Architect Requests",
-            "icon": "MessageSquare",
-            "href": "/dashboard/retailer/requests"
+            "id": "sample-requests",
+            "label": "Sample Requests",
+            "icon": "Package",
+            "href": "/dashboard/retailer/sample-requests"
+        },
+        {
+            "id": "retailer-ratings",
+            "label": "Performance",
+            "icon": "Star",
+            "href": "/dashboard/retailer/ratings"
         },
         {
             "id": "profile",
