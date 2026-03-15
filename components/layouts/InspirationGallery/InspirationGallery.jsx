@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import data from "./data.json";
+import { useGetFeaturedGallery } from "@/hooks/useInspirationGallery";
 import InspirationCard from "../../cards/InspirationCard";
 import Container from "../../ui/Container";
 import Button from "@/components/ui/Button";
@@ -12,9 +12,12 @@ const InspirationGallery = () => {
     const [activeCategory, setActiveCategory] = useState("All");
     const [selectedProduct, setSelectedProduct] = useState(null);
 
+    const { data: apiData, isLoading } = useGetFeaturedGallery();
+    const galleryItems = apiData || [];
+
     const filteredData = activeCategory === "All"
-        ? data
-        : data.filter(item => item.category === activeCategory);
+        ? galleryItems
+        : galleryItems.filter(item => item.category === activeCategory);
 
     const handleProductClick = (item) => {
         setSelectedProduct(item);
@@ -47,20 +50,24 @@ const InspirationGallery = () => {
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {filteredData.map((item) => (
-                        <InspirationCard
-                            key={item.id}
-                            company={item.company}
-                            image={item.image}
-                            description={item.description}
-                            link={item.link}
-                            onViewMore={() => handleProductClick(item)}
-                        />
-                    ))}
-                </div>
+                {isLoading ? (
+                    <div className="py-20 text-center text-gray-500 w-full animate-pulse">Loading gallery...</div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {filteredData.map((item) => (
+                            <InspirationCard
+                                key={item._id}
+                                company={item.architectId?.name || "Architect"}
+                                image={item.imageUrl}
+                                description={item.title || "Project Render"}
+                                link={`/productdetails/${item.projectId?._id || ''}`}
+                                onViewMore={() => handleProductClick(item)}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                {filteredData.length === 0 && (
+                {!isLoading && filteredData.length === 0 && (
                     <div className="text-center py-20 text-gray-500">
                         Coming Soon
                     </div>

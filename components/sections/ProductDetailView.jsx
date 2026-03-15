@@ -16,7 +16,7 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/thumbs'
 import 'swiper/css/free-mode'
-import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin } from 'lucide-react'
+import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin, Send } from 'lucide-react'
 import { useCartStore } from '@/store/useCartStore'
 import { useAddToCart } from '@/hooks/useCart'
 import { toast } from '@/components/ui/Toast';
@@ -420,21 +420,10 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     </div>
                                     {hasVariants && selectedVariant && (
                                         <div className="text-sm py-1 text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            <span>SKU: {selectedVariant.skucode || selectedVariant._id}</span>
-                                            {availableAttributes.map(key => {
-                                                const val = selectedAttributes[key]
-                                                if (!val) return null
-                                                return (
-                                                    <React.Fragment key={key}>
-                                                        <span className="text-gray-300">|</span>
-                                                        <span className="capitalize">{key}: <span className="text-gray-700 font-medium">{val}</span></span>
-                                                    </React.Fragment>
-                                                )
-                                            })}
+                                            <span>SKU: {selectedVariant.skucode}</span>
                                         </div>
                                     )}
                                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">{name}</h1>
-                                    <p className="text-base text-gray-700 leading-relaxed mb-4">{subtitle}</p>
 
                                     {/* VARIANT PICKER (THUMBNAILS) */}
                                     {hasVariants && (
@@ -744,13 +733,20 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
                                     {isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}
                                 </button>
+                                <Button
+                                    onClick={() => handleOpenModal({})}
+                                    className="w-full py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2 border bg-[#e09a74] text-white hover:bg-white hover:text-[#e09a74] border border-[#e09a74] mt-2"
+                                >
+                                    <Send className="w-4 h-4" />
+                                    CONTACT
+                                </Button>
                             </div>
                         </div>
                     </div>
 
                     {/* Bottom Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 py-4">
-                        <div className="flex flex-col gap-8">
+                    <div className="py-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
                             {/* Overview */}
                             <section className="bg-white rounded-xl border border-gray-100 p-5">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Overview</h3>
@@ -796,7 +792,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                             <section className="bg-white rounded-xl border border-gray-100 p-2">
                                 <Accordion items={[
                                     {
-                                        title: 'Shipping & Dimensions', content: <div className="space-y-4 p-3">
+                                        title: 'Dimensions', content: <div className="space-y-4 p-3">
                                             <ul className="space-y-2">
                                                 {(product.dimensions || ['Standard sizing applies', 'Contact brand for custom dimensions']).map((dim, idx) => (
                                                     <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
@@ -852,11 +848,6 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                 ]} />
                             </section>
                         </div>
-
-                        {/* RIGHT Column */}
-                        <aside className="lg:sticky lg:top-24 h-fit">
-                            <RequestInfo product={product} />
-                        </aside>
                     </div>
 
                     {/* Request Sample Modal */}

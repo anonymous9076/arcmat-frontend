@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Upload, Download, Package } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import useAuthStore from '@/store/useAuthStore';
 import { useProductStore } from '@/store/useProductStore';
@@ -39,6 +39,7 @@ export default function ProductsListPage() {
   const { getPublicProducts } = useProductStore();
   const { openProductFormModal, openBulkUploadModal } = useUIStore();
   const { setLoading: setGlobalLoading } = useLoader();
+  const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);

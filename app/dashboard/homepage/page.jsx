@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { getBannerImageUrl } from '@/lib/productUtils';
 import RoleGuard from '@/components/auth/RoleGuard';
 import BentoGridAdmin from './bento/BentoGridAdmin';
+import InspirationGalleryAdmin from './inspirationgallery/InspirationGalleryAdmin';
 
 export default function BannersPage() {
     const router = useRouter();
@@ -96,6 +97,13 @@ export default function BannersPage() {
                                 }`}
                         >
                             Bento Grid
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('inspiration')}
+                            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'inspiration' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Inspiration Gallery
                         </button>
                     </div>
                 </div>
@@ -257,8 +265,10 @@ export default function BannersPage() {
                             type="danger"
                         />
                     </>
-                ) : (
+                ) : activeTab === 'bento' ? (
                     <BentoGridAdmin />
+                ) : (
+                    <InspirationGalleryAdmin />
                 )}
             </Container>
         </RoleGuard>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Button from '../ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '../ui/Toast'
+import {Send } from 'lucide-react'
 
 const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false }) => {
     const { user } = useAuth();
@@ -84,10 +85,10 @@ const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false })
             <div className="bg-[#FFF9E6]">
                 <div className="flex items-center gap-2 mb-6 p-1 bg-[#e09a74]">
                     <div className="bg-[#e09a74] rounded-full p-2">
-                        <Image width={20} height={20} src="/Images/information.png" alt="info" />
+                        <Send className="text-black"/>
                     </div>
                     <div className="flex justify-between items-center w-full pr-2">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-900">Request for Information</h2>
+                        <h2 className="text-lg md:text-xl font-bold text-gray-900">Contact</h2>
                         {isModal && onClose && (
                             <button onClick={onClose} className="text-gray-900 hover:text-white transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
