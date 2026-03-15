@@ -23,7 +23,7 @@ import {
     Download, FileOutput, ShoppingCart, Tag, Building2, Hash,
     LayoutDashboard, Paintbrush2, TableProperties, FolderDown,
     Trash2, ChevronRight, Minus, ImagePlus, Search, List, ChevronDown,
-    IndianRupee, CreditCard
+    IndianRupee, CreditCard, MessageCircle
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import {
@@ -38,6 +38,7 @@ import ExportTab from '@/components/moodboard/tabs/ExportTab';
 import DownloadTab from '@/components/moodboard/tabs/DownloadTab';
 import DiscussionTab from '@/components/moodboard/tabs/DiscussionTab';
 import DeleteConfirmationModal from '@/components/moodboard/DeleteConfirmationModal';
+import MaterialDiscussionModal from '@/components/moodboard/MaterialDiscussionModal';
 
 import MaterialPanel from '@/components/visualizer/MaterialPanel';
 import CanvasPreview from '@/components/visualizer/CanvasPreview';
@@ -93,6 +94,7 @@ export default function MoodboardDetailPage() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [isRenderModalOpen, setIsRenderModalOpen] = useState(false);
     const [selectedFullScreenImage, setSelectedFullScreenImage] = useState(null);
+    const [discussionModalItem, setDiscussionModalItem] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
 
@@ -568,22 +570,22 @@ export default function MoodboardDetailPage() {
             data: { productIds: finalIds }
         }, {
             onSuccess: () => {
-        // 3. Record Material History & Notify Approvals
-        const oldProduct = products.find(p => String(p._id) === String(oldProductId));
-        const newImage = newProduct.variant_images?.[0]?.secure_url || newProduct.productId?.product_images?.[0]?.secure_url || newProduct.secure_url;
-        const oldImage = oldProduct?.variant_images?.[0]?.secure_url || oldProduct?.productId?.product_images?.[0]?.secure_url || oldProduct?.secure_url;
+                // 3. Record Material History & Notify Approvals
+                const oldProduct = products.find(p => String(p._id) === String(oldProductId));
+                const newImage = newProduct.variant_images?.[0]?.secure_url || newProduct.productId?.product_images?.[0]?.secure_url || newProduct.secure_url;
+                const oldImage = oldProduct?.variant_images?.[0]?.secure_url || oldProduct?.productId?.product_images?.[0]?.secure_url || oldProduct?.secure_url;
 
-        addMaterialVersionMutation.mutate({
-            spaceId: moodboardId,
-            spaceName: moodboard?.moodboard_name || 'Space',
-            materialId: retailerProductId,
-            materialName: getProductName(newProduct),
-            materialImage: newImage,
-            previousMaterialId: oldProductId,
-            previousMaterialName: oldProductName,
-            previousMaterialImage: oldImage,
-            reason: reason
-        }, {
+                addMaterialVersionMutation.mutate({
+                    spaceId: moodboardId,
+                    spaceName: moodboard?.moodboard_name || 'Space',
+                    materialId: retailerProductId,
+                    materialName: getProductName(newProduct),
+                    materialImage: newImage,
+                    previousMaterialId: oldProductId,
+                    previousMaterialName: oldProductName,
+                    previousMaterialImage: oldImage,
+                    reason: reason
+                }, {
                     onSuccess: (historyRes) => {
                         const historyId = historyRes?.history?._id;
 
@@ -663,6 +665,17 @@ export default function MoodboardDetailPage() {
                 <Container className="pt-4 md:pt-6 pb-0">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                         <div className="flex-1 min-w-0">
+                            <div className="mb-2">
+                                <Link
+                                    href={`/dashboard/projects/${projectId}/moodboards`}
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#d9a88a] transition-colors"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                    </svg>
+                                    Back to Spaces
+                                </Link>
+                            </div>
                             {isEditing ? (
                                 <div className="flex items-center gap-3 mb-1">
                                     <input
@@ -680,82 +693,67 @@ export default function MoodboardDetailPage() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-3 mb-1 group/title w-fit">
-                                    <h1 className="text-3xl font-black text-[#1a1a2e]">{moodboard?.moodboard_name}</h1>
-                                    {isArchitect && (
-                                        <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="p-1.5 text-gray-300 hover:text-gray-500 rounded-lg opacity-0 group-hover/title:opacity-100 transition-all"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                    )}
+                                <div className="flex items-center gap-3 mb-1 group/title w-full min-w-0">
+                                    <h1 className="text-3xl font-black text-[#1a1a2e] truncate">{moodboard?.moodboard_name}</h1>
+
+                                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 ml-1">
+
+
+                                        <div className="relative shrink-0">
+                                            <button
+                                                onClick={() => setMenuOpen(o => !o)}
+                                                className="p-1.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                                            >
+                                                <MoreHorizontal className="w-5 h-5" />
+                                            </button>
+
+                                            {menuOpen && (
+                                                <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
+                                                    {isArchitect && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => { setIsEditing(true); setMenuOpen(false); }}
+                                                                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
+                                                            >
+                                                                <Edit2 className="w-4 h-4" /> Rename
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setMenuOpen(false);
+                                                                    if (window.confirm('Delete this space?')) {
+                                                                        deleteMutation.mutate(moodboardId, {
+                                                                            onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" /> Delete
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {siblingBoards.length > 0 && (
+                                                        <>
+                                                            <div className="border-t border-gray-100 my-1" />
+                                                            <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Spaces</p>
+                                                            {siblingBoards.map(b => (
+                                                                <button
+                                                                    key={b._id}
+                                                                    onClick={() => { setMenuOpen(false); router.push(`/dashboard/projects/${projectId}/moodboards/${b._id}`); }}
+                                                                    className={`w-full text-left px-4 py-2 text-sm font-semibold hover:bg-gray-50 truncate transition-colors ${b._id === moodboardId ? 'text-[#d9a88a] bg-[#fef7f2]' : 'text-gray-600'}`}
+                                                                >
+                                                                    {b.moodboard_name}
+                                                                </button>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
-                            <p className="text-sm text-gray-400 font-medium mt-1">
-                                {moodboard?.description || 'Enter a description for the board'}
-                            </p>
-                        </div>
 
-                        <div className="flex items-center justify-between sm:justify-start gap-3 shrink-0">
-                            <div className="relative">
-                                <button
-                                    onClick={() => setMenuOpen(o => !o)}
-                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
-                                >
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </button>
-
-                                {menuOpen && (
-                                    <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                                        {isArchitect && (
-                                            <>
-                                                <button
-                                                    onClick={() => { setIsEditing(true); setMenuOpen(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                                >
-                                                    <Edit2 className="w-4 h-4" /> Rename
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setMenuOpen(false);
-                                                        if (window.confirm('Delete this space?')) {
-                                                            deleteMutation.mutate(moodboardId, {
-                                                                onSuccess: () => router.push(`/dashboard/projects/${projectId}/moodboards`)
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2"
-                                                >
-                                                    <Trash2 className="w-4 h-4" /> Delete
-                                                </button>
-                                            </>
-                                        )}
-                                        {siblingBoards.length > 0 && (
-                                            <>
-                                                <div className="border-t border-gray-100 my-1" />
-                                                <p className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Other Spaces</p>
-                                                {siblingBoards.map(b => (
-                                                    <button
-                                                        key={b._id}
-                                                        onClick={() => { setMenuOpen(false); router.push(`/dashboard/projects/${projectId}/moodboards/${b._id}`); }}
-                                                        className="w-full text-left px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 truncate"
-                                                    >
-                                                        <List className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                                        <span className="truncate">{b.moodboard_name}</span>
-                                                    </button>
-                                                ))}
-                                            </>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <Link
-                                href={`/dashboard/projects/${projectId}/moodboards`}
-                                className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-[#d9a88a] transition-colors"
-                            >
-                                Project Space
-                            </Link>
                         </div>
                     </div>
 
@@ -920,9 +918,25 @@ export default function MoodboardDetailPage() {
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
 
-                                    {/* Delete Button */}
-                                    {isArchitect && (
-                                        <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {/* Action Buttons */}
+                                    <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDiscussionModalItem(photo);
+                                            }}
+                                            className="relative p-2 bg-white/90 hover:bg-black hover:text-[#d9a88a] rounded-xl shadow-lg transition-all text-gray-500"
+                                            title="Discuss Render"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            {productNotifications[photo.id]?.unreadMessages > 0 && (
+                                                <span className="absolute -top-1 -right-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full shadow-md animate-pulse">
+                                                    {productNotifications[photo.id].unreadMessages}
+                                                </span>
+                                            )}
+                                        </button>
+                                        {/* Delete Button */}
+                                        {isArchitect && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -934,8 +948,8 @@ export default function MoodboardDetailPage() {
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                     <div
                                         onClick={() => setSelectedFullScreenImage(photo)}
                                         className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6"
@@ -1012,6 +1026,15 @@ export default function MoodboardDetailPage() {
                 tags={['Render']}
             />
 
+            <MaterialDiscussionModal
+                isOpen={!!discussionModalItem}
+                onClose={() => setDiscussionModalItem(null)}
+                projectId={projectId}
+                spaceId={moodboardId}
+                materialId={discussionModalItem?.id}
+                materialName={discussionModalItem?.title}
+            />
+
             {/* Full Screen Image Viewer */}
             {selectedFullScreenImage && (
                 <div
@@ -1025,9 +1048,26 @@ export default function MoodboardDetailPage() {
                         <X className="w-8 h-8" />
                     </button>
 
+                    {/* Discussion Button */}
+                    <button
+                        className={`absolute top-6 ${isArchitect ? 'right-48' : 'right-24'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-[350] border border-white/10 group`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setDiscussionModalItem(selectedFullScreenImage);
+                        }}
+                        title="Discuss Render"
+                    >
+                        <MessageCircle className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                        {selectedFullScreenImage && productNotifications[selectedFullScreenImage.id]?.unreadMessages > 0 && (
+                            <span className="absolute top-0 right-0 flex items-center justify-center bg-red-500 text-white text-[12px] font-bold h-5 min-w-[20px] px-1 rounded-full shadow-md animate-pulse">
+                                {productNotifications[selectedFullScreenImage.id].unreadMessages}
+                            </span>
+                        )}
+                    </button>
+
                     {isArchitect && (
                         <button
-                            className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-50 border border-white/10 group"
+                            className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-[350] border border-white/10 group"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setItemToDelete(selectedFullScreenImage.id);

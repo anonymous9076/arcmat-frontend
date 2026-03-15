@@ -109,19 +109,10 @@ export default function DiscussionTab({ projectId, spaceId }) {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="group relative flex items-start gap-2 max-w-[85%]">
+                                    <div className="group relative flex items-start flex-col gap-1 max-w-[85%]">
                                         <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-[#1a1a2e] text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm shadow-sm'}`}>
                                             <p className="whitespace-pre-wrap">{comment.message}</p>
                                         </div>
-                                        {(isMe || user?.role === 'architect') && (
-                                            <button
-                                                onClick={() => deleteMutation.mutate(comment._id)}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0 mt-1"
-                                                title="Delete message"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
                                     </div>
                                     <span className="text-[10px] text-gray-400 mt-1 font-medium">
                                         {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

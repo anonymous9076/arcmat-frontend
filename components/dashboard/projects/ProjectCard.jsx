@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 import RetailerRatingModal from './RetailerRatingModal';
 
-export default function ProjectCard({ project, onEdit, onDelete, href }) {
+export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDiscussion }) {
     const { user } = useAuthStore();
     const isArchitect = user?.role === 'architect';
 
@@ -179,17 +179,26 @@ export default function ProjectCard({ project, onEdit, onDelete, href }) {
                             <ChevronRight className="w-5 h-5 text-gray-400 group-hover/title:translate-x-1 transition-transform" />
                         </Link>
 
-                        {/* Notification Badges */}
+                        {/* Notification Badges & Discussion Shortcut */}
                         <div className="flex items-center gap-1.5 ml-1">
-                            {unreadMessages > 0 && (
-                                <div
-                                    className="flex items-center justify-center bg-red-50 text-red-600 rounded-full px-2 py-0.5 border border-red-100 shadow-sm"
-                                    title={`${unreadMessages} new message${unreadMessages > 1 ? 's' : ''}`}
-                                >
-                                    <MessageCircle className="w-3 h-3 mr-1" />
-                                    <span className="text-[10px] font-bold leading-none">{unreadMessages}</span>
-                                </div>
-                            )}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onOpenDiscussion?.(project);
+                                }}
+                                className={`flex items-center justify-center rounded-full px-2 py-1.5 border shadow-sm transition-all hover:scale-105 active:scale-95 ${unreadMessages > 0
+                                        ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'
+                                        : 'bg-white text-gray-400 border-gray-100 hover:text-[#d9a88a] hover:border-[#d9a88a]/30'
+                                    }`}
+                                title={unreadMessages > 0 ? `${unreadMessages} unread message${unreadMessages > 1 ? 's' : ''}` : 'Open Project Discussion'}
+                            >
+                                <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                                <span className="text-[11px] font-bold leading-none">
+                                    {unreadMessages > 0 ? unreadMessages : 'Discuss'}
+                                </span>
+                            </button>
+
                             {pendingApprovals > 0 && (
                                 <div
                                     className="flex items-center justify-center bg-amber-50 text-amber-600 rounded-full px-2 py-0.5 border border-amber-100 shadow-sm"

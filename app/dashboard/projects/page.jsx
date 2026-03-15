@@ -7,6 +7,7 @@ import useAuthStore from '@/store/useAuthStore';
 import { Grid, List, Search, Filter, Loader2, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import CreateProjectModal from '@/components/dashboard/sidebar/CreateProjectModal';
+import ProjectDiscussionModal from '@/components/dashboard/projects/ProjectDiscussionModal';
 import { useDeleteProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -20,6 +21,7 @@ export default function AllProjectsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
+    const [discussionProject, setDiscussionProject] = useState(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [mounted, setMounted] = useState(false);
@@ -189,6 +191,7 @@ export default function AllProjectsPage() {
                             project={project}
                             onEdit={handleEdit}
                             onDelete={() => handleDeleteClick(project)}
+                            onOpenDiscussion={(p) => setDiscussionProject(p)}
                         />
                     ))}
                 </div>
@@ -216,6 +219,13 @@ export default function AllProjectsPage() {
                 isOpen={isProjectModalOpen}
                 onClose={closeProjectModal}
                 project={editingProject}
+            />
+
+            <ProjectDiscussionModal
+                isOpen={!!discussionProject}
+                onClose={() => setDiscussionProject(null)}
+                projectId={discussionProject?._id}
+                projectName={discussionProject?.projectName}
             />
 
             <ConfirmationModal
