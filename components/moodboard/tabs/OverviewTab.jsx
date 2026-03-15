@@ -456,6 +456,7 @@ export default function OverviewTab({
                 spaceId={moodboardId}
                 materialId={selectedMaterial?.id}
                 currentMaterialName={selectedMaterial?.name}
+                onStatusChange={handleProductStatusChange}
             />
 
             <SampleRequestModal

@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard, useGetMoodboardsByProject } from '@/hooks/useMoodboard';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
-import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
+import { useAddMaterialVersion, useGetSpaceHistory, useApproveMaterialVersion } from '@/hooks/useMaterialHistory';
 import { usePostComment } from '@/hooks/useDiscussion';
 import { useMarkNotificationsRead, useGetProductNotifications } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
@@ -127,6 +127,8 @@ export default function MoodboardDetailPage() {
     const { mutate: addToCartBackend } = useAddToCart();
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();
     const { mutate: postComment } = usePostComment(projectId);
+    const { data: historyData } = useGetSpaceHistory(projectId, moodboardId);
+    const approveVersionMutation = useApproveMaterialVersion(projectId);
 
     // Fetch product-level notifications
     const { data: notificationsData } = useGetProductNotifications(projectId, moodboardId);
@@ -498,7 +500,22 @@ export default function MoodboardDetailPage() {
                 [productId]: typeof current === 'object' ? { ...current, status } : { status }
             };
         });
-    }, []);
+
+        // Sync with material history if user is a client/customer
+        if (user?.role === 'customer' || user?.role === 'professional') {
+            const history = historyData?.data || [];
+            // Find the pending version for this specific material
+            const pendingVersion = history.find(h => h.materialId === productId && h.approvalStatus === 'Pending');
+            
+            if (pendingVersion) {
+                if (status === 'Specified') {
+                    approveVersionMutation.mutate({ versionId: pendingVersion._id, data: { status: 'Approved' } });
+                } else if (status === 'Excluded') {
+                    approveVersionMutation.mutate({ versionId: pendingVersion._id, data: { status: 'Rejected' } });
+                }
+            }
+        }
+    }, [user, historyData, approveVersionMutation]);
 
     const handlePriceQtyUpdate = useCallback((id, updates, isPhoto) => {
         if (isPhoto) {

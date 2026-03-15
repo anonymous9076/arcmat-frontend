@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2, X, CheckCircle2, CircleDashed, ArrowRightLeft } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
-export default function MaterialHistoryModal({ isOpen, onClose, projectId, spaceId, materialId, currentMaterialName }) {
+export default function MaterialHistoryModal({ isOpen, onClose, projectId, spaceId, materialId, currentMaterialName, onStatusChange }) {
     const { user } = useAuth();
     // Professionals can also act as clients in some flows, but 'customer' is the primary role
     const isClient = user?.role === 'customer' || user?.role === 'professional';
@@ -28,17 +28,19 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
     // Reconstruct the full history chain for the selected material with safety guards
     let filteredHistory = [];
     if (materialId && history.length > 0) {
-        let currentEntry = history.find(h => h.materialId === materialId || h.previousMaterialId === materialId);
+        // Step 1: Find the absolute head (the newest version) of the chain
+        // Start by finding any entry related to this material, preferably the final/current one
+        let head = history.find(h => (h.materialId === materialId || h.previousMaterialId === materialId) && h.isFinal) 
+                   || history.find(h => h.materialId === materialId || h.previousMaterialId === materialId);
 
-        if (currentEntry) {
-            // Step 1: Find the absolute head (the newest version) of the chain
-            let head = currentEntry;
+        if (head) {
             const forwardVisited = new Set();
-            while (head && head.materialId) {
-                if (forwardVisited.has(head._id)) break; // Cycle protection
+            while (head) {
+                if (forwardVisited.has(head._id)) break;
                 forwardVisited.add(head._id);
 
-                const nextEntry = history.find(h => h.previousMaterialId === head.materialId);
+                // Find the entry that specifically replaced THIS materialId
+                const nextEntry = history.find(h => h.previousMaterialId === head.materialId && h.version > head.version);
                 if (nextEntry) {
                     head = nextEntry;
                 } else {
@@ -50,13 +52,19 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
             let cursor = head;
             const backwardVisited = new Set();
             while (cursor) {
-                if (backwardVisited.has(cursor._id)) break; // Cycle protection
+                if (backwardVisited.has(cursor._id)) break;
                 backwardVisited.add(cursor._id);
 
                 filteredHistory.push(cursor);
+                
                 if (cursor.previousMaterialId) {
-                    // Look for the version that was the source of this replacement
-                    cursor = history.find(h => h.materialId === cursor.previousMaterialId);
+                    // Look for the version that was the source of this replacement.
+                    // Crucially, search for the LATEST version that exists BEFORE this one.
+                    const predecessor = history
+                        .filter(h => h.materialId === cursor.previousMaterialId && h.version < cursor.version)
+                        .sort((a, b) => b.version - a.version)[0]; // Get the one with highest version < current
+                    
+                    cursor = predecessor;
                 } else {
                     cursor = null;
                 }
@@ -68,8 +76,13 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
 
     if (!isOpen) return null;
 
-    const handleApprove = (versionId, status) => {
+    const handleApprove = (versionId, status, materialIdForStatus) => {
         approveMutation.mutate({ versionId, data: { status } });
+        
+        if (onStatusChange) {
+            const moodboardStatus = status === 'Approved' ? 'Specified' : 'Excluded';
+            onStatusChange(materialIdForStatus || materialId, moodboardStatus);
+        }
     };
 
     return (
@@ -183,13 +196,13 @@ export default function MaterialHistoryModal({ isOpen, onClose, projectId, space
                                             {isClient && entry.approvalStatus === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => handleApprove(entry._id, 'Approved')}
+                                                        onClick={() => handleApprove(entry._id, 'Approved', entry.materialId)}
                                                         className="text-[10px] font-bold bg-green-50 text-green-600 hover:bg-green-100 px-2 py-1 rounded transition-colors"
                                                     >
                                                         Approve
                                                     </button>
                                                     <button
-                                                        onClick={() => handleApprove(entry._id, 'Rejected')}
+                                                        onClick={() => handleApprove(entry._id, 'Rejected', entry.materialId)}
                                                         className="text-[10px] font-bold bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded transition-colors"
                                                     >
                                                         Reject
