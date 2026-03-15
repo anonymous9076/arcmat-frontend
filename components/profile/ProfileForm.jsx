@@ -57,7 +57,7 @@ const ProfileForm = ({ brand, onSubmit, onCancel, isSubmitting }) => {
             setPreview(objectUrl);
             return () => URL.revokeObjectURL(objectUrl);
         } else {
-            setPreview(getBrandImageUrl(brand?.logo) || null);
+            setPreview(brand?.logo ? getBrandImageUrl(brand.logo) : null);
         }
     }, [logoFile, brand]);
 

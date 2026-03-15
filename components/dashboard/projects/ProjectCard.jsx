@@ -1,7 +1,6 @@
 'use client';
-
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle, MoreHorizontal, Image as ImageIcon, Download, PlusSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -11,6 +10,11 @@ import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 import RetailerRatingModal from './RetailerRatingModal';
+import { exportProjectToExcel } from '@/lib/exportUtils';
+import { getImageUrl } from '@/lib/productUtils';
+import { moodboardService } from '@/services/moodboardService';
+import { useCreateTemplateFromProject } from '@/hooks/useTemplate';
+
 
 export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDiscussion }) {
     const { user } = useAuthStore();
@@ -31,12 +35,16 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
     const [currentPhase, setCurrentPhase] = useState(phase);
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isPhaseDropdownOpen, setIsPhaseDropdownOpen] = useState(false);
+    const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
     const phaseDropdownRef = useRef(null);
+    const optionsMenuRef = useRef(null);
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const updateProjectMutation = useUpdateProject();
+    const createTemplateMutation = useCreateTemplateFromProject();
 
     useEffect(() => {
         setCurrentStatus(status);
@@ -64,6 +72,9 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
             }
             if (phaseDropdownRef.current && !phaseDropdownRef.current.contains(event.target)) {
                 setIsPhaseDropdownOpen(false);
+            }
+            if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target)) {
+                setIsOptionsMenuOpen(false);
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
@@ -151,8 +162,53 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
         router.push(href || `/dashboard/projects/${_id}/moodboards`);
     };
 
+    const handleDownloadProject = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            try {
+                setIsExporting(true);
+                toast.loading('Fetching all project data...', { id: 'project-export-fetch' });
+
+                // 1. Fetch moodboard list
+                const listResponse = await moodboardService.getMoodboardList(_id);
+                const spaces = listResponse?.data || [];
+
+                if (spaces.length === 0) {
+                    toast.dismiss('project-export-fetch');
+                    toast.error('No spaces found in this project to export');
+                    return;
+                }
+
+                // 2. Fetch full details for each moodboard (products, costs, images)
+                const fullSpaces = await Promise.all(spaces.map(async (space) => {
+                    const detailResponse = await moodboardService.getMoodboardById(space._id);
+                    return detailResponse?.data;
+                }));
+
+                toast.dismiss('project-export-fetch');
+
+                // 3. Trigger project-wide Excel export
+                await exportProjectToExcel(project, fullSpaces.filter(s => s !== null));
+
+            } catch (error) {
+                console.error('Failed to download project:', error);
+                toast.dismiss('project-export-fetch');
+                toast.error('Failed to fetch project details for export');
+            } finally {
+                setIsExporting(false);
+            }
+        };
+
+        const handleCreateTemplate = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOptionsMenuOpen(false);
+            createTemplateMutation.mutate(_id);
+        };
+
     return (
-        <div 
+        <div
             onClick={handleCardClick}
             className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full mx-auto md:mx-0 cursor-pointer"
         >
@@ -164,21 +220,50 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
             )}
             {/* Absolute Action Buttons (Hover) */}
             {isArchitect && (
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <div className="absolute top-4 right-4 z-30" ref={optionsMenuRef}>
                     <button
-                        onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-                        className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-[#d9a88a] hover:bg-[#d9a88a] hover:text-white transition-all transform hover:scale-110"
-                        title="Edit project"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOptionsMenuOpen(!isOptionsMenuOpen); }}
+                        className="p-2 bg-white/90 shadow-md border border-gray-100 rounded-xl text-gray-500 hover:text-[#1a1a2e] hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
+                        title="More options"
                     >
-                        <Edit2 className="w-4 h-4" />
+                        <MoreHorizontal className="w-5 h-5" />
                     </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(project._id); }}
-                        className="p-2 bg-white shadow-md border border-gray-50 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all transform hover:scale-110"
-                        title="Delete project"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+                    {isOptionsMenuOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.11)] border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOptionsMenuOpen(false); onEdit(project); }}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#d9a88a] flex items-center gap-2 transition-colors cursor-pointer"
+                            >
+                                <Edit2 className="w-4 h-4" /> Edit Details
+                            </button>
+                            <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOptionsMenuOpen(false); setIsCoverModalOpen(true); }}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#d9a88a] flex items-center gap-2 transition-colors cursor-pointer"
+                            >
+                                <ImageIcon className="w-4 h-4" /> Change Cover
+                            </button>
+                            <button
+                                onClick={handleDownloadProject}
+                                disabled={isExporting}
+                                className={`w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#d9a88a] flex items-center gap-2 transition-colors cursor-pointer ${isExporting ? 'opacity-50 animate-pulse' : ''}`}
+                            >
+                                <Download className="w-4 h-4" /> Download Project
+                            </button>
+                            <button
+                                onClick={handleCreateTemplate}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#d9a88a] flex items-center gap-2 transition-colors cursor-pointer"
+                            >
+                                <PlusSquare className="w-4 h-4" /> Create Template
+                            </button>
+                            <div className="border-t border-gray-100 my-1" />
+                            <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOptionsMenuOpen(false); onDelete(project._id); }}
+                                className="w-full text-left px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors cursor-pointer"
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete Project
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -209,8 +294,8 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                                     onOpenDiscussion?.(project);
                                 }}
                                 className={`flex items-center justify-center rounded-full px-2 py-1.5 border shadow-sm transition-all hover:scale-105 active:scale-95 ${unreadMessages > 0
-                                        ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'
-                                        : 'bg-white text-gray-400 border-gray-100 hover:text-[#d9a88a] hover:border-[#d9a88a]/30'
+                                    ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100'
+                                    : 'bg-white text-gray-400 border-gray-100 hover:text-[#d9a88a] hover:border-[#d9a88a]/30'
                                     }`}
                                 title={unreadMessages > 0 ? `${unreadMessages} unread message${unreadMessages > 1 ? 's' : ''}` : 'Open Project Discussion'}
                             >
@@ -307,10 +392,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
 
             {/* Right Section */}
             <div className="flex-[1.4] bg-[#fafafb] rounded-[16px] flex items-center justify-between border border-gray-50 group-hover:border-gray-100 transition-colors relative min-w-0 overflow-hidden">
-                {project.coverImage && (
+                {getImageUrl(project.coverImage) && (
                     <div className="absolute inset-0 z-0">
-                        <Image src={project.coverImage} alt="" fill className="object-cover opacity-20" />
-                        <div className="absolute inset-0 bg-linear-to-r from-[#fafafb] via-[#fafafb]/10d to-transparent" />
+                        <Image src={getImageUrl(project.coverImage)} alt="" fill className="object-cover opacity-80" />
+                        <div className="absolute inset-0 bg-linear-to-r from-black/40 to-black/10 transition-colors" />
                     </div>
                 )}
 
@@ -327,6 +412,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                         >
                             <Camera className="w-3.5 h-3.5" />
                         </button>
+                        <h4 className="font-extrabold text-white drop-shadow-md text-[15px] truncate max-w-[120px]">Spec's Overview</h4>
                     </div>
 
                     <div className="mt-auto">

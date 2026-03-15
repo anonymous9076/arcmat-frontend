@@ -25,14 +25,14 @@ export default function DeleteConfirmationModal({ isOpen, onClose, onConfirm, ti
                     </div>
 
                     <h3 className="text-xl font-black text-[#1a1a2e] px-6 text-center">
-                        {title || 'Delete Render?'}
+                        {title || 'Delete D/Render?'}
                     </h3>
                 </div>
 
                 {/* Body */}
                 <div className="px-8 pb-8">
                     <p className="text-center text-gray-500 font-medium leading-relaxed">
-                        {message || 'This action cannot be undone. This render will be permanently removed from your space.'}
+                        {message || 'This action cannot be undone. This drawing/render will be permanently removed from your space.'}
                     </p>
                 </div>
 

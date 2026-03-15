@@ -42,7 +42,7 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
             });
 
             if (category.image) {
-                setPreviewImage(getCategoryImageUrl(category.image));
+                setPreviewImage();
             } else {
                 setPreviewImage(null);
             }

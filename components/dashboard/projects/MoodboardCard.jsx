@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
 import { useUpdateMoodboard, useDuplicateMoodboard } from '@/hooks/useMoodboard';
-import { getProductImageUrl } from '@/lib/productUtils';
+import { getProductImageUrl, getProductThumbnail } from '@/lib/productUtils';
 import { toast } from 'sonner';
 import CoverSelectionModal from './CoverSelectionModal';
 import { exportMoodboardToExcel } from '@/lib/exportUtils';
@@ -72,14 +72,7 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
         return board.canvasState
             .filter(item => item.type === 'material' && item.material)
             .slice(0, 4)
-            .map(item => {
-                const m = item.material;
-                if (m.images?.length) return getProductImageUrl(m.images[0]);
-                if (m.variant_images?.length) return getProductImageUrl(m.variant_images[0]);
-                if (typeof m.productId === 'object' && m.productId?.product_images?.length)
-                    return getProductImageUrl(m.productId.product_images[0]);
-                return '/Icons/arcmatlogo.svg';
-            });
+            .map(item => getProductThumbnail(item.material));
     };
 
     const handleDownloadExcel = async (e) => {
@@ -157,9 +150,9 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
                     className="absolute inset-0 rounded-[24px] overflow-hidden bg-gray-50 flex flex-col border border-gray-100 group-hover/preview:border-[#d9a88a]/20 transition-colors z-10"
                     onClick={() => useProjectStore.getState().setActiveMoodboard(_id, moodboard_name, projectId, "")}
                 >
-                    {moodboard.coverImage ? (
+                    {(typeof moodboard.coverImage === 'string' && moodboard.coverImage.trim()) ? (
                         <div className="relative h-full w-full">
-                            <Image src={moodboard.coverImage} alt="" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />
+                            <Image src={moodboard.coverImage.trim()} alt="Cover" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />
                         </div>
                     ) : (
                         <div className="h-full w-full grid grid-cols-2 grid-rows-2 gap-[2px]">
@@ -167,23 +160,23 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
                                 <>
                                     {previewImages.length === 1 ? (
                                         <div className="col-span-2 row-span-2 relative h-full w-full">
-                                            <Image src={previewImages[0]} alt="" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />
+                                            {(typeof previewImages[0] === 'string' && previewImages[0].trim()) && <Image src={previewImages[0].trim()} alt="" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />}
                                         </div>
                                     ) : previewImages.length === 2 ? (
                                         <>
-                                            <div className="row-span-2 relative h-full w-full"><Image src={previewImages[0]} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" /></div>
-                                            <div className="row-span-2 relative h-full w-full"><Image src={previewImages[1]} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" /></div>
+                                            <div className="row-span-2 relative h-full w-full">{(typeof previewImages[0] === 'string' && previewImages[0].trim()) && <Image src={previewImages[0].trim()} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" />}</div>
+                                            <div className="row-span-2 relative h-full w-full">{(typeof previewImages[1] === 'string' && previewImages[1].trim()) && <Image src={previewImages[1].trim()} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" />}</div>
                                         </>
                                     ) : previewImages.length === 3 ? (
                                         <>
-                                            <div className="row-span-2 relative h-full w-full"><Image src={previewImages[0]} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" /></div>
-                                            <div className="relative h-full w-full"><Image src={previewImages[1]} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" /></div>
-                                            <div className="relative h-full w-full"><Image src={previewImages[2]} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" /></div>
+                                            <div className="row-span-2 relative h-full w-full">{(typeof previewImages[0] === 'string' && previewImages[0].trim()) && <Image src={previewImages[0].trim()} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" />}</div>
+                                            <div className="relative h-full w-full">{(typeof previewImages[1] === 'string' && previewImages[1].trim()) && <Image src={previewImages[1].trim()} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" />}</div>
+                                            <div className="relative h-full w-full">{(typeof previewImages[2] === 'string' && previewImages[2].trim()) && <Image src={previewImages[2].trim()} alt="" fill className="object-cover group-hover/preview:scale-105 transition-transform duration-700" />}</div>
                                         </>
                                     ) : (
                                         previewImages.map((img, i) => (
                                             <div key={i} className="relative h-full w-full hover:z-10 bg-white">
-                                                <Image src={img} alt="" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />
+                                                {(typeof img === 'string' && img.trim()) && <Image src={img.trim()} alt="" fill className="object-cover group-hover/preview:scale-110 transition-transform duration-700" />}
                                             </div>
                                         ))
                                     )}

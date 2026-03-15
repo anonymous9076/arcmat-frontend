@@ -114,7 +114,7 @@ export default function VendorProductTable({ products = [] }) {
                     <div className="h-12 w-12 bg-gray-100 rounded overflow-hidden">
                       {images?.[0] ? (
                         <img
-                          src={getProductImageUrl(images[0])}
+                          src={getProductImageUrl(images?.[0])}
                           alt={name}
                           className="h-full w-full object-cover"
                         />

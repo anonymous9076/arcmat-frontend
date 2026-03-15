@@ -6,24 +6,36 @@ import Button from '@/components/ui/Button';
 import { useGetMoodboardDropdown } from '@/hooks/useMoodboard';
 import { useGetProjects } from '@/hooks/useProject';
 import { useCreateEstimatedCost, useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
+import { 
+    useGetTemplates, 
+    useGetMoodboardTemplates, 
+    useUpdateEstimatedCostTemplate,
+    useCreateEstimatedCostTemplate
+} from '@/hooks/useTemplate';
 import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
 import useProjectStore from '@/store/useProjectStore';
 import { toast } from 'sonner';
 
 export default function AddToMoodboardModal({ isOpen, onClose, product, products }) {
     const { activeProjectId, activeProjectName, activeMoodboardId, activeMoodboardName } = useProjectStore();
+    const [targetType, setTargetType] = useState('project');
     const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId || '');
     const [selectedMoodboardId, setSelectedMoodboardId] = useState(activeMoodboardId || '');
 
-    const { data: projectsData, isLoading: projectsLoading } = useGetProjects({ enabled: isOpen });
-    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardDropdown(selectedProjectId);
+    const { data: projectsData, isLoading: projectsLoading } = useGetProjects({ enabled: isOpen && targetType === 'project' });
+    const { data: templatesData, isLoading: templatesLoading } = useGetTemplates({ enabled: isOpen && targetType === 'template' });
+    
+    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardDropdown(targetType === 'project' ? selectedProjectId : null);
+    const { data: templateSpacesData, isLoading: templateSpacesLoading } = useGetMoodboardTemplates(targetType === 'template' ? selectedProjectId : null);
 
     const createEstimateMutation = useCreateEstimatedCost();
     const updateEstimateMutation = useUpdateEstimatedCost();
-    const addMaterialVersionMutation = useAddMaterialVersion(selectedProjectId);
+    const createTemplateEstimateMutation = useCreateEstimatedCostTemplate();
+    const updateTemplateEstimateMutation = useUpdateEstimatedCostTemplate();
+    const addMaterialVersionMutation = useAddMaterialVersion(targetType === 'project' ? selectedProjectId : null);
 
-    const projects = projectsData?.data || [];
-    const moodboards = moodboardsData?.data || [];
+    const items = targetType === 'project' ? (projectsData?.data || []) : (templatesData?.data || []);
+    const moodboards = targetType === 'project' ? (moodboardsData?.data || []) : (templateSpacesData?.data || []);
 
 
     useEffect(() => {
@@ -33,14 +45,14 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
         }
     }, [isOpen, activeProjectId, activeMoodboardId]);
 
-    // Reset moodboard selection when project changes
+    // Reset moodboard selection when project changes or type changes
     useEffect(() => {
         if (selectedProjectId !== activeProjectId) {
             setSelectedMoodboardId('');
         } else if (activeMoodboardId) {
             setSelectedMoodboardId(activeMoodboardId);
         }
-    }, [selectedProjectId, activeProjectId, activeMoodboardId]);
+    }, [selectedProjectId, activeProjectId, activeMoodboardId, targetType]);
 
     // Handle extraction of single or multiple product IDs
     const getProductIds = () => {
@@ -59,12 +71,12 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
         const productIdsToSend = getProductIds();
 
         if (!selectedProjectId) {
-            toast.warning("Please select a project first.");
+            toast.warning(`Please select a ${targetType} first.`);
             return;
         }
 
         if (!selectedMoodboardId) {
-            toast.warning("Please select a moodboard first.");
+            toast.warning("Please select a space first.");
             return;
         }
 
@@ -75,8 +87,48 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
 
         const selectedMb = moodboards.find(mb => mb._id === selectedMoodboardId);
 
+        if (targetType === 'template') {
+            const existingCostId = selectedMb?.estimation?._id;
+            if (existingCostId) {
+                const existingProductIds = selectedMb.estimation.productIds || [];
+                const normalizedExisting = existingProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
+                const newIds = productIdsToSend.filter(id => !normalizedExisting.includes(id));
+
+                if (newIds.length === 0) {
+                    toast.success("Products already exist in this template space!");
+                    onClose();
+                    return;
+                }
+
+                updateTemplateEstimateMutation.mutate({
+                    costId: existingCostId,
+                    data: {
+                        productIds: [...normalizedExisting, ...newIds]
+                    }
+                }, {
+                    onSuccess: () => {
+                        toast.success("Added to Template Space successfully!");
+                        onClose();
+                    }
+                });
+            } else {
+                // CREATING new estimation for TEMPLATE
+                createTemplateEstimateMutation.mutate({
+                    templateId: selectedProjectId,
+                    moodboardTemplateId: selectedMoodboardId,
+                    productIds: productIdsToSend
+                }, {
+                    onSuccess: () => {
+                        toast.success("Created Template Estimation and Added Products!");
+                        onClose();
+                    }
+                });
+            }
+            return;
+        }
+
         if (selectedMb?.estimatedCostId) {
-            // UPDATING existing estimation
+            // UPDATING existing estimation for PROJECT
             const existingRetailerProductIds = selectedMb.estimatedCostId.productIds || [];
             const normalizedExisting = existingRetailerProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
 
@@ -117,7 +169,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                 }
             });
         } else {
-            // CREATING new estimation
+            // CREATING new estimation for PROJECT
             createEstimateMutation.mutate({
                 moodboardId: selectedMoodboardId,
                 projectId: selectedProjectId,
@@ -200,28 +252,44 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                     ) : null}
 
                     <div className="space-y-4 mt-4">
-                        {/* Project Selection */}
+                        {/* Target Selection Toggle */}
+                        <div className="flex bg-gray-100 p-1 rounded-2xl mb-4">
+                            <button
+                                onClick={() => { setTargetType('project'); setSelectedProjectId(''); setSelectedMoodboardId(''); }}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${targetType === 'project' ? 'bg-white text-[#d9a88a] shadow-sm' : 'text-gray-400'}`}
+                            >
+                                Projects
+                            </button>
+                            <button
+                                onClick={() => { setTargetType('template'); setSelectedProjectId(''); setSelectedMoodboardId(''); }}
+                                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${targetType === 'template' ? 'bg-white text-[#d9a88a] shadow-sm' : 'text-gray-400'}`}
+                            >
+                                Templates
+                            </button>
+                        </div>
+
+                        {/* Project/Template Selection */}
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase font-black tracking-widest text-gray-400 ml-1">
-                                1. Select Project
+                                1. Select {targetType === 'project' ? 'Project' : 'Template'}
                             </label>
-                            {projectsLoading ? (
+                            {projectsLoading || templatesLoading ? (
                                 <div className="flex justify-center py-4">
                                     <Loader2 className="w-6 h-6 text-[#d9a88a] animate-spin" />
                                 </div>
-                            ) : projects.length > 0 ? (
+                            ) : items.length > 0 ? (
                                 <select
                                     value={selectedProjectId}
                                     onChange={(e) => setSelectedProjectId(e.target.value)}
                                     className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-white font-bold text-[#2d3142] focus:border-[#d9a88a] outline-none transition-all cursor-pointer"
                                 >
-                                    <option value="" disabled>Choose a project...</option>
-                                    {projects.map(p => (
-                                        <option key={p._id} value={p._id}>{p.projectName}</option>
+                                    <option value="" disabled>Choose a {targetType}...</option>
+                                    {items.map(p => (
+                                        <option key={p._id} value={p._id}>{targetType === 'project' ? p.projectName : p.templateName}</option>
                                     ))}
                                 </select>
                             ) : (
-                                <p className="text-center py-4 text-gray-400 text-sm">No projects found</p>
+                                <p className="text-center py-4 text-gray-400 text-sm">No {targetType}s found</p>
                             )}
                         </div>
 
@@ -232,7 +300,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                                     2. Choose Space
                                 </label>
 
-                                {moodboardsLoading ? (
+                                {moodboardsLoading || templateSpacesLoading ? (
                                     <div className="flex justify-center py-8">
                                         <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
                                     </div>
@@ -281,10 +349,10 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                     </Button>
                     <Button
                         onClick={handleAdd}
-                        disabled={!selectedMoodboardId || createEstimateMutation.isPending || updateEstimateMutation.isPending}
+                        disabled={!selectedMoodboardId || createEstimateMutation.isPending || updateEstimateMutation.isPending || updateTemplateEstimateMutation.isPending || createTemplateEstimateMutation.isPending}
                         className="flex-2 py-4 bg-[#d9a88a] text-white font-black rounded-2xl hover:bg-[#c59678] shadow-lg shadow-orange-100 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                     >
-                        {createEstimateMutation.isPending || updateEstimateMutation.isPending ? (
+                        {createEstimateMutation.isPending || updateEstimateMutation.isPending || updateTemplateEstimateMutation.isPending || createTemplateEstimateMutation.isPending ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                             'Add to board'

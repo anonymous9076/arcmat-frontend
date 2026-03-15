@@ -17,7 +17,8 @@ import {
     getProductCategory,
     getProductSize,
     resolvePricing,
-    formatCurrency
+    formatCurrency,
+    getImageUrl
 } from '@/lib/productUtils';
 import useProjectStore from '@/store/useProjectStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,10 +43,10 @@ export function StatusDot({ status = 'Considering' }) {
 }
 
 export default function OverviewTab({
-    products,
-    customPhotos,
-    productStatuses,
-    productNotifications,
+    products = [],
+    customPhotos = [],
+    productStatuses = {},
+    productNotifications = {},
     projectId,
     projectName,
     moodboardId,
@@ -61,7 +62,8 @@ export default function OverviewTab({
     handleAddToCart,
     router,
     isArchitect,
-    privacyControls
+    privacyControls,
+    isTemplate = false
 }) {
     const { user } = useAuth();
     const isClient = user?.role === 'customer';
@@ -82,13 +84,13 @@ export default function OverviewTab({
     const [selectedMaterial, setSelectedMaterial] = useState(null);
 
     // Calculate total estimation
-    const totalEstimation = products.reduce((sum, p) => {
-        const meta = productStatuses[p._id] || {};
+    const totalEstimation = (products || []).reduce((sum, p) => {
+        const meta = (productStatuses || {})[p?._id] || {};
         const price = typeof meta === 'object' ? (Number(meta.price) || 0) : 0;
         const qty = typeof meta === 'object' ? (Number(meta.quantity) || 1) : 1;
         return sum + (price * qty);
-    }, 0) + customPhotos.reduce((sum, p) => {
-        return sum + ((Number(p.price) || 0) * (Number(p.quantity) || 1));
+    }, 0) + (customPhotos || []).reduce((sum, p) => {
+        return sum + ((Number(p?.price) || 0) * (Number(p?.quantity) || 1));
     }, 0);
 
     const openContextMenu = useCallback((e, itemId, isPhoto) => {
@@ -215,6 +217,7 @@ export default function OverviewTab({
                     }}
                     onClose={() => setContextMenu(null)}
                     isClient={isClient}
+                    isTemplate={isTemplate}
                     onOpenHistory={() => {
                         const product = products.find(p => p._id === contextMenu.itemId);
                         setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
@@ -280,10 +283,10 @@ export default function OverviewTab({
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {/* + Add Card */}
                     {isArchitect && (
-                        <div className="relative">
+                        <div className="relative h-full">
                             <button
                                 onClick={() => setAddCardOpen(o => !o)}
-                                className="w-full border-2 border-dashed border-[#d9a88a]/40 rounded-2xl flex flex-col items-center justify-center gap-2 min-h-[220px] cursor-pointer hover:border-[#d9a88a] hover:bg-[#fef7f2] transition-all group bg-[#fef7f2]/50"
+                                className="w-full h-full border-2 border-dashed border-[#d9a88a]/40 rounded-2xl flex flex-col items-center justify-center gap-2 min-h-[220px] cursor-pointer hover:border-[#d9a88a] hover:bg-[#fef7f2] transition-all group bg-[#fef7f2]/50"
                             >
                                 <div className="w-10 h-10 rounded-full bg-[#d9a88a]/10 flex items-center justify-center">
                                     <Plus className="w-5 h-5 text-[#d9a88a]" />
@@ -324,11 +327,11 @@ export default function OverviewTab({
                         <div
                             key={photo.id}
                             onContextMenu={(e) => openContextMenu(e, photo.id, true)}
-                            className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
+                            className="flex flex-col h-full border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
                         >
                             <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                                {photo.previewUrl ? (
-                                    <img src={photo.previewUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                {getImageUrl(photo.previewUrl) ? (
+                                    <img src={getImageUrl(photo.previewUrl)} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-50">
                                         <ImagePlus className="w-8 h-8 text-gray-300" />
@@ -384,10 +387,10 @@ export default function OverviewTab({
                                 <div
                                     key={`${productId || 'p'}-${i}`}
                                     onContextMenu={(e) => openContextMenu(e, productId, false)}
-                                    className="flex flex-col border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
+                                    className="flex flex-col h-full border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
                                 >
                                     <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                                        {imgUrl && imgUrl !== '/Icons/arcmatlogo.svg' ? (
+                                        {imgUrl ? (
                                             <img src={imgUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gray-100">

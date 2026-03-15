@@ -506,7 +506,7 @@ export default function MoodboardDetailPage() {
             const history = historyData?.data || [];
             // Find the pending version for this specific material
             const pendingVersion = history.find(h => h.materialId === productId && h.approvalStatus === 'Pending');
-            
+
             if (pendingVersion) {
                 if (status === 'Specified') {
                     approveVersionMutation.mutate({ versionId: pendingVersion._id, data: { status: 'Approved' } });
@@ -915,25 +915,31 @@ export default function MoodboardDetailPage() {
                             {isArchitect && (
                                 <button
                                     onClick={() => setIsRenderModalOpen(true)}
-                                    className="w-full sm:w-auto justify-center px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
+                                    className="px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-[#d9a88a] transition-all shadow-lg hover:shadow-[#d9a88a]/20"
                                 >
-                                    <Plus className="w-4 h-4" /> Add Drawing/Render
+                                    <ImagePlus className="w-4 h-4" />
+                                    Upload
                                 </button>
                             )}
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                             {renderPhotos.map(photo => (
                                 <div
                                     key={photo.id}
                                     className="group relative aspect-video bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
                                 >
-                                    <img
-                                        src={photo.previewUrl}
-                                        alt={photo.title}
-                                        onClick={() => setSelectedFullScreenImage(photo)}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                    />
+                                    {(typeof photo.previewUrl === 'string' && photo.previewUrl.trim()) ? (
+                                        <img
+                                            src={photo.previewUrl.trim()}
+                                            alt={photo.title}
+                                            onClick={() => setSelectedFullScreenImage(photo)}
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                            <ImagePlus className="w-8 h-8 text-gray-300" />
+                                        </div>
+                                    )}
 
                                     {/* Action Buttons */}
                                     <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
@@ -983,57 +989,65 @@ export default function MoodboardDetailPage() {
                                     </div>
                                 </div>
                             ))}
-                            {renderPhotos.length === 0 && (
-                                <div className="col-span-full py-24 border-2 border-dashed border-gray-200 rounded-[40px] flex flex-col items-center justify-center text-center">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
-                                        <ImagePlus className="w-8 h-8 text-gray-300" />
+                            {
+                                renderPhotos.length === 0 && (
+                                    <div className="col-span-full py-24 border-2 border-dashed border-gray-200 rounded-[40px] flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+                                            <ImagePlus className="w-8 h-8 text-gray-300" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-gray-500">No drawings or renders yet</h3>
+                                        <p className="text-sm text-gray-400 max-w-xs mt-1">
+                                            {isArchitect ? "Upload high-quality drawings or renders and tag them as 'Render' to show them here." : "No drawings or renders have been uploaded for this space yet."}
+                                        </p>
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-500">No drawings or renders yet</h3>
-                                    <p className="text-sm text-gray-400 max-w-xs mt-1">
-                                        {isArchitect ? "Upload high-quality drawings or renders and tag them as 'Render' to show them here." : "No drawings or renders have been uploaded for this space yet."}
-                                    </p>
-                                </div>
-                            )}
+                                )
+                            }
                         </div>
                     </div>
                 )}
 
                 {/* EXPORT */}
-                {activeTab === 'export' && (
-                    <ExportTab
-                        products={products}
-                        customPhotos={generalPhotos}
-                        customRows={customRows}
-                        boardItems={boardItems}
-                        productStatuses={productStatuses}
-                        projectName={project?.projectName}
-                        exportAsCSV={exportAsCSV}
-                        handleAddToCart={handleAddToCart}
-                        handlePriceQtyUpdate={handlePriceQtyUpdate}
-                        handlePhotoStatusChange={handlePhotoStatusChange}
-                        handleProductStatusChange={handleProductStatusChange}
-                        handleAddCustomRow={handleAddCustomRow}
-                        handleCustomRowUpdate={handleCustomRowUpdate}
-                        handleRemoveCustomRow={handleRemoveCustomRow}
-                        isArchitect={isArchitect}
-                        privacyControls={project?.privacyControls}
-                    />
-                )}
+                {
+                    activeTab === 'export' && (
+                        <ExportTab
+                            products={products}
+                            customPhotos={generalPhotos}
+                            customRows={customRows}
+                            boardItems={boardItems}
+                            productStatuses={productStatuses}
+                            projectName={project?.projectName}
+                            exportAsCSV={exportAsCSV}
+                            handleAddToCart={handleAddToCart}
+                            handlePriceQtyUpdate={handlePriceQtyUpdate}
+                            handlePhotoStatusChange={handlePhotoStatusChange}
+                            handleProductStatusChange={handleProductStatusChange}
+                            handleAddCustomRow={handleAddCustomRow}
+                            handleCustomRowUpdate={handleCustomRowUpdate}
+                            handleRemoveCustomRow={handleRemoveCustomRow}
+                            isArchitect={isArchitect}
+                            privacyControls={project?.privacyControls}
+                        />
+                    )
+                }
 
                 {/* DOWNLOAD */}
-                {activeTab === 'download' && (
-                    <DownloadTab
-                        boardItems={boardItems}
-                        exportAsCSV={exportAsCSV}
-                        setActiveTab={setActiveTab}
-                        downloadCanvas={() => canvasRef.current?.download('jpeg')}
-                    />
-                )}
+                {
+                    activeTab === 'download' && (
+                        <DownloadTab
+                            boardItems={boardItems}
+                            exportAsCSV={exportAsCSV}
+                            setActiveTab={setActiveTab}
+                            downloadCanvas={() => canvasRef.current?.download('jpeg')}
+                        />
+                    )
+                }
 
                 {/* DISCUSSION */}
-                {activeTab === 'discussion' && (
-                    <DiscussionTab projectId={projectId} spaceId={moodboardId} />
-                )}
+                {
+                    activeTab === 'discussion' && (
+                        <DiscussionTab projectId={projectId} spaceId={moodboardId} />
+                    )
+                }
             </div>
 
             <PhotoUploadModal
@@ -1053,71 +1067,79 @@ export default function MoodboardDetailPage() {
             />
 
             {/* Full Screen Image Viewer */}
-            {selectedFullScreenImage && (
-                <div
-                    className="fixed inset-0 z-300 bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden"
-                    onClick={() => setSelectedFullScreenImage(null)}
-                >
-                    <button
-                        className="absolute top-6 right-6 p-3 bg-black/40 hover:bg-black/60 rounded-full text-white transition-all z-50 border border-white/10"
+            {
+                selectedFullScreenImage && (
+                    <div
+                        className="fixed inset-0 z-300 bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-300 overflow-hidden"
                         onClick={() => setSelectedFullScreenImage(null)}
                     >
-                        <X className="w-8 h-8" />
-                    </button>
-
-                    {/* Discussion Button */}
-                    <button
-                        className={`absolute top-6 ${isArchitect ? 'right-48' : 'right-24'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-[350] border border-white/10 group`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setDiscussionModalItem(selectedFullScreenImage);
-                        }}
-                        title="Discuss Drawing/Render"
-                    >
-                        <MessageCircle className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                        {selectedFullScreenImage && productNotifications[selectedFullScreenImage.id]?.unreadMessages > 0 && (
-                            <span className="absolute top-0 right-0 flex items-center justify-center bg-red-500 text-white text-[12px] font-bold h-5 min-w-[20px] px-1 rounded-full shadow-md animate-pulse">
-                                {productNotifications[selectedFullScreenImage.id].unreadMessages}
-                            </span>
-                        )}
-                    </button>
-
-                    {isArchitect && (
                         <button
-                            className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-[350] border border-white/10 group"
+                            className="absolute top-6 right-6 p-3 bg-black/40 hover:bg-black/60 rounded-full text-white transition-all z-50 border border-white/10"
+                            onClick={() => setSelectedFullScreenImage(null)}
+                        >
+                            <X className="w-8 h-8" />
+                        </button>
+
+                        {/* Discussion Button */}
+                        <button
+                            className={`absolute top-6 ${isArchitect ? 'right-48' : 'right-24'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-[350] border border-white/10 group`}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setItemToDelete(selectedFullScreenImage.id);
-                                setIsDeleteModalOpen(true);
+                                setDiscussionModalItem(selectedFullScreenImage);
                             }}
-                            title="Delete Drawing/Render"
+                            title="Discuss Drawing/Render"
                         >
-                            <Trash2 className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            <MessageCircle className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            {selectedFullScreenImage && productNotifications[selectedFullScreenImage.id]?.unreadMessages > 0 && (
+                                <span className="absolute top-0 right-0 flex items-center justify-center bg-red-500 text-white text-[12px] font-bold h-5 min-w-[20px] px-1 rounded-full shadow-md animate-pulse">
+                                    {productNotifications[selectedFullScreenImage.id].unreadMessages}
+                                </span>
+                            )}
                         </button>
-                    )}
 
-                    <div
-                        className="relative w-full h-full flex items-center justify-center"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <img
-                            src={selectedFullScreenImage.previewUrl}
-                            alt={selectedFullScreenImage.title}
-                            className="w-full h-full object-contain"
-                        />
+                        {isArchitect && (
+                            <button
+                                className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-[350] border border-white/10 group"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setItemToDelete(selectedFullScreenImage.id);
+                                    setIsDeleteModalOpen(true);
+                                }}
+                                title="Delete Drawing/Render"
+                            >
+                                <Trash2 className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            </button>
+                        )}
 
-                        {/* Overlay Metadata */}
-                        <div className="absolute bottom-0 left-0 right-0 p-12 bg-linear-to-t from-black/80 to-transparent pointer-events-none">
-                            <div className="max-w-4xl mx-auto space-y-2">
-                                <h2 className="text-4xl font-black text-white drop-shadow-lg">{selectedFullScreenImage.title.length > 10 ? selectedFullScreenImage.title.slice(0, 10) + "..." : selectedFullScreenImage.title}</h2>
-                                {selectedFullScreenImage.description && (
-                                    <p className="text-xl text-white/80 font-medium max-w-2xl drop-shadow-md">{selectedFullScreenImage.description.length > 20 ? selectedFullScreenImage.description.slice(0, 20) + "..." : selectedFullScreenImage.description}</p>
-                                )}
+                        <div
+                            className="relative w-full h-full flex items-center justify-center"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {(typeof selectedFullScreenImage.previewUrl === 'string' && selectedFullScreenImage.previewUrl.trim()) ? (
+                                <img
+                                    src={selectedFullScreenImage.previewUrl.trim()}
+                                    alt={selectedFullScreenImage.title}
+                                    className="w-full h-full object-contain"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    No preview available
+                                </div>
+                            )}
+
+                            {/* Overlay Metadata */}
+                            <div className="absolute bottom-0 left-0 right-0 p-12 bg-linear-to-t from-black/80 to-transparent pointer-events-none">
+                                <div className="max-w-4xl mx-auto space-y-2">
+                                    <h2 className="text-4xl font-black text-white drop-shadow-lg">{selectedFullScreenImage.title.length > 10 ? selectedFullScreenImage.title.slice(0, 10) + "..." : selectedFullScreenImage.title}</h2>
+                                    {selectedFullScreenImage.description && (
+                                        <p className="text-xl text-white/80 font-medium max-w-2xl drop-shadow-md">{selectedFullScreenImage.description.length > 20 ? selectedFullScreenImage.description.slice(0, 20) + "..." : selectedFullScreenImage.description}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}

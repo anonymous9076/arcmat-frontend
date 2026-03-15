@@ -9,10 +9,10 @@ export default function ProjectDrawer({ isOpen, onClose, savedMaterials, onAdd, 
     const getImgUrl = (v) => {
         if (!v) return '/Icons/arcmatlogo.svg';
         // Try every known image field in order of priority
-        if (v.images?.length) return getProductImageUrl(v.images[0]);
-        if (v.variant_images?.length) return getVariantImageUrl(v.variant_images[0]);
+        if (v.images?.length) return ;
+        if (v.variant_images?.length) return ;
         if (typeof v.productId === 'object' && v.productId?.product_images?.length)
-            return getProductImageUrl(v.productId.product_images[0]);
+            return ;
         if (v.photoUrl) return v.photoUrl;
         return '/Icons/arcmatlogo.svg';
     };

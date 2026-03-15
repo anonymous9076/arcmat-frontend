@@ -11,7 +11,7 @@ import { useGetVariants } from "@/hooks/useProduct";
 import { useGetRetailerProducts } from "@/hooks/useRetailer";
 import { useGetVendors } from "@/hooks/useVendor";
 import { resolvePricing, formatCurrency } from "@/lib/productUtils";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import CompareBar from "@/components/ui/CompareBar";
 import Pagination from "@/components/ui/Pagination";
 import { parseFiltersFromURL, buildURLFromFilters } from "@/lib/urlParamsUtils";
@@ -182,6 +182,14 @@ export default function ProductListPage() {
                 </div>
 
                 <main className="flex-1">
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center gap-2 text-gray-400 hover:text-[#e09a74] transition-colors mb-6 group"
+                    >
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-xs font-bold uppercase tracking-widest">Back</span>
+                    </button>
+
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <Loader2 className="w-10 h-10 text-[#e09a74] animate-spin mb-4" />

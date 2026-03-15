@@ -65,7 +65,7 @@ const HeroSection = () => {
             <SwiperSlide key={banner._id || idx} className="h-full">
               <div className="relative w-full h-full min-h-[80vh] sm:min-h-screen">
                 <Image
-                  src={getBannerImageUrl(banner.banner) || '/Images/Banner.png'}
+                  src={getBannerImageUrl(banner.image) || '/Images/Banner.png'}
 
                   alt={banner.banner_alt || 'Hero Banner'}
                   fill

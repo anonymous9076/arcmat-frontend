@@ -153,9 +153,9 @@ export default function BrandInventoryPage() {
                                     <td className="px-6 py-4 align-top">
                                         <div className="flex gap-4 items-start">
                                             <div className="w-20 h-20 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 relative">
-                                                {getProductImageUrl(product.product_images?.[0]) ? (
+                                                {getProductImageUrl(product.product_images?.[0] || product.images?.[0]) ? (
                                                     <img
-                                                        src={getProductImageUrl(product.product_images?.[0])}
+                                                        src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])}
                                                         alt={product.product_name}
                                                         className="w-full h-full object-cover"
                                                     />
@@ -256,7 +256,7 @@ export default function BrandInventoryPage() {
                             <div className="bg-gray-50 p-4 rounded-2xl mb-6 flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden shrink-0">
                                     <img
-                                        src={getProductImageUrl(selectedItem?.product?.product_images?.[0])}
+                                        src={getProductImageUrl(selectedItem?.variant?.variant_images?.[0] || selectedItem?.product?.product_images?.[0])}
                                         alt=""
                                         className="w-full h-full object-cover"
                                     />

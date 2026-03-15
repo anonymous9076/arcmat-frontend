@@ -115,10 +115,10 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
                         onDrop={handleDrop}
                         className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-dashed transition-all cursor-pointer ${dragging ? 'border-[#d9a88a] bg-[#fef7f2]' : previewUrl ? 'border-transparent' : 'border-gray-200 hover:border-[#d9a88a] hover:bg-[#fef7f2]/50'}`}
                     >
-                        {previewUrl ? (
+                        {(typeof previewUrl === 'string' && previewUrl.trim()) ? (
                             <>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                <img src={previewUrl.trim()} alt="Preview" className="w-full h-full object-cover" />
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setFile(null); setPreviewUrl(null); }}
                                     className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-xl shadow text-gray-500 hover:text-red-500 transition-colors"

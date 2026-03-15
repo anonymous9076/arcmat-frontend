@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Button from '../ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from '../ui/Toast'
-import {Send } from 'lucide-react'
+import { Send } from 'lucide-react'
 
 const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false }) => {
     const { user } = useAuth();
@@ -83,7 +83,7 @@ const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false })
         <div className="mb-2">
 
             <div className="bg-[#FFF9E6]">
-                <div className="flex items-center gap-2 mb-6 p-1 bg-[#e09a74]">
+                <div className="flex items-center gap-1 mb-6 p-1 bg-[#e09a74]">
                     <div className="bg-[#e09a74] rounded-full p-2">
                         <Send className="text-black"/>
                     </div>

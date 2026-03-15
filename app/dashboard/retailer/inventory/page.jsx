@@ -132,7 +132,7 @@ export default function RetailerProductsPage() {
                             {retailerProducts.map(item => {
                                 const product = item.product || {};
                                 const variant = item.variant || {};
-                                const imageUrl = getProductImageUrl(product.product_images?.[0]);
+                                const imageUrl = getProductImageUrl(variant.variant_images?.[0] || product.product_images?.[0] || product.images?.[0]);
 
                                 return (
                                     <tr key={item._id} className="hover:bg-gray-50/50 transition-colors group">
@@ -244,7 +244,7 @@ export default function RetailerProductsPage() {
                             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
                                 <div className="w-16 h-16 rounded-xl bg-white border border-gray-100 overflow-hidden shrink-0 p-1">
                                     <img
-                                        src={getProductImageUrl(editingItem.product?.product_images?.[0])}
+                                        src={getProductImageUrl(editingItem.variant?.variant_images?.[0] || editingItem.product?.product_images?.[0] || editingItem.product?.images?.[0])}
                                         alt=""
                                         className="w-full h-full object-contain"
                                     />

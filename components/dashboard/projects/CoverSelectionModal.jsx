@@ -51,9 +51,9 @@ export default function CoverSelectionModal({
 
                 <div className="flex-1 overflow-y-auto p-8">
                     <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-[32px] py-12 px-6 bg-gray-50/50">
-                        {previewUrl ? (
+                        {(typeof previewUrl === 'string' && previewUrl.trim()) ? (
                             <div className="relative w-full aspect-video rounded-2xl overflow-hidden mb-6 group shadow-md">
-                                <Image src={previewUrl} alt="Preview" fill className="object-cover" />
+                                <Image src={previewUrl.trim()} alt="Preview" fill className="object-cover" />
                                 <button
                                     onClick={() => { setUploadFile(null); setPreviewUrl(null); }}
                                     className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur rounded-full text-red-500 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"

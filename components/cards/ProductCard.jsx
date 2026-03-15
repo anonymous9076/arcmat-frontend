@@ -69,8 +69,8 @@ const ProductCard = ({ product }) => {
     const toggleSelection = useSelectionStore((state) => state.toggleProduct);
     const isSelected = useSelectionStore((state) => {
         const getProductId = (p) => {
-            const baseProduct = p.productId ? p.productId : p;
-            return String(baseProduct._id || baseProduct.id || p._id || p.id || p.override_id);
+            const baseProduct = p?.productId ? p.productId : p;
+            return String(baseProduct?._id || baseProduct?.id || p?._id || p?.id || p?.override_id);
         };
         const currentId = getProductId(product);
         return state.selectedProducts.some(p => getProductId(p) === currentId);
@@ -234,8 +234,8 @@ const ProductCard = ({ product }) => {
     // Use a more robust comparison to ensure IDs match regardless of type
     const isCompared = React.useMemo(() => {
         if (!mounted) return false;
-        const currentId = String(product._id || product.id);
-        return comparedProducts.some(p => String(p._id || p.id) === currentId);
+        const currentId = String(product?._id || product?.id);
+        return comparedProducts.some(p => String(p?._id || p?.id) === currentId);
     }, [comparedProducts, product, mounted]);
 
     const handleCompareToggle = (e) => {

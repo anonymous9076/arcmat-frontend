@@ -44,7 +44,7 @@ export default function EditBannerPage() {
             });
 
             if (banner.banner) {
-                setPreviewUrl(getBannerImageUrl(banner.banner));
+                setPreviewUrl();
             }
         }
     }, [banner]);

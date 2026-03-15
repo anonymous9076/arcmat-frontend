@@ -420,7 +420,17 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     </div>
                                     {hasVariants && selectedVariant && (
                                         <div className="text-sm py-1 text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            <span>SKU: {selectedVariant.skucode}</span>
+                                            <span>SKU: {selectedVariant.skucode || selectedVariant._id}</span>
+                                            {/* {availableAttributes.map(key => {
+                                                const val = selectedAttributes[key]
+                                                if (!val) return null
+                                                return (
+                                                    <React.Fragment key={key}>
+                                                        <span className="text-gray-300">|</span>
+                                                        <span className="capitalize">{key}: <span className="text-gray-700 font-medium">{val}</span></span>
+                                                    </React.Fragment>
+                                                )
+                                            })} */}
                                         </div>
                                     )}
                                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 leading-tight">{name}</h1>
@@ -434,7 +444,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                                     const hasVariantImg = v.variant_images?.length > 0
                                                     const img = hasVariantImg
                                                         ? getVariantImageUrl(v.variant_images[0])
-                                                        : displayImages[0];
+                                                        : getProductImageUrl(displayImages[0]);
                                                     const isSelected = selectedVariant?._id === v._id;
                                                     const variantColor = v.color || v.dynamicAttributes?.find(a => a.key?.toLowerCase() === 'color')?.value
                                                     const variantColorCode = variantColor ? getColorCode(variantColor) : null

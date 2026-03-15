@@ -41,10 +41,10 @@ const getBoardThumbnail = (board) => {
     if (!firstMaterial?.material) return null;
 
     const m = firstMaterial.material;
-    if (m.images?.length) return getProductImageUrl(m.images[0]);
-    if (m.variant_images?.length) return getProductImageUrl(m.variant_images[0]);
+    if (m.images?.length) return ;
+    if (m.variant_images?.length) return ;
     if (typeof m.productId === 'object' && m.productId?.product_images?.length)
-        return getProductImageUrl(m.productId.product_images[0]);
+        return ;
 
     return null;
 };
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                                     <div key={product._id} className="flex items-center gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-50 last:border-0 pb-3">
                                         <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                                             {product.product_images?.[0] ? (
-                                                <Image src={getProductImageUrl(product.product_images[0])} alt={product.product_name} fill className="object-cover" />
+                                                <Image src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])} alt={product.product_name} fill className="object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -507,7 +507,7 @@ export default function DashboardPage() {
                                     <div key={product._id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                                         <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
                                             {product.product_images?.[0] ? (
-                                                <Image src={getProductImageUrl(product.product_images[0])} alt={product.product_name} fill className="object-cover" />
+                                                <Image src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])} alt={product.product_name} fill className="object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                     <Package className="w-6 h-6" />

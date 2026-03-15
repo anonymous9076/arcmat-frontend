@@ -172,6 +172,12 @@
             "href": "/dashboard/retailer-contacts"
         },
         {
+            "id": "templates",
+            "label": "Templates",
+            "icon": "Briefcase",
+            "href": "/dashboard/templates"
+        },
+        {
             "id": "help",
             "label": "Help",
             "icon": "HelpCircle",

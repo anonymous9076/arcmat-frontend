@@ -14,6 +14,7 @@ export default function CardContextMenu({
     onStatusChange, onRemove,
     onClose,
     isClient = false,
+    isTemplate = false,
     onOpenHistory,
     onOpenSampleReq,
     onOpenRetailerReq,
@@ -100,19 +101,21 @@ export default function CardContextMenu({
 
             <div className="border-t border-gray-100 my-1" />
 
-            <button
-                onClick={() => { onOpenDiscussion?.(); onClose(); }}
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1a1a2e] flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-                <span>Discuss Material</span>
-                {unreadMessages > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                        {unreadMessages}
-                    </span>
-                )}
-            </button>
+            {!isTemplate && (
+                <button
+                    onClick={() => { onOpenDiscussion?.(); onClose(); }}
+                    className="w-full text-left px-4 py-2 text-sm font-semibold text-[#1a1a2e] flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                    <span>Discuss Material</span>
+                    {unreadMessages > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                            {unreadMessages}
+                        </span>
+                    )}
+                </button>
+            )}
 
-            {!isPhoto && (
+            {!isPhoto && !isTemplate && (
                 <>
                     {!isClient && (
                         <button

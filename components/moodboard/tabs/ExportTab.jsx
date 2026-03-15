@@ -5,11 +5,11 @@ import { getProductThumbnail, getProductName, getProductBrand, getProductCategor
 import { STATUS_STYLES } from './OverviewTab';
 
 export default function ExportTab({
-    products,
-    customPhotos,
+    products = [],
+    customPhotos = [],
     customRows = [],
-    boardItems,
-    productStatuses,
+    boardItems = [],
+    productStatuses = {},
     projectName,
     exportAsCSV,
     handleAddToCart,
@@ -114,21 +114,21 @@ export default function ExportTab({
             ...customRows.map(r => ({ type: 'row', data: r }))
         ];
 
-        const calc = (items) => items.reduce((sum, { type, data }) => {
-            const id = type === 'product' ? data._id : data.id;
+        const calc = (items) => (items || []).reduce((sum, { type, data }) => {
+            const id = type === 'product' ? data?._id : data?.id;
             let up = 0;
             if (type === 'photo' || type === 'row') {
-                up = Number(data.price) || 0;
+                up = Number(data?.price) || 0;
             } else {
-                const meta = productStatuses[id];
-                if (typeof meta === 'object' && meta.price !== undefined) {
+                const meta = (productStatuses || {})[id];
+                if (typeof meta === 'object' && meta?.price !== undefined) {
                     up = Number(meta.price);
                 } else {
-                    const { price } = resolvePricing(data);
+                    const { price } = resolvePricing(data || {});
                     up = price;
                 }
             }
-            const q = (type === 'photo' || type === 'row') ? (Number(data.quantity) || 1) : (Number(productStatuses[id]?.quantity) || 1);
+            const q = (type === 'photo' || type === 'row') ? (Number(data?.quantity) || 1) : (Number((productStatuses || {})[id]?.quantity) || 1);
             return sum + (up * q);
         }, 0);
 

@@ -388,7 +388,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden shrink-0">
-                                {v.variant_images && v.variant_images[0] && (
+                                 {v.variant_images && v.variant_images[0] && (
                                   <img
                                     src={getVariantImageUrl(v.variant_images[0])}
                                     className="w-full h-full object-cover"
@@ -397,7 +397,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
                                 )}
                                 {!v.variant_images?.[0] && v.product_image1 && (
                                   <img
-                                    src={getVariantImageUrl(v.product_image1)}
+                                    src={getProductImageUrl(v.product_image1)}
                                     className="w-full h-full object-cover"
                                     alt=""
                                   />

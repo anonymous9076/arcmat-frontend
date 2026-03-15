@@ -9,9 +9,9 @@ export default function CartItem({ item, isAuth, onUpdateQuantity, onRemove }) {
     const name = isAuth ? item.product_name : item.name;
     const image = isAuth
         ? (isVariant
-            ? getVariantImageUrl(product?.variant_images?.[0])
-            : getProductImageUrl(product?.product_images?.[0]))
-        : (isVariant ? getVariantImageUrl(item.image) : getProductImageUrl(item.image));
+            ? getVariantImageUrl(item.product_variant_id)
+            : getProductImageUrl(item.product_id))
+        : (isVariant ? getVariantImageUrl(item) : getProductImageUrl(item));
 
     const sellingPrice = isAuth ? Number(item.resolved_selling_price || 0) : Number(item.price || 0);
     const mrpPrice = isAuth ? Number(item.resolved_mrp_price || 0) : Number(item.mrp || 0);
@@ -27,11 +27,17 @@ export default function CartItem({ item, isAuth, onUpdateQuantity, onRemove }) {
                 {/* Product Image */}
                 <div className="shrink-0">
                     <div className="w-full sm:w-32 h-48 sm:h-32 rounded-xl overflow-hidden bg-gray-100">
-                        <img
-                            src={image}
-                            alt={name}
-                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                        />
+                        {(typeof image === 'string' && image.trim()) ? (
+                            <img
+                                src={image.trim()}
+                                alt={name}
+                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                <div className="text-xs font-bold">No Image</div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
