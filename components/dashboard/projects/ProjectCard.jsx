@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import useProjectStore from '@/store/useProjectStore';
 import useAuthStore from '@/store/useAuthStore';
@@ -13,6 +14,7 @@ import RetailerRatingModal from './RetailerRatingModal';
 
 export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDiscussion }) {
     const { user } = useAuthStore();
+    const router = useRouter();
     const isArchitect = user?.role === 'architect';
 
     const {
@@ -33,6 +35,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
     const phaseDropdownRef = useRef(null);
     const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const updateProjectMutation = useUpdateProject();
 
     useEffect(() => {
@@ -142,8 +145,23 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
         );
     };
 
+    const handleCardClick = () => {
+        setIsRedirecting(true);
+        useProjectStore.getState().setActiveProject(_id, projectName);
+        router.push(href || `/dashboard/projects/${_id}/moodboards`);
+    };
+
     return (
-        <div className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full mx-auto md:mx-0">
+        <div 
+            onClick={handleCardClick}
+            className="bg-white rounded-[24px] border border-gray-100 p-4 flex flex-col md:flex-row gap-4 hover:shadow-lg hover:border-gray-200 transition-all group relative h-full w-full mx-auto md:mx-0 cursor-pointer"
+        >
+            {/* Loader Overlay */}
+            {isRedirecting && (
+                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-200 rounded-[24px]">
+                    <Loader2 className="w-8 h-8 text-[#d9a88a] animate-spin" />
+                </div>
+            )}
             {/* Absolute Action Buttons (Hover) */}
             {isArchitect && (
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -170,7 +188,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                     <div className="flex items-center gap-2 flex-wrap">
                         <Link
                             href={href || `/dashboard/projects/${project._id}/moodboards`}
-                            onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                useProjectStore.getState().setActiveProject(project._id, project.projectName);
+                            }}
                             className="flex items-center gap-2 group/title w-max"
                         >
                             <h3 className="text-[20px] font-extrabold text-[#2d3142] group-hover/title:text-gray-600 transition-colors truncate max-w-[200px]">
@@ -220,7 +241,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                 <div className="mb-auto relative" ref={phaseDropdownRef}>
                     <span className="text-[10px] text-gray-400 font-bold mb-2 block tracking-wide">Project Phase</span>
                     <button
-                        onClick={() => isArchitect && setIsPhaseDropdownOpen(!isPhaseDropdownOpen)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            isArchitect && setIsPhaseDropdownOpen(!isPhaseDropdownOpen);
+                        }}
                         className={`flex items-center justify-between min-w-[140px] px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-extrabold text-[#2d3142] ${isArchitect ? 'hover:bg-gray-50 transition-colors cursor-pointer' : 'cursor-default'}`}
                         disabled={!isArchitect}
                     >
@@ -233,7 +257,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                             {PHASE_OPTIONS.map((option) => (
                                 <button
                                     key={option}
-                                    onClick={() => handlePhaseChange(option)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePhaseChange(option);
+                                    }}
                                     className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentPhase === option ? 'text-[#D9A88A] bg-gray-50' : 'text-gray-500'}`}
                                 >
                                     {option}
@@ -246,7 +273,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
 
                 <div className="mt-8 relative" ref={dropdownRef}>
                     <button
-                        onClick={() => isArchitect && setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            isArchitect && setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                        }}
                         className={`inline-flex items-center gap-2 px-4 py-1.5 bg-[#f4f5f7] rounded-full text-[13px] font-bold text-gray-600 ${isArchitect ? 'hover:bg-gray-200 transition-colors cursor-pointer' : 'cursor-default'}`}
                         disabled={!isArchitect}
                     >
@@ -259,7 +289,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                             {STATUS_OPTIONS.map((option) => (
                                 <button
                                     key={option}
-                                    onClick={() => handleStatusChange(option)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusChange(option);
+                                    }}
                                     className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between hover:bg-gray-50 transition-colors ${currentStatus === option ? 'text-[#D9A88A] bg-gray-50' : 'text-gray-500'
                                         }`}
                                 >
@@ -285,7 +318,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                     <div className="flex items-center justify-between">
                         <h4 className="font-extrabold text-[#2d3142] text-[15px] truncate">Spec'd Brands</h4>
                         <button
-                            onClick={() => setIsCoverModalOpen(true)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsCoverModalOpen(true);
+                            }}
                             className="p-1.5 bg-white shadow-sm rounded-lg text-gray-400 hover:text-[#d9a88a] transition-colors"
                             title="Change Project Cover"
                         >
@@ -297,7 +333,10 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                         {isArchitect && (
                             <Link
                                 href="/productlist"
-                                onClick={() => useProjectStore.getState().setActiveProject(project._id, project.projectName)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    useProjectStore.getState().setActiveProject(project._id, project.projectName);
+                                }}
                                 className="inline-flex items-center justify-center px-4 py-2 bg-[#D9A88A] text-white text-[12px] font-bold rounded-full hover:bg-[#D9A88A] shadow-sm transition-colors whitespace-nowrap"
                             >
                                 See all products

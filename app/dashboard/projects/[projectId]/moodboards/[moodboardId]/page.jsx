@@ -65,7 +65,7 @@ function StatusDot({ status = 'Considering' }) {
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'designDesk', label: 'Design Desk', icon: Paintbrush2 },
-    { id: 'renders', label: 'Renders', icon: ImagePlus },
+    { id: 'renders', label: 'Drawing/Render', icon: ImagePlus },
     { id: 'discussion', label: 'Discussion', icon: Paintbrush2 },
     { id: 'export', label: 'Export', icon: TableProperties },
     { id: 'download', label: 'Download', icon: FolderDown },
@@ -909,15 +909,15 @@ export default function MoodboardDetailPage() {
                     <div className="h-full overflow-y-auto p-4 md:p-8">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
                             <div>
-                                <h2 className="text-xl md:text-2xl font-black text-[#1a1a2e] mb-0.5 md:mb-1">Renders</h2>
-                                <p className="text-[12px] md:text-sm text-gray-500 font-medium tracking-tight">Visualizations and renders for this space</p>
+                                <h2 className="text-xl md:text-2xl font-black text-[#1a1a2e] mb-0.5 md:mb-1">Drawing/Render</h2>
+                                <p className="text-[12px] md:text-sm text-gray-500 font-medium tracking-tight">Visualizations and drawings for this space</p>
                             </div>
                             {isArchitect && (
                                 <button
                                     onClick={() => setIsRenderModalOpen(true)}
                                     className="w-full sm:w-auto justify-center px-6 py-3 bg-[#1a1a2e] text-white font-bold rounded-2xl hover:bg-[#2d2d4a] transition-colors flex items-center gap-2"
                                 >
-                                    <Plus className="w-4 h-4" /> Add Render
+                                    <Plus className="w-4 h-4" /> Add Drawing/Render
                                 </button>
                             )}
                         </div>
@@ -943,7 +943,7 @@ export default function MoodboardDetailPage() {
                                                 setDiscussionModalItem(photo);
                                             }}
                                             className="relative p-2 bg-white/90 hover:bg-black hover:text-[#d9a88a] rounded-xl shadow-lg transition-all text-gray-500"
-                                            title="Discuss Render"
+                                            title="Discuss Drawing/Render"
                                         >
                                             <MessageCircle className="w-4 h-4" />
                                             {productNotifications[photo.id]?.unreadMessages > 0 && (
@@ -961,7 +961,7 @@ export default function MoodboardDetailPage() {
                                                     setIsDeleteModalOpen(true);
                                                 }}
                                                 className="p-2 bg-white/90 hover:bg-black hover:text-white rounded-xl shadow-lg transition-all text-red-500"
-                                                title="Delete Render"
+                                                title="Delete Drawing/Render"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -988,9 +988,9 @@ export default function MoodboardDetailPage() {
                                     <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
                                         <ImagePlus className="w-8 h-8 text-gray-300" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-500">No renders yet</h3>
+                                    <h3 className="text-lg font-bold text-gray-500">No drawings or renders yet</h3>
                                     <p className="text-sm text-gray-400 max-w-xs mt-1">
-                                        {isArchitect ? "Upload high-quality renders and tag them as 'Render' to show them here." : "No renders have been uploaded for this space yet."}
+                                        {isArchitect ? "Upload high-quality drawings or renders and tag them as 'Render' to show them here." : "No drawings or renders have been uploaded for this space yet."}
                                     </p>
                                 </div>
                             )}
@@ -1072,7 +1072,7 @@ export default function MoodboardDetailPage() {
                             e.stopPropagation();
                             setDiscussionModalItem(selectedFullScreenImage);
                         }}
-                        title="Discuss Render"
+                        title="Discuss Drawing/Render"
                     >
                         <MessageCircle className="w-8 h-8 group-hover:scale-110 transition-transform" />
                         {selectedFullScreenImage && productNotifications[selectedFullScreenImage.id]?.unreadMessages > 0 && (
@@ -1090,7 +1090,7 @@ export default function MoodboardDetailPage() {
                                 setItemToDelete(selectedFullScreenImage.id);
                                 setIsDeleteModalOpen(true);
                             }}
-                            title="Delete Render"
+                            title="Delete Drawing/Render"
                         >
                             <Trash2 className="w-8 h-8 group-hover:scale-110 transition-transform" />
                         </button>
