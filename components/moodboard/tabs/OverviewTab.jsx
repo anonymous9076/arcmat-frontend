@@ -1,6 +1,7 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { ChevronDown, Search, Tag, ShoppingCart, Plus, ImagePlus, List, Building2, MessageCircle, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 import PhotoUploadModal from '@/components/moodboard/PhotoUploadModal';
@@ -389,7 +390,10 @@ export default function OverviewTab({
                                     onContextMenu={(e) => openContextMenu(e, productId, false)}
                                     className="flex flex-col h-full border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-context-menu bg-white"
                                 >
-                                    <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                                    <Link 
+                                        href={`/productdetails/${typeof product?.productId === 'object' ? product?.productId?._id : (product?.productId || product._id)}?variantId=${productId}`}
+                                        className="relative aspect-square bg-gray-50 overflow-hidden cursor-pointer block"
+                                    >
                                         {imgUrl ? (
                                             <img src={imgUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                         ) : (
@@ -420,14 +424,17 @@ export default function OverviewTab({
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="p-3 flex flex-col gap-2 flex-1">
+                                    </Link>
+                                    <Link 
+                                        href={`/productdetails/${typeof product?.productId === 'object' ? product?.productId?._id : (product?.productId || product._id)}?variantId=${productId}`}
+                                        className="p-3 flex flex-col gap-2 flex-1 cursor-pointer block"
+                                    >
                                         <div>
                                             <div className="flex items-center justify-between gap-2">
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{hasVariants > 0 ? `${hasVariants} Finishes` : '0 Finishes'}</p>
                                                 {getProductSize(product) && <p className="text-[10px] text-gray-400 font-medium whitespace-nowrap">{getProductSize(product)}</p>}
                                             </div>
-                                            <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1">{brand}</p>
+                                            <p className="text-sm font-bold text-[#1a1a2e] leading-snug line-clamp-1 hover:text-[#d9a88a] transition-colors">{brand}</p>
                                             <p className="text-[10px] text-gray-400 truncate">{name}</p>
                                         </div>
 
@@ -438,7 +445,7 @@ export default function OverviewTab({
                                                 </p>
                                             )}
                                         </div>
-                                    </div>
+                                    </Link>
                                 </div>
                             );
                         })}
