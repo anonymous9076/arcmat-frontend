@@ -7,7 +7,6 @@ const filterCategories = [
     "Price Range",
     "Color",
     "City",
-    "Availability",
 ]
 
 const ToggleSwitch = ({ label, checked, onChange }) => (
@@ -83,8 +82,32 @@ const ProductSidebar = ({
             ...prev,
             availability: checked
                 ? [...prev.availability, status]
-                : prev.availability.filter(s => s !== status)
+                : (prev.availability || []).filter(s => s !== status)
         }))
+    }
+
+    const handleAttributeChange = (key, value, checked) => {
+        setActiveFilters(prev => {
+            const currentValues = (prev.attributes || {})[key] || [];
+            const newValues = checked
+                ? [...currentValues, value]
+                : currentValues.filter(v => v !== value);
+
+            const updatedAttributes = {
+                ...(prev.attributes || {}),
+                [key]: newValues
+            };
+
+            // Remove key if empty
+            if (newValues.length === 0) {
+                delete updatedAttributes[key];
+            }
+
+            return {
+                ...prev,
+                attributes: updatedAttributes
+            };
+        });
     }
 
     const clearAll = () => {
@@ -166,55 +189,89 @@ const ProductSidebar = ({
                     >
                         {cat === "Brand" && (
                             <div className="flex flex-col gap-2.5 mt-1">
-                                {brands.length > 0 ? (
-                                    brands.map(brand => (
-                                        <label key={brand._id} className="flex items-center gap-3 cursor-pointer group">
-                                            <div className="relative flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
-                                                    checked={activeFilters.brands.includes(brand._id)}
-                                                    onChange={(e) => handleBrandChange(brand._id, e.target.checked)}
-                                                />
-                                                <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            </div>
-                                            <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors">{brand.name}</span>
-                                        </label>
-                                    ))
-                                ) : (
-                                    <p className="text-xs text-gray-400 italic">No brands found</p>
-                                )}
+                                {brands.map(brand => (
+                                    <label key={brand._id || brand.id} className="flex items-center gap-3 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
+                                                checked={activeFilters.brands.includes(brand._id || brand.id)}
+                                                onChange={(e) => handleBrandChange(brand._id || brand.id, e.target.checked)}
+                                            />
+                                            <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors">{brand.name}</span>
+                                    </label>
+                                ))}
                             </div>
                         )}
 
                         {cat === "Price Range" && (
-                            <div className="space-y-4 px-1">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Min</label>
-                                        <input
-                                            type="number"
-                                            value={activeFilters.priceRange[0]}
-                                            onChange={(e) => handlePriceChange(0, e.target.value)}
-                                            min={minPrice}
-                                            max={activeFilters.priceRange[1]}
-                                            step={priceStep}
-                                            className="w-full h-9 px-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#e09a74] font-medium"
-                                        />
+                            <div className="px-1 pt-2 pb-4">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Min</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={activeFilters.priceRange[0]}
+                                                    onChange={(e) => handlePriceChange(0, e.target.value)}
+                                                    className="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:border-[#e09a74]"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Max</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={activeFilters.priceRange[1]}
+                                                    onChange={(e) => handlePriceChange(1, e.target.value)}
+                                                    className="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold focus:outline-none focus:border-[#e09a74]"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <label className="text-[10px] uppercase font-bold text-gray-400 block mb-1">Max</label>
+                                    <div className="relative h-6 flex items-center group">
                                         <input
-                                            type="number"
-                                            value={activeFilters.priceRange[1]}
-                                            onChange={(e) => handlePriceChange(1, e.target.value)}
-                                            min={activeFilters.priceRange[0]}
+                                            type="range"
+                                            min={minPrice}
                                             max={maxPrice}
                                             step={priceStep}
-                                            className="w-full h-9 px-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#e09a74] font-medium"
+                                            value={activeFilters.priceRange[1]}
+                                            onChange={(e) => handlePriceChange(1, e.target.value)}
+                                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#e09a74]"
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {cat === "Color" && (
+                            <div className="grid grid-cols-5 gap-3 mt-1">
+                                {availableColors.map(color => {
+                                    const code = getColorCode(color)
+                                    const isSelected = activeFilters.colors.includes(color)
+                                    return (
+                                        <button
+                                            key={color}
+                                            onClick={() => handleColorChange(color, !isSelected)}
+                                            className={`group relative flex flex-col items-center gap-1.5 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
+                                            title={color}
+                                        >
+                                            <div
+                                                className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${isSelected ? 'border-[#e09a74] ring-2 ring-[#e09a74]/20' : 'border-gray-100 group-hover:border-gray-300'}`}
+                                                style={{ backgroundColor: code }}
+                                            />
+                                            {code === '#FFFFFF' && (
+                                                <div className="absolute inset-x-0 top-0 h-4 rounded-t-full border-t border-gray-100" />
+                                            )}
+                                        </button>
+                                    )
+                                })}
                             </div>
                         )}
 
@@ -237,28 +294,23 @@ const ProductSidebar = ({
                             </div>
                         )}
 
-                        {cat === "Availability" && (
+                        {/* Generic Attribute Renderer */}
+                        {!filterCategories.includes(cat) && availableAttributes.find(a => a.key === cat) && (
                             <div className="flex flex-col gap-2.5 mt-1">
-                                {["In Stock", "On Order", "Limited"].map(status => (
-                                    <label key={status} className="flex items-center gap-3 cursor-pointer group">
+                                {availableAttributes.find(a => a.key === cat).values.map(val => (
+                                    <label key={val} className="flex items-center gap-3 cursor-pointer group">
                                         <div className="relative flex items-center">
                                             <input
                                                 type="checkbox"
                                                 className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
-                                                checked={activeFilters.availability.includes(status)}
-                                                onChange={(e) => handleAvailabilityChange(status, e.target.checked)}
+                                                checked={((activeFilters.attributes || {})[cat] || []).includes(val)}
+                                                onChange={(e) => handleAttributeChange(cat, val, e.target.checked)}
                                             />
                                             <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                         </div>
-                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors uppercase tracking-tight font-bold">{status}</span>
+                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors">{val}</span>
                                     </label>
                                 ))}
-                            </div>
-                        )}
-
-                        {cat === "Availability" && (
-                            <div className="flex flex-col gap-2 italic text-gray-400 text-[13px]">
-                                coming soon!!
                             </div>
                         )}
                     </AccordionItem>

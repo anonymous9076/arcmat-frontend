@@ -1,100 +1,82 @@
+"use client";
+
+import React from "react";
 import Image from "next/image";
+import Link from 'next/link';
 import Container from "../ui/Container";
+import { useGetBrands } from "@/hooks/useBrand";
+import { getBrandImageUrl } from "@/lib/productUtils";
 
 const LeadingBrands = () => {
-    const brands = [
-        "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg",
-        "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg",
-        "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg",
-        "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg", "comingSoon.jpg"
-    ];
+    const { data: brandsData, isLoading } = useGetBrands({ 
+        showOnHomepage: 1, 
+        limit: 16,
+        type: 'frontend' 
+    });
+
+    const brands = brandsData?.data || [];
 
     return (
-        <section className="bg-white pt-16 pb-20">
-            <div className="w-full mx-auto">
-
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-[#4D4E58] mb-6 leading-tight">
-                        Leading brands collected in <br className="hidden md:block" /> a single place.
+        <section className="bg-white py-24 sm:py-32">
+            <Container>
+                <div className="max-w-4xl mx-auto text-center mb-20">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
+                        Leading brands collected in <br className="hidden sm:block" /> a single place.
                     </h2>
-                    <p className="text-gray-500 text-lg md:text-xl font-light">
-                        Quickly searches hundreds of brands and thousands of materials in seconds.
+                    <p className="text-lg text-gray-500 font-medium max-w-2xl mx-auto">
+                        Explore hundreds of premium brands and thousands of architectural materials, curated for your next project.
                     </p>
                 </div>
 
-                <div className="bg-[#E09A74] w-full py-16 rounded-sm">
-                    <Container>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 max-w-[1600px] mx-auto">
-                            {brands.map((brand, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-white aspect-square flex items-center justify-center p-4 rounded-sm hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group transform hover:-translate-y-1"
-                                >
-                                    {brand === "comingSoon.jpg" ? (
-                                        // Coming Soon Tile
-                                        <div className="flex flex-col items-center justify-center w-full h-full text-center relative">
-                                            {/* Animated gradient background */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 opacity-50"></div>
-
-                                            {/* Image with overlay */}
-                                            <div className="relative w-full h-full mb-2">
-                                                <Image
-                                                    src={`/Brands/${brand}`}
-                                                    alt="Coming Soon"
-                                                    fill
-                                                    className="object-contain opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-50 transition-all duration-300"
-                                                />
-                                                {/* Shimmer effect */}
-                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                                            </div>
-
-                                            {/* Coming Soon Badge with animation */}
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
-                                                <span className="text-xs font-semibold text-[#E09A74] bg-white px-4 py-1.5 rounded-full shadow-md border border-[#E09A74]/20 animate-pulse">
-                                                    Coming Soon
-                                                </span>
-                                                <span className="text-[10px] text-gray-500 bg-white/80 px-3 py-1 rounded-full">
-                                                    Stay Tuned
-                                                </span>
-                                            </div>
-
-                                            {/* Corner ribbon */}
-                                            <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
-                                                <div className="absolute top-3 right-[-32px] w-32 text-center bg-[#E09A74] text-white text-[8px] font-bold py-1 rotate-45 shadow-md">
-                                                    NEW
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // Regular Brand Tiles
-                                        <div className="relative w-full h-full">
-                                            {/* Shimmer effect on hover */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-30 -translate-x-full group-hover:translate-x-full transition-all duration-700 z-10"></div>
-
-                                            {/* Brand Image */}
-                                            <Image
-                                                src={`/Brands/${brand}`}
-                                                alt={`Brand ${index + 1}`}
-                                                fill
-                                                className="object-contain group-hover:scale-110 transition-transform duration-300"
-                                            />
-
-                                            {/* Overlay that appears on hover */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#E09A74]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                                            {/* Optional: Brand number indicator on hover */}
-                                            <div className="absolute bottom-2 right-2 bg-white/90 text-[#E09A74] text-xs font-semibold px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm">
-                                                #{index + 1}
-                                            </div>
-                                        </div>
-                                    )}
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#E09A74]"></div>
+                    </div>
+                ) : brands.length > 0 ? (
+                    <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                        {brands.map((brand, index) => (
+                            <Link
+                                key={brand._id || index}
+                                href={`/brand/${brand._id}`}
+                                className="group relative bg-white w-[calc(50%-1rem)] xs:w-40 sm:w-48 aspect-square flex items-center justify-center p-6 rounded-2xl border border-gray-100 hover:border-[#E09A74]/30 hover:shadow-xl hover:shadow-[#E09A74]/5 transition-all duration-500 cursor-pointer overflow-hidden transform hover:-translate-y-1"
+                            >
+                                {/* Subtle Background Pattern */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                
+                                {/* Image Container */}
+                                <div className="relative w-full h-full">
+                                    <Image
+                                        src={getBrandImageUrl(brand.logo)}
+                                        alt={brand.name}
+                                        fill
+                                        className="object-contain filter  transition-all duration-700 opacity-80 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                                        unoptimized
+                                    />
                                 </div>
+
+                                {/* Hover Border Indicator */}
+                                <div className="absolute inset-x-0 bottom-0 h-1 bg-[#E09A74] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
+                        <p className="text-gray-400 font-medium italic">Our curated list of premium brands is coming soon.</p>
+                        <div className="mt-6 flex justify-center gap-4 opacity-20 filter blur-[1px]">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="w-16 h-16 bg-gray-200 rounded-xl"></div>
                             ))}
                         </div>
-                    </Container>
-                </div>
+                    </div>
+                )}
 
-            </div>
+                <div className="mt-20 flex flex-col items-center">
+                    <div className="h-px w-24 bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-8"></div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">
+                        Empowering architects worldwide
+                    </p>
+                </div>
+            </Container>
         </section>
     );
 };

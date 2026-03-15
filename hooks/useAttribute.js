@@ -13,6 +13,14 @@ export const useGetAttributes = () => {
     });
 };
 
+export const useGetAttributesByCategory = (categoryId) => {
+    return useQuery({
+        queryKey: [...ATTRIBUTE_KEYS.list(), { categoryId }],
+        queryFn: () => attributeService.getAttributesByCategoryId(categoryId),
+        enabled: !!categoryId && categoryId !== 'All',
+    });
+};
+
 export const useCreateAttribute = () => {
     const queryClient = useQueryClient();
     return useMutation({

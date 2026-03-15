@@ -21,4 +21,9 @@ export const attributeService = {
         const response = await api.delete(`/attribute/${id}`);
         return response.data;
     },
+    // Get attributes by category ID
+    getAttributesByCategoryId: async (categoryId) => {
+        const response = await api.get(`/attribute/listbycategoryid/${categoryId}`);
+        return response.data;
+    },
 };

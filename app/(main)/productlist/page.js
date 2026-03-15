@@ -7,11 +7,11 @@ import ProductCard from "@/components/cards/ProductCard";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Image from "next/image";
-import { useGetVariants } from "@/hooks/useProduct";
-import { useGetRetailerProducts } from "@/hooks/useRetailer";
+import { useGetVariants, useGetRetailerProducts } from "@/hooks/useProduct";
 import { useGetVendors } from "@/hooks/useVendor";
+import { useGetAttributes, useGetAttributesByCategory } from "@/hooks/useAttribute";
 import { resolvePricing, formatCurrency } from "@/lib/productUtils";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, PackageOpen } from "lucide-react";
 import CompareBar from "@/components/ui/CompareBar";
 import Pagination from "@/components/ui/Pagination";
 import { parseFiltersFromURL, buildURLFromFilters } from "@/lib/urlParamsUtils";
@@ -36,6 +36,7 @@ export default function ProductListPage() {
     const [activeFilters, setActiveFilters] = useState({
         brands: [],
         colors: [],
+        cities: [],
         availability: [],
         attributes: {}, // Dynamic attributes
         priceRange: [0, 500000],
@@ -70,6 +71,9 @@ export default function ProductListPage() {
     });
 
     const { data: brandsData } = useGetVendors({ type: 'frontend' });
+    const { data: globalAttributesData } = useGetAttributes();
+    const { data: categoryAttributesData } = useGetAttributesByCategory(selectedCategory);
+
     const brands = Array.isArray(brandsData) ? brandsData : (brandsData?.data || []);
 
     const products = apiData?.data?.data || apiData?.data || [];
@@ -153,8 +157,41 @@ export default function ProductListPage() {
     }, [products, metadata]);
 
     const availableAttributes = useMemo(() => {
-        return metadata?.availableAttributes || [];
-    }, [metadata]);
+        const metadataAttrs = metadata?.availableAttributes || [];
+        const globalAttrs = (globalAttributesData?.data || []).map(attr => ({
+            key: attr.attributeName,
+            values: attr.attributeValues || []
+        }));
+        const categoryAttrs = (categoryAttributesData?.data || []).map(attr => ({
+            key: attr.attributeName,
+            values: attr.attributeValues || []
+        }));
+
+        // Merge logic: Base is global attributes (as requested to "show all values")
+        // and optionally refine with category attributes if they are different or specific
+        const combinedMap = new Map();
+
+        globalAttrs.forEach(a => combinedMap.set(a.key, new Set(a.values)));
+        categoryAttrs.forEach(a => {
+            if (combinedMap.has(a.key)) {
+                a.values.forEach(v => combinedMap.get(a.key).add(v));
+            } else {
+                combinedMap.set(a.key, new Set(a.values));
+            }
+        });
+        metadataAttrs.forEach(a => {
+            if (combinedMap.has(a.key)) {
+                a.values.forEach(v => combinedMap.get(a.key).add(v));
+            } else {
+                combinedMap.set(a.key, new Set(a.values));
+            }
+        });
+
+        return Array.from(combinedMap.entries()).map(([key, values]) => ({
+            key,
+            values: Array.from(values).sort()
+        }));
+    }, [metadata, globalAttributesData, categoryAttributesData]);
 
     return (
         <div className="min-h-screen">
@@ -182,6 +219,15 @@ export default function ProductListPage() {
                 </div>
 
                 <main className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div className="flex flex-col gap-1">
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">All Products</h1>
+                            <p className="text-sm text-gray-500 font-medium">Browse our latest collection.</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                        </div>
+                    </div>
+
                     <button
                         onClick={() => router.back()}
                         className="flex items-center gap-2 text-gray-400 hover:text-[#e09a74] transition-colors mb-6 group"
@@ -224,7 +270,7 @@ export default function ProductListPage() {
 
                     {filteredAndSortedProducts.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-20 grayscale opacity-50">
-                            <p className="text-xl font-medium text-gray-500">Coming Soon</p>
+                            <p className="text-xl font-medium text-gray-500">No Products Found</p>
                         </div>
                     )}
                 </main>

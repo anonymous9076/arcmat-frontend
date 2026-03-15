@@ -41,8 +41,8 @@ export default function EditCategoryModal({ isOpen, onClose, category, categorie
                 showcase: category.showcase || []
             });
 
-            if (category.image) {
-                setPreviewImage();
+            if (category.image && category.image.secure_url) {
+                setPreviewImage(category.image.secure_url);
             } else {
                 setPreviewImage(null);
             }

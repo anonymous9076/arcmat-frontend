@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Upload, Download, Package } from 'lucide-react';
+import { Plus, Search, Upload, Download, Package, Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import useAuthStore from '@/store/useAuthStore';
@@ -260,8 +260,8 @@ export default function ProductsListPage() {
             </p>
           </div>
 
-          {/* ACTIONS - Only show when viewing specific vendor's products */}
-          {vendorId && (
+          {/* ACTIONS - Only show when viewing specific vendor's products or for admins */}
+          {(vendorId || isAdmin) && (
             <div className="flex flex-wrap items-center gap-3">
               {isAdmin && (
                 <button
@@ -277,15 +277,20 @@ export default function ProductsListPage() {
                 </button>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={handleDataExport}
                   disabled={isExporting}
-                  className="rounded-full bg-white text-blue-600 hover:bg-blue-50 min-w-[130px] h-[42px] px-6 border border-blue-600 shadow-sm transition-all duration-300 font-semibold flex items-center"
+                  className="rounded-full bg-white text-blue-600 hover:bg-blue-50 min-w-[130px] h-[42px] px-6 border border-blue-600 shadow-sm transition-all duration-300 font-semibold flex items-center justify-center"
                 >
-                  <Package className="w-4 h-4 mr-2" />
-                  Export Data
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Package className="w-4 h-4 mr-2" />
+                  )}
+                  {isExporting ? 'Exporting...' : 'Export Data'}
                 </Button>
+                {/* Brand-only buttons like Bulk Import and Add Product should only show if vendorId/brandId is valid */}
                 {!isAdmin && (
                   <>
                     <Button

@@ -13,6 +13,7 @@ import { getBannerImageUrl } from '@/lib/productUtils';
 import RoleGuard from '@/components/auth/RoleGuard';
 import BentoGridAdmin from './bento/BentoGridAdmin';
 import InspirationGalleryAdmin from './inspirationgallery/InspirationGalleryAdmin';
+import BrandsAdmin from './BrandsAdmin';
 
 export default function BannersPage() {
     const router = useRouter();
@@ -104,6 +105,13 @@ export default function BannersPage() {
                                 }`}
                         >
                             Inspiration Gallery
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('brands')}
+                            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'brands' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Featured Brands
                         </button>
                     </div>
                 </div>
@@ -267,8 +275,10 @@ export default function BannersPage() {
                     </>
                 ) : activeTab === 'bento' ? (
                     <BentoGridAdmin />
-                ) : (
+                ) : activeTab === 'inspiration' ? (
                     <InspirationGalleryAdmin />
+                ) : (
+                    <BrandsAdmin />
                 )}
             </Container>
         </RoleGuard>
