@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle, MoreHorizontal, Image as ImageIcon, Download, PlusSquare } from 'lucide-react';
+import { ChevronRight, ChevronDown, Edit2, Trash2, Check, Camera, MessageCircle, AlertCircle, MoreHorizontal, Image as ImageIcon, Download, PlusSquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
