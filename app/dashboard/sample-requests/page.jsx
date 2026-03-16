@@ -109,7 +109,7 @@ export default function SampleRequestsPage() {
                                     <div className="flex gap-4 lg:w-1/3 shrink-0">
                                         <div className="w-24 h-24 bg-gray-50 rounded-2xl overflow-hidden border border-gray-50 shadow-sm shrink-0">
                                             <img
-                                                src={getProductThumbnail(request.materialId)}
+                                                src={getProductThumbnail(request.productId)}
                                                 alt=""
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                             />
@@ -117,7 +117,7 @@ export default function SampleRequestsPage() {
 
                                         <div className="flex flex-col justify-center min-w-0">
                                             <h4 className="font-black text-lg text-[#2d3142] truncate">
-                                                {request.materialName}
+                                                {request.productName || request.productId?.product_name || 'Material'}
                                             </h4>
 
                                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">

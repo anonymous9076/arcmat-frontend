@@ -27,6 +27,8 @@ export default function RequestSampleModal({ isOpen, onClose, product, projectId
         }
 
         createSampleMutation.mutate({
+            productId: product._id,
+            productName: product.product_name,
             materialId: product._id,
             materialName: product.product_name,
             shippingAddress: address,

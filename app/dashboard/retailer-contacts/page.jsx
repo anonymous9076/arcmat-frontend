@@ -145,7 +145,7 @@ export default function RetailerContactsPage() {
                                                     )}
                                                 </div>
                                                 {/* BUG FIX 4: Use handleOpenChat instead of direct setMessagingRequest */}
-                                                <Button
+                                                {/* <Button
                                                     onClick={() => handleOpenChat(request)}
                                                     className="relative bg-white border-2 border-[#e09a74] text-[#e09a74] hover:bg-[#e09a74] hover:text-white font-black rounded-2xl py-3 px-6 flex items-center gap-2 transition-all shadow-sm"
                                                 >
@@ -156,7 +156,7 @@ export default function RetailerContactsPage() {
                                                             {request.unreadMessages}
                                                         </span>
                                                     )}
-                                                </Button>
+                                                </Button> */}
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-4 text-gray-400">
