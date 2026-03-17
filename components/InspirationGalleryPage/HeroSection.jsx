@@ -11,14 +11,21 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import bannerService from '@/services/bannerService';
 import { getBannerImageUrl } from '@/lib/productUtils';
+import Loader from '../ui/loader';
 
 
 const HeroSection = () => {
     const { user } = useAuth();
     const router = useRouter();
     const [banners, setBanners] = useState([]);
+    const [isNavigating, setIsNavigating] = useState(false);
 
     const isAdmin = user?.role === 'admin';
+
+    const handleUploadClick = () => {
+        setIsNavigating(true);
+        router.push('/dashboard/homepage?tab=inspiration');
+    };
 
     useEffect(() => {
         const fetchBanners = async () => {
@@ -94,18 +101,27 @@ const HeroSection = () => {
                 {isAdmin && (
                     <div className="flex gap-4 flex-wrap justify-center mt-4">
                         <Button
+                            disabled={isNavigating}
                             text={
                                 <span className="flex items-center gap-2">
                                     <Upload className="w-5 h-5" />
-                                    Upload Your Inspiration
+                                    Upload Inspiration
                                 </span>
                             }
-                            onClick={() => router.push('/dashboard/banners')}
-                            className="px-6 py-3 bg-[#e18e60] text-[16px] text-white hover:bg-white hover:text-[#e18e60] hover:scale-105 transition-all"
+                            onClick={handleUploadClick}
+                            className="px-6 py-3 bg-[#e18e60] text-[16px] text-white hover:bg-white hover:text-[#e18e60] hover:scale-105 transition-all min-w-[200px]"
                         />
                     </div>
                 )}
             </div>
+
+            {isNavigating && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-300">
+                    <div>
+                        <Loader />
+                    </div>
+                </div>
+            )}
         </section>
     );
 };

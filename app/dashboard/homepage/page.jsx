@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -17,10 +17,19 @@ import BrandsAdmin from './BrandsAdmin';
 
 export default function BannersPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('banners');
+    const searchParams = useSearchParams();
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'banners');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [bannerToDelete, setBannerToDelete] = useState(null);
+
+    // Update active tab if URL parameter changes
+    React.useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && ['banners', 'bento', 'inspiration', 'brands'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
     const { data: apiResponse, isLoading, error } = useGetBanners();
     const banners = Array.isArray(apiResponse) ? apiResponse : (apiResponse?.data || []);

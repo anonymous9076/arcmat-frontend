@@ -8,12 +8,10 @@
     ],
     "phases": [
         "Concept Design",
-        "Schematic Design",
         "Design Development",
         "Material Specification",
-        "Construction / Procurement",
-        "Substitution / Revision",
-        "Project Completed"
+        "Construction",
+        "Completed"
     ],
     "sizes": [
         "50,000+ m²",

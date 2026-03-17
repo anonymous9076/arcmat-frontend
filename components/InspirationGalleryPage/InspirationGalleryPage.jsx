@@ -1,74 +1,54 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import data from "./data.json";
-import InspirationCard from "../cards/InspirationPageCard";
-import ProductModal from "./ProductModal";
+import { useState } from "react";
+import Image from "next/image";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
-
-const categories = [
-    "All", "Kitchen", "Bedroom", "Furniture",
-    "Decor", "Lighting", "Finishes", "Bathware",
-];
+import { useGetFeaturedGallery } from "@/hooks/useInspirationGallery";
+import { ImageIcon } from "lucide-react";
 
 const InspirationGalleryPage = () => {
-    const [activeCategory, setActiveCategory] = useState("All");
-    const [selectedProduct, setSelectedProduct] = useState(null);
     const [visibleCount, setVisibleCount] = useState(8);
-    const [liked, setLiked] = useState({});
 
-    /* Persist likes */
-    useEffect(() => {
-        const saved = localStorage.getItem("liked-products");
-        if (saved) setLiked(JSON.parse(saved));
-    }, []);
+    const { data: galleryItems, isLoading, error } = useGetFeaturedGallery();
 
-    useEffect(() => {
-        localStorage.setItem("liked-products", JSON.stringify(liked));
-    }, [liked]);
+    const visibleItems = (galleryItems || []).slice(0, visibleCount);
 
-    // Lock body scroll when modal is open
-    useEffect(() => {
-        if (selectedProduct) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [selectedProduct]);
+    if (isLoading) {
+        return (
+            <section className="bg-[#ece6df] py-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 md:p-8">
+                    {[...Array(8)].map((_, i) => (
+                        <div
+                            key={i}
+                            className={`h-[350px] bg-gray-300 animate-pulse rounded-xl ${
+                                i % 2 !== 0 ? "mt-10" : ""
+                            }`}
+                        />
+                    ))}
+                </div>
+            </section>
+        );
+    }
 
-    const filteredData =
-        activeCategory === "All"
-            ? data
-            : data.filter((item) => item.category === activeCategory);
-
-    const visibleData = filteredData.slice(0, visibleCount);
+    if (error || !galleryItems || galleryItems.length === 0) {
+        return (
+            <section className="bg-white py-24">
+                <Container>
+                    <div className="flex flex-col items-center justify-center text-center gap-4 py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <ImageIcon className="w-16 h-16 text-gray-300" />
+                        <h2 className="text-2xl font-bold text-gray-500">No Inspiration Images Yet</h2>
+                        <p className="text-gray-400 max-w-sm">
+                            The admin hasn't featured any renders yet. Check back soon for curated inspiration.
+                        </p>
+                    </div>
+                </Container>
+            </section>
+        );
+    }
 
     return (
         <section className="bg-white py-16 relative">
-            {/* Categories */}
-            <Container id="gallery-start">
-                <div className="flex flex-wrap justify-center gap-3 mb-12">
-                    {categories.map((category) => (
-                        <button
-                            key={category}
-                            onClick={() => {
-                                setActiveCategory(category);
-                                setVisibleCount(8);
-                            }}
-                            className={`px-6 py-2 rounded-full border transition-all duration-300 text-sm md:text-base font-medium
-              ${activeCategory === category
-                                    ? "bg-[#d69e76] border-[#d69e76] text-white shadow-md"
-                                    : "bg-white border-[#d69e76] text-[#6b6b6b] hover:bg-[#fff6f0]"
-                                }`}
-                        >
-                            {category}
-                        </button>
-                    ))}
-                </div>
-            </Container>
-
             {/* Gallery */}
             <div className="p-4 md:p-8 bg-[#ece6df]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -76,30 +56,22 @@ const InspirationGalleryPage = () => {
                         <div
                             key={colIndex}
                             className={`flex flex-col gap-4
-                ${colIndex === 1 || colIndex === 3 ? "mt-10" : ""}
-                ${colIndex >= 2 ? "hidden lg:flex" : "flex"}
-              `}
+                                ${colIndex === 1 || colIndex === 3 ? "mt-10" : ""}
+                                ${colIndex >= 2 ? "hidden lg:flex" : "flex"}
+                            `}
                         >
-                            {visibleData
+                            {visibleItems
                                 .filter((_, index) => index % 4 === colIndex)
                                 .map((item) => (
-                                    <div key={item.id} className="relative h-[350px]">
-                                        <InspirationCard
-                                            company={item.company}
-                                            image={item.image}
-                                            description={item.description}
-                                            link={item.link}
-                                            onViewMore={() => setSelectedProduct(item)} // <--- This triggers the modal
-                                        />
-                                    </div>
+                                    <GalleryCard key={item._id} item={item} />
                                 ))}
                         </div>
                     ))}
                 </div>
 
                 {/* Show More / Show Less */}
-                <div className="flex justify-center gap-4 mt-12 mb-20">
-                    {visibleCount < filteredData.length && (
+                <div className="flex justify-center gap-4 mt-12 mb-20" id="gallery-start">
+                    {visibleCount < galleryItems.length && (
                         <Button
                             text="Show More"
                             onClick={() => setVisibleCount((p) => p + 8)}
@@ -118,14 +90,46 @@ const InspirationGalleryPage = () => {
                     )}
                 </div>
             </div>
-
-            {/* MODAL INTEGRATION */}
-            <ProductModal
-                product={selectedProduct}
-                onClose={() => setSelectedProduct(null)}
-            />
-
         </section>
+    );
+};
+
+const GalleryCard = ({ item }) => {
+    const architectName = item.architectId?.name || "Architect";
+    const title = item.title || "Inspiration";
+    const imageUrl = item.imageUrl;
+
+    return (
+        <div className="relative h-[350px] overflow-hidden rounded-xl cursor-pointer group bg-gray-200 shadow-md hover:shadow-xl transition-shadow duration-300 block">
+            {/* Skeleton behind image */}
+            <div className="absolute inset-0 animate-pulse bg-gray-300 z-0" />
+
+            {imageUrl ? (
+                <Image
+                    src={imageUrl}
+                    alt={title}
+                    fill
+                    className="relative z-10 object-cover transition-all duration-700 ease-in-out group-hover:scale-110"
+                    unoptimized
+                />
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                </div>
+            )}
+
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#d69e76] mb-1">
+                        {architectName}
+                    </p>
+                    <p className="text-sm text-gray-200">
+                        {title.length > 60 ? title.slice(0, 60) + "..." : title}
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 };
 
