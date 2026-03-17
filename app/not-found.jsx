@@ -19,9 +19,9 @@ export default function NotFound() {
       />
 
       {/* Back Link */}
-      <div className="absolute top-6 left-6 z-20">
+      {/* <div className="absolute top-6 left-6 z-20">
         <BackLink useRouterBack={true} label="Go Back" />
-      </div>
+      </div> */}
 
       <div className="max-w-3xl w-full text-center space-y-6 md:space-y-8 relative z-10 flex flex-col items-center">
 

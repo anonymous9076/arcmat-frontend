@@ -279,7 +279,7 @@ export default function DashboardPage() {
             <Container className="py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-gray-500">Welcome back, {getFirstName()}! Here's what's happening today.</p>
+                    <p className="text-gray-500">Welcome {user?.fullName || 'User'} {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)} Account</p>
                 </div>
 
                 <div className={clsx("grid gap-6 mb-8", isAdmin ? "grid-cols-1 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3")}>
@@ -592,7 +592,7 @@ export default function DashboardPage() {
         <Container className="py-8">
             {/* Welcome Header */}
             <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome back, {getFirstName()}!</h1>
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome {user?.fullName || 'User'} Architect Account</h1>
                 <p className="text-gray-500 max-w-2xl mx-auto mb-8">What are we building today? Explore categories or dive back into your ongoing projects.</p>
 
                 {/* Filter Buttons */}
