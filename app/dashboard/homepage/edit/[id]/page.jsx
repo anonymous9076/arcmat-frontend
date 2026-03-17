@@ -44,7 +44,7 @@ export default function EditBannerPage() {
             });
 
             if (banner.banner) {
-                setPreviewUrl();
+                setPreviewUrl(getBannerImageUrl(banner.banner));
             }
         }
     }, [banner]);
@@ -114,7 +114,7 @@ export default function EditBannerPage() {
 
             await updateBannerMutation.mutateAsync({ id: bannerId, data });
             toast.success('Banner updated successfully!');
-            router.push('/dashboard/banners');
+            router.push('/dashboard/homepage');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update banner');
         } finally {
@@ -216,6 +216,7 @@ export default function EditBannerPage() {
                         className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a88a] text-gray-900"
                     >
                         <option value="Hero">Hero</option>
+                        <option value="Inspiration">Inspiration</option>
                         <option value="Promotional">Promotional</option>
                         <option value="Sidebar">Sidebar</option>
                         <option value="Footer">Footer</option>

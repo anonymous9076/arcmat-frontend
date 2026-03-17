@@ -91,7 +91,7 @@ export default function AddBannerPage() {
 
             await createBannerMutation.mutateAsync(data);
             toast.success('Banner created successfully!');
-            router.push('/dashboard/banners');
+            router.push('/dashboard/homepage');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create banner');
         } finally {
@@ -178,6 +178,7 @@ export default function AddBannerPage() {
                             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a88a] text-gray-900"
                         >
                             <option value="Hero">Hero</option>
+                            <option value="Inspiration">Inspiration</option>
                             <option value="Promotional">Promotional</option>
                             <option value="Sidebar">Sidebar</option>
                             <option value="Footer">Footer</option>

@@ -154,7 +154,7 @@ export default function BannersPage() {
                                     <p className="text-gray-500">No banners found.</p>
                                     {!searchQuery && (
                                         <Button
-                                            onClick={() => router.push('/dashboard/banners/add')}
+                                            onClick={() => router.push('/dashboard/homepage/add')}
                                             className="mt-4 bg-[#d9a88a] text-white hover:bg-[#c89675]"
                                         >
                                             Create Your First Banner
@@ -248,7 +248,7 @@ export default function BannersPage() {
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2">
                                                                 <button
-                                                                    onClick={() => router.push(`/dashboard/banners/edit/${banner._id}`)}
+                                                                    onClick={() => router.push(`/dashboard/homepage/edit/${banner._id}`)}
                                                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                                     title="Edit banner"
                                                                 >
