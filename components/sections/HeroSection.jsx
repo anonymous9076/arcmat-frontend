@@ -103,18 +103,20 @@ const HeroSection = () => {
         <p className="max-w-[800px] text-base sm:text-lg md:text-xl lg:text-[23px] font-normal px-2">
           Everything you need to choose the right materials.
         </p>
-        <div className="flex gap-4 flex-wrap justify-center mt-4">
-          <Button
-            text="Join for free"
-            onClick={handleCTAClick}
-            className="px-6 py-3 bg-white text-[16px] text-[#4D4E58] hover:bg-gray-100 hover:scale-105"
-          />
-          <Button
-            onClick={handleCTAClick}
-            text="Become a Brand Partner"
-            className="px-6 py-3 bg-white text-[16px] text-[#4D4E58] hover:bg-gray-100 hover:scale-105"
-          />
-        </div>
+        {!isAuthenticated && (
+          <div className="flex gap-4 flex-wrap justify-center mt-4">
+            <Button
+              text="Join for free"
+              onClick={handleCTAClick}
+              className="px-6 py-3 bg-white text-[16px] text-[#4D4E58] hover:bg-gray-100 hover:scale-105"
+            />
+            <Button
+              onClick={handleCTAClick}
+              text="Become a Brand Partner"
+              className="px-6 py-3 bg-white text-[16px] text-[#4D4E58] hover:bg-gray-100 hover:scale-105"
+            />
+          </div>
+        )}
       </div>
     </section>
   );
