@@ -46,6 +46,7 @@ export default function AllBoardsPage() {
 
     const allBoards = boardsData?.data || [];
     const allProjects = projectsData?.data || [];
+    const isArchitect = user?.role === 'architect';
 
     // Filter logic
     const filteredBoards = allBoards.filter(board => {
@@ -125,6 +126,8 @@ export default function AllBoardsPage() {
                             moodboard={board}
                             projectId={board.projectId?._id}
                             onDelete={handleDeleteClick}
+                            isArchitect={isArchitect}
+                            projectPrivacy={board.projectId?.privacyControls}
                         />
                     ))}
                 </div>

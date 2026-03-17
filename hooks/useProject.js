@@ -37,6 +37,7 @@ export const useCreateProject = () => {
         mutationFn: projectService.createProject,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['moodboards'] });
             toast.success('Project created successfully!');
         },
         onError: (error) => {
@@ -51,6 +52,7 @@ export const useUpdateProject = () => {
         mutationFn: ({ id, data }) => projectService.updateProject(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['moodboards'] });
             toast.success('Project updated successfully!');
         },
         onError: (error) => {
@@ -65,6 +67,7 @@ export const useDeleteProject = () => {
         mutationFn: projectService.deleteProject,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['moodboards'] });
             toast.success('Project deleted successfully!');
         },
         onError: (error) => {
@@ -79,6 +82,7 @@ export const useCompleteProject = () => {
         mutationFn: projectService.completeProject,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['moodboards'] });
             toast.success('Project marked as completed!');
         },
         onError: (error) => {

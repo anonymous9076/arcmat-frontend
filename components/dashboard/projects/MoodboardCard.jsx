@@ -260,12 +260,14 @@ export default function MoodboardCard({ moodboard, projectId, onDelete, isArchit
                                     )}
                                 </div>
 
-                                <button
-                                    onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
-                                    className="p-1 text-gray-300 hover:text-[#d9a88a] transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                </button>
+                                {isArchitect && (
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); setIsEditing(true); }}
+                                        className="p-1 text-gray-300 hover:text-[#d9a88a] transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
                             </div>
                         )}
                         <p className="text-xs text-gray-400 font-bold tracking-tight">

@@ -51,6 +51,7 @@ export const useCreateMoodboard = () => {
         mutationFn: moodboardService.createMoodboard,
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
             toast.success('Moodboard created successfully!');
         },
         onError: (error) => {
@@ -66,6 +67,7 @@ export const useUpdateMoodboard = () => {
         mutationFn: ({ id, data }) => moodboardService.updateMoodboard(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
             // Silence auto-save toasts to avoid spamming the user
         },
         onError: (error) => {
@@ -81,6 +83,7 @@ export const useDeleteMoodboard = () => {
         mutationFn: moodboardService.deleteMoodboard,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
             toast.success('Moodboard deleted successfully!');
         },
         onError: (error) => {
@@ -96,6 +99,7 @@ export const useDuplicateMoodboard = () => {
         mutationFn: moodboardService.duplicateMoodboard,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: MOODBOARD_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
             toast.success('Space Template duplicated! (Canvas cleared)');
         },
         onError: (error) => {

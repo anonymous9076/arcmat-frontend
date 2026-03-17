@@ -122,6 +122,12 @@
             "href": "/dashboard/projects"
         },
         {
+            "id": "boards",
+            "label": "Spaces",
+            "icon": "PlayCircle",
+            "href": "/dashboard/boards"
+        },
+        {
             "id": "my-orders",
             "label": "My Orders",
             "icon": "ShoppingBag",
