@@ -6,8 +6,8 @@ export const projectService = {
         return response.data;
     },
 
-    getProjectById: async (id) => {
-        const response = await api.get(`/project/${id}`);
+    getProjectById: async (id, params) => {
+        const response = await api.get(`/project/${id}`, { params });
         return response.data;
     },
 

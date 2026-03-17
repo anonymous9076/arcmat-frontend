@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGetMoodboardsByProject } from '@/hooks/useMoodboard';
 import { useGetProject } from '@/hooks/useProject';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import Container from '@/components/ui/Container';
@@ -13,17 +12,15 @@ export default function ProjectMoodboardsPage() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
 
-    const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
-    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);
-
-    const moodboards = moodboardsData?.data || [];
-    const project = projectData?.data || (moodboards.length > 0 ? moodboards[0].projectId : null);
+    const { data: projectData, isLoading: projectLoading } = useGetProject(projectId, { includeSpaces: true });
+    const project = projectData?.data;
+    const moodboards = project?.moodboards || [];
 
     const filteredMoodboards = moodboards.filter(mb =>
         mb.moodboard_name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const isLoading = projectLoading || moodboardsLoading;
+    const isLoading = projectLoading;
 
     return (
         <Container className="py-8">

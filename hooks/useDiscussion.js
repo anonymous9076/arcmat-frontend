@@ -7,12 +7,13 @@ export const DISCUSSION_KEYS = {
     project: (projectId, spaceId = null) => [...DISCUSSION_KEYS.all, projectId, spaceId ? `space-${spaceId}` : 'general'],
 };
 
-export const useGetComments = (projectId, spaceId = null) => {
+export const useGetComments = (projectId, spaceId = null, options = {}) => {
     return useQuery({
         queryKey: DISCUSSION_KEYS.project(projectId, spaceId),
         queryFn: () => discussionService.getComments(projectId, spaceId),
-        enabled: !!projectId,
-        refetchInterval: 5000, // Poll every 5 seconds for new messages
+        enabled: !!projectId && (options.enabled !== false),
+        refetchInterval: options.refetchInterval ?? 5000, // Default to 5s if not specified
+        ...options
     });
 };
 

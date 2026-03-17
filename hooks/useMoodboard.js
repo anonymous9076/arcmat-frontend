@@ -35,11 +35,12 @@ export const useGetMoodboardDropdown = (projectId) => {
     });
 };
 
-export const useGetMoodboard = (id) => {
+export const useGetMoodboard = (id, options = {}) => {
     return useQuery({
-        queryKey: MOODBOARD_KEYS.detail(id),
-        queryFn: () => moodboardService.getMoodboardById(id),
+        queryKey: [...MOODBOARD_KEYS.detail(id), options],
+        queryFn: () => moodboardService.getMoodboardById(id, options),
         enabled: !!id,
+        ...options
     });
 };
 

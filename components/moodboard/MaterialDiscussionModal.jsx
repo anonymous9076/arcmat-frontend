@@ -10,7 +10,7 @@ export default function MaterialDiscussionModal({ isOpen, onClose, projectId, sp
     const [isInternal, setIsInternal] = useState(false);
     const isArchitect = user?.role === 'architect';
 
-    const { data, isLoading } = useGetComments(projectId, spaceId);
+    const { data, isLoading } = useGetComments(projectId, spaceId, { enabled: isOpen });
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();

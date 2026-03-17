@@ -12,7 +12,7 @@ export default function ProjectDiscussionModal({ isOpen, onClose, projectId, pro
     const scrollContainerRef = useRef(null);
 
     // spaceId and materialId are explicitly null for general project discussion
-    const { data, isLoading } = useGetComments(projectId, null);
+    const { data, isLoading } = useGetComments(projectId, null, { enabled: isOpen });
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();

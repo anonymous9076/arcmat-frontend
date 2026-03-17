@@ -14,7 +14,7 @@ export default function DiscussionTab({ projectId, spaceId }) {
 
     const scrollContainerRef = useRef(null);
 
-    const { data, isLoading } = useGetComments(projectId, spaceId);
+    const { data, isLoading } = useGetComments(projectId, spaceId, { refetchInterval: 10000 });
     const postMutation = usePostComment(projectId);
     const deleteMutation = useDeleteComment(projectId);
     const { mutate: markNotificationsRead } = useMarkNotificationsRead();

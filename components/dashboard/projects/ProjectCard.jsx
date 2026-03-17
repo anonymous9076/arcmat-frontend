@@ -10,7 +10,7 @@ import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 import RetailerRatingModal from './RetailerRatingModal';
-import { exportProjectToExcel, downloadImage } from '@/lib/exportUtils';
+import { exportProjectToZip, downloadImage } from '@/lib/exportUtils';
 import { getImageUrl } from '@/lib/productUtils';
 import { moodboardService } from '@/services/moodboardService';
 import { useCreateTemplateFromProject } from '@/hooks/useTemplate';
@@ -186,18 +186,8 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
 
             toast.dismiss('project-export-fetch');
 
-            // 3. Trigger project-wide Excel export
-            await exportProjectToExcel(project, fullSpaces.filter(s => s !== null));
-
-            // 4. Download individual render images
-            const allRenders = fullSpaces.flatMap(s => (s?.customPhotos || []).filter(p => (p.tags || []).includes('Render')));
-            if (allRenders.length > 0) {
-                toast.info(`Downloading ${allRenders.length} render images...`);
-                // Use sequential or controlled parallel download to avoid overwhelming browser
-                for (const render of allRenders) {
-                    await downloadImage(render.previewUrl, `${projectName}-${render.title || 'render'}.jpg`);
-                }
-            }
+            // 3. Trigger project-wide ZIP export (includes Excel + Renders)
+            await exportProjectToZip(project, fullSpaces.filter(s => s !== null));
 
         } catch (error) {
             console.error('Failed to download project:', error);

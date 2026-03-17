@@ -6,11 +6,11 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard, useGetMoodboardsByProject } from '@/hooks/useMoodboard';
+import { useGetMoodboard, useDeleteMoodboard, useUpdateMoodboard } from '@/hooks/useMoodboard';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import { useAddMaterialVersion, useGetSpaceHistory, useApproveMaterialVersion } from '@/hooks/useMaterialHistory';
 import { usePostComment } from '@/hooks/useDiscussion';
-import { useMarkNotificationsRead, useGetProductNotifications } from '@/hooks/useProject';
+import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import useProjectStore from '@/store/useProjectStore';
 import { useAddToCart } from '@/hooks/useCart';
@@ -114,8 +114,10 @@ export default function MoodboardDetailPage() {
     const [isMounted, setIsMounted] = useState(false);
     const isDataLoaded = useRef(false);
 
-    const { data: moodboardData, isLoading, isError, error } = useGetMoodboard(moodboardId);
-    const { data: siblingData } = useGetMoodboardsByProject(projectId);
+    const { data: moodboardData, isLoading, isError, error } = useGetMoodboard(moodboardId, { 
+        includeSiblings: true,
+        includeNotifications: true 
+    });
     const deleteMutation = useDeleteMoodboard();
     const updateEstimationMutation = useUpdateEstimatedCost();
     const { mutate: updateMoodboard, isPending: isUpdatingName } = useUpdateMoodboard();
@@ -127,22 +129,23 @@ export default function MoodboardDetailPage() {
     const { data: historyData } = useGetSpaceHistory(projectId, moodboardId);
     const approveVersionMutation = useApproveMaterialVersion(projectId);
 
-    // Fetch product-level notifications
-    const { data: notificationsData } = useGetProductNotifications(projectId, moodboardId);
-    const productNotifications = notificationsData?.data?.productNotifications || {};
+    // Initial notifications come from consolidated moodboard fetch
+    const notificationsData = moodboardData?.data?.notifications;
+    const productNotifications = notificationsData?.productNotifications || {};
 
     const moodboard = moodboardData?.data;
     const project = moodboard?.projectId;
     const estimation = moodboard?.estimatedCostId;
     const products = estimation?.productIds || [];
-    const siblingBoards = (siblingData?.data || []).filter(b => b._id !== moodboardId);
+    const siblingBoards = (moodboard?.siblings || []).filter(b => b._id !== moodboardId);
+    console.log("Siblings:", siblingBoards); // Debug verify
 
     useEffect(() => { setIsMounted(true); }, []);
 
     // Mark GENERAL space/project discussions as read when on Discussion tab or on mount
     useEffect(() => {
         if (projectId && moodboardId && isAuthenticated) {
-            const hasUnreadGeneral = notificationsData?.data?.generalDiscussions > 0;
+            const hasUnreadGeneral = notificationsData?.generalDiscussions > 0;
             if (activeTab === 'discussion' || !isDataLoaded.current) {
                 markNotificationsRead({ id: projectId, spaceId: moodboardId, type: 'general' });
             }

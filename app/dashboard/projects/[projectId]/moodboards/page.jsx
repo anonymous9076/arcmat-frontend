@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGetMoodboardsByProject, useDeleteMoodboard } from '@/hooks/useMoodboard';
+import { useDeleteMoodboard } from '@/hooks/useMoodboard';
 import { useGetProject, useCompleteProject } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
@@ -39,13 +39,12 @@ export default function MoodboardsPage() {
         }
     }, [isContractor, router]);
 
-    const { data: projectData, isLoading: projectLoading } = useGetProject(projectId);
-    const { data: moodboardsData, isLoading: moodboardsLoading } = useGetMoodboardsByProject(projectId);
+    const { data: projectData, isLoading: projectLoading } = useGetProject(projectId, { includeSpaces: true });
     const deleteMutation = useDeleteMoodboard();
     const completeMutation = useCompleteProject();
 
-    const moodboards = moodboardsData?.data || [];
-    const project = projectData?.data || (moodboards.length > 0 ? moodboards[0].projectId : null);
+    const project = projectData?.data;
+    const moodboards = project?.moodboards || [];
 
     const handleDeleteClick = (id) => {
         setMoodboardToDelete(id);
@@ -83,7 +82,7 @@ export default function MoodboardsPage() {
             return 0;
         });
 
-    if (projectLoading || moodboardsLoading) {
+    if (projectLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
                 <Loader2 className="w-12 h-12 text-[#d9a88a] animate-spin mb-4" />
@@ -105,7 +104,7 @@ export default function MoodboardsPage() {
 
                 {isArchitect && (
                     <div className="flex items-center gap-4">
-                        {project?.status !== 'Completed' && (
+                        {/* {project?.status !== 'Completed' && (
                             <Button
                                 onClick={() => setIsCompleteModalOpen(true)}
                                 disabled={completeMutation.isPending}
@@ -114,7 +113,7 @@ export default function MoodboardsPage() {
                                 {completeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                 Complete Project
                             </Button>
-                        )}
+                        )} */}
                         <Button
                             onClick={() => setIsPrivacyModalOpen(true)}
                             className="bg-white border text-gray-700 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 text-sm"

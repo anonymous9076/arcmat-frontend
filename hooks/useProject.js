@@ -18,15 +18,16 @@ export const useGetProjects = (filters = {}) => {
         queryKey: PROJECT_KEYS.list(filters),
         queryFn: () => projectService.getAllProjects(filters),
         enabled: filters.enabled !== false,
-        refetchInterval: 30000,
+        refetchInterval: 60000, // Reduced from 30s to 60s
     });
 };
 
-export const useGetProject = (id) => {
+export const useGetProject = (id, options = {}) => {
     return useQuery({
-        queryKey: PROJECT_KEYS.detail(id),
-        queryFn: () => projectService.getProjectById(id),
+        queryKey: [...PROJECT_KEYS.detail(id), options],
+        queryFn: () => projectService.getProjectById(id, options),
         enabled: !!id,
+        ...options
     });
 };
 
@@ -134,6 +135,6 @@ export const useGetProductNotifications = (projectId, spaceId) => {
         queryKey: [...PROJECT_KEYS.detail(projectId), 'space', spaceId, 'notifications'],
         queryFn: () => projectService.getProductNotifications(projectId, spaceId),
         enabled: !!projectId && !!spaceId,
-        refetchInterval: 30000,
+        refetchInterval: 60000,
     });
 };

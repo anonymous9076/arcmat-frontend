@@ -16,8 +16,8 @@ export const moodboardService = {
         return response.data;
     },
 
-    getMoodboardById: async (id) => {
-        const response = await api.get(`/moodboard/id/${id}`);
+    getMoodboardById: async (id, params) => {
+        const response = await api.get(`/moodboard/id/${id}`, { params });
         return response.data;
     },
 
