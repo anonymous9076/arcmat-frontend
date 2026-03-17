@@ -96,7 +96,7 @@ export default function MoodboardsPage() {
         <Container className="py-8">
             <div className="flex items-center justify-between mb-10">
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => router.push('/dashboard/projects')}
                     className="flex items-center gap-2 text-gray-400 hover:text-[#d9a88a] font-bold transition-colors group"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />

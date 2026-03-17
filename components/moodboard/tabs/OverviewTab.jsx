@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { ChevronDown, Search, Tag, ShoppingCart, Plus, ImagePlus, List, Building2, MessageCircle, AlertCircle } from 'lucide-react';
+import { Download, ChevronDown, Search, Tag, ShoppingCart, Plus, ImagePlus, List, Building2, MessageCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ import {
     formatCurrency,
     getImageUrl
 } from '@/lib/productUtils';
+import { downloadImage } from '@/lib/exportUtils';
 import useProjectStore from '@/store/useProjectStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
@@ -247,6 +248,16 @@ export default function OverviewTab({
                         const product = products.find(p => p._id === contextMenu.itemId);
                         setSelectedMaterial({ id: contextMenu.itemId, name: product ? getProductName(product) : '' });
                         setActiveModal('replace');
+                    }}
+                    onDownload={() => {
+                        const photo = contextMenu.isPhoto 
+                            ? customPhotos.find(p => p.id === contextMenu.itemId)
+                            : products.find(p => p._id === contextMenu.itemId);
+                        
+                        const url = contextMenu.isPhoto ? photo?.previewUrl : getProductThumbnail(photo);
+                        const name = contextMenu.isPhoto ? photo?.title : getProductName(photo);
+                        if (url) downloadImage(url, `${name || 'material'}.jpg`);
+                        else toast.error('No image available for download');
                     }}
                     productNotifications={productNotifications}
                     itemId={contextMenu.itemId}

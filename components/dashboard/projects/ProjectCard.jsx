@@ -10,7 +10,7 @@ import { useUpdateProject } from '@/hooks/useProject';
 import { toast } from '@/components/ui/Toast';
 import CoverSelectionModal from './CoverSelectionModal';
 import RetailerRatingModal from './RetailerRatingModal';
-import { exportProjectToExcel } from '@/lib/exportUtils';
+import { exportProjectToExcel, downloadImage } from '@/lib/exportUtils';
 import { getImageUrl } from '@/lib/productUtils';
 import { moodboardService } from '@/services/moodboardService';
 import { useCreateTemplateFromProject } from '@/hooks/useTemplate';
@@ -161,49 +161,59 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
     };
 
     const handleDownloadProject = async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
 
-            try {
-                setIsExporting(true);
-                toast.loading('Fetching all project data...', { id: 'project-export-fetch' });
+        try {
+            setIsExporting(true);
+            toast.loading('Fetching all project data...', { id: 'project-export-fetch' });
 
-                // 1. Fetch moodboard list
-                const listResponse = await moodboardService.getMoodboardList(_id);
-                const spaces = listResponse?.data || [];
+            // 1. Fetch moodboard list
+            const listResponse = await moodboardService.getMoodboardList(_id);
+            const spaces = listResponse?.data || [];
 
-                if (spaces.length === 0) {
-                    toast.dismiss('project-export-fetch');
-                    toast.error('No spaces found in this project to export');
-                    return;
-                }
-
-                // 2. Fetch full details for each moodboard (products, costs, images)
-                const fullSpaces = await Promise.all(spaces.map(async (space) => {
-                    const detailResponse = await moodboardService.getMoodboardById(space._id);
-                    return detailResponse?.data;
-                }));
-
+            if (spaces.length === 0) {
                 toast.dismiss('project-export-fetch');
-
-                // 3. Trigger project-wide Excel export
-                await exportProjectToExcel(project, fullSpaces.filter(s => s !== null));
-
-            } catch (error) {
-                console.error('Failed to download project:', error);
-                toast.dismiss('project-export-fetch');
-                toast.error('Failed to fetch project details for export');
-            } finally {
-                setIsExporting(false);
+                toast.error('No spaces found in this project to export');
+                return;
             }
-        };
 
-        const handleCreateTemplate = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsOptionsMenuOpen(false);
-            createTemplateMutation.mutate(_id);
-        };
+            // 2. Fetch full details for each moodboard (products, costs, images)
+            const fullSpaces = await Promise.all(spaces.map(async (space) => {
+                const detailResponse = await moodboardService.getMoodboardById(space._id);
+                return detailResponse?.data;
+            }));
+
+            toast.dismiss('project-export-fetch');
+
+            // 3. Trigger project-wide Excel export
+            await exportProjectToExcel(project, fullSpaces.filter(s => s !== null));
+
+            // 4. Download individual render images
+            const allRenders = fullSpaces.flatMap(s => (s?.customPhotos || []).filter(p => (p.tags || []).includes('Render')));
+            if (allRenders.length > 0) {
+                toast.info(`Downloading ${allRenders.length} render images...`);
+                // Use sequential or controlled parallel download to avoid overwhelming browser
+                for (const render of allRenders) {
+                    await downloadImage(render.previewUrl, `${projectName}-${render.title || 'render'}.jpg`);
+                }
+            }
+
+        } catch (error) {
+            console.error('Failed to download project:', error);
+            toast.dismiss('project-export-fetch');
+            toast.error('Failed to fetch project details for export');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleCreateTemplate = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOptionsMenuOpen(false);
+        createTemplateMutation.mutate(_id);
+    };
 
     return (
         <div
@@ -399,7 +409,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
 
                 <div className="flex flex-col h-full justify-between gap-4 z-10 w-full min-w-0 pr-2 p-4">
                     <div className="flex items-center justify-between">
-                        <h4 className="font-extrabold text-[#2d3142] text-[15px] truncate">Spec'd Brands</h4>
+                        <h4 className="font-extrabold text-gray-500  border-amber-500 text-[15px] truncate">Spec'd Brands</h4>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -410,7 +420,7 @@ export default function ProjectCard({ project, onEdit, onDelete, href, onOpenDis
                         >
                             <Camera className="w-3.5 h-3.5" />
                         </button>
-                        <h4 className="font-extrabold text-white drop-shadow-md text-[15px] truncate max-w-[120px]">Spec's Overview</h4>
+
                     </div>
 
                     <div className="mt-auto">

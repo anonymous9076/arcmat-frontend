@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Check, CheckCircle, XCircle } from 'lucide-react';
+import { Check, CheckCircle, XCircle, Download } from 'lucide-react';
 
 const STATUSES = [
     { label: 'Specified', color: 'bg-green-400' },
@@ -20,6 +20,7 @@ export default function CardContextMenu({
     onOpenRetailerReq,
     onOpenDiscussion,
     onOpenReplace,
+    onDownload,
     productNotifications = null,
     itemId
 }) {
@@ -164,6 +165,15 @@ export default function CardContextMenu({
                     Remove from board
                 </button>
             )}
+
+            <div className="border-t border-gray-100 my-1" />
+            <button
+                onClick={() => { onDownload?.(); onClose(); }}
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+            >
+                <Download className="w-4 h-4" />
+                Download Image
+            </button>
         </div>
     );
 }

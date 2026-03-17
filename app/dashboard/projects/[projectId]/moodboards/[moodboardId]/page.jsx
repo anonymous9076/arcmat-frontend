@@ -26,11 +26,8 @@ import {
     IndianRupee, CreditCard, MessageCircle
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
-import {
-    getProductImageUrl, getProductName, getProductCategory,
-    getProductBrand, getProductThumbnail
-} from '@/lib/productUtils';
-import { exportMoodboardToExcel } from '@/lib/exportUtils';
+import { getProductImageUrl, getProductName, getProductCategory, getProductBrand, getProductThumbnail } from '@/lib/productUtils';
+import { exportMoodboardToExcel, downloadImage } from '@/lib/exportUtils';
 
 // Visualizer components
 import OverviewTab from '@/components/moodboard/tabs/OverviewTab';
@@ -913,13 +910,32 @@ export default function MoodboardDetailPage() {
                                 <p className="text-[12px] md:text-sm text-gray-500 font-medium tracking-tight">Visualizations and drawings for this space</p>
                             </div>
                             {isArchitect && (
-                                <button
-                                    onClick={() => setIsRenderModalOpen(true)}
-                                    className="px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-[#d9a88a] transition-all shadow-lg hover:shadow-[#d9a88a]/20"
-                                >
-                                    <ImagePlus className="w-4 h-4" />
-                                    Upload
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => {
+                                            if (renderPhotos.length === 0) { toast.error('No renders to download'); return; }
+                                            toast.promise(
+                                                Promise.all(renderPhotos.map(p => downloadImage(p.previewUrl, `${p.title}.jpg`))),
+                                                {
+                                                    loading: 'Preparing batch download...',
+                                                    success: 'Batch download started',
+                                                    error: 'Some downloads might have failed'
+                                                }
+                                            );
+                                        }}
+                                        className="px-6 py-3 border border-gray-200 text-gray-600 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-50 transition-all shadow-sm"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        Download All
+                                    </button>
+                                    <button
+                                        onClick={() => setIsRenderModalOpen(true)}
+                                        className="px-6 py-3 bg-[#1a1a2e] text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-[#d9a88a] transition-all shadow-lg hover:shadow-[#d9a88a]/20"
+                                    >
+                                        <ImagePlus className="w-4 h-4" />
+                                        Upload
+                                    </button>
+                                </div>
                             )}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
@@ -957,6 +973,17 @@ export default function MoodboardDetailPage() {
                                                     {productNotifications[photo.id].unreadMessages}
                                                 </span>
                                             )}
+                                        </button>
+                                        {/* Download Button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadImage(photo.previewUrl, `${photo.title}.jpg`);
+                                            }}
+                                            className="p-2 bg-white/90 hover:bg-black hover:text-[#d9a88a] rounded-xl shadow-lg transition-all text-gray-500"
+                                            title="Download Drawing/Render"
+                                        >
+                                            <Download className="w-4 h-4" />
                                         </button>
                                         {/* Delete Button */}
                                         {isArchitect && (
@@ -1082,7 +1109,7 @@ export default function MoodboardDetailPage() {
 
                         {/* Discussion Button */}
                         <button
-                            className={`absolute top-6 ${isArchitect ? 'right-48' : 'right-24'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-[350] border border-white/10 group`}
+                            className={`absolute top-6 ${isArchitect ? 'right-48' : 'right-24'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-350 border border-white/10 group`}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setDiscussionModalItem(selectedFullScreenImage);
@@ -1097,9 +1124,21 @@ export default function MoodboardDetailPage() {
                             )}
                         </button>
 
+                        {/* Full Screen Download Button */}
+                        <button
+                            className={`absolute top-6 ${isArchitect ? 'right-60' : 'right-36'} p-3 bg-black/40 hover:bg-[#d9a88a]/80 rounded-full text-white transition-all z-350 border border-white/10 group`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                downloadImage(selectedFullScreenImage.previewUrl, `${selectedFullScreenImage.title}.jpg`);
+                            }}
+                            title="Download Drawing/Render"
+                        >
+                            <Download className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                        </button>
+
                         {isArchitect && (
                             <button
-                                className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-[350] border border-white/10 group"
+                                className="absolute top-6 right-24 p-3 bg-black/40 hover:bg-red-500/80 rounded-full text-white transition-all z-350 border border-white/10 group"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setItemToDelete(selectedFullScreenImage.id);
