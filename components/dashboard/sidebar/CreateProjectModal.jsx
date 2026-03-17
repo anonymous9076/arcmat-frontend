@@ -321,6 +321,15 @@ export default function CreateProjectModal({ isOpen, onClose, project = null, is
                                         className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
                                     />
                                 </div>
+                                <section>
+                                    <label className="block text-xl font-bold text-[#2d3142] mb-3">Phase</label>
+                                    <SelectionGrid
+                                        fieldName="phase"
+                                        options={projectOptions.phases}
+                                        selectedValue={formData.phase}
+                                        onSelect={handleSelect}
+                                    />
+                                </section>
                             </div>
                         </section>
                     ) : (
