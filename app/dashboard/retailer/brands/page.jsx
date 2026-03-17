@@ -28,8 +28,8 @@ export default function RetailerBrandsPage() {
     const { data: addressesData, isLoading: addressLoading } = useGetAddresses(effectiveRetailerId);
     const updateBrands = useUpdateRetailerBrands();
 
-    const addresses = addressesData?.data || [];
-    const hasAddress = addresses.length > 0;
+    const addresses = addressesData?.data?.data || addressesData?.data || [];
+    const hasAddress = Array.isArray(addresses) ? addresses.length > 0 : false;
     const isRetailer = user?.role === 'retailer';
 
     const allBrands = Array.isArray(allBrandsData?.data)
@@ -52,7 +52,7 @@ export default function RetailerBrandsPage() {
             return;
         }
         try {
-            await updateBrands.mutateAsync({ brandId, action: 'add', retailerId });
+            await updateBrands.mutateAsync({ brandId, action: 'add', retailerId: effectiveRetailerId });
             toast.success('Brand added to reselling list');
         } catch (error) {
             const message = error.response?.data?.message || 'Failed to add brand';
@@ -62,7 +62,7 @@ export default function RetailerBrandsPage() {
 
     const handleLeaveBrand = async (brandId) => {
         try {
-            await updateBrands.mutateAsync({ brandId, action: 'remove', retailerId });
+            await updateBrands.mutateAsync({ brandId, action: 'remove', retailerId: effectiveRetailerId });
             toast.success('Brand removed from reselling list');
         } catch (error) {
             toast.error('Failed to remove brand');
@@ -169,7 +169,7 @@ export default function RetailerBrandsPage() {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {filteredBrands.map(brand => {
                         const isJoined = myBrandIds.includes(brand._id || brand.id);
                         return (
@@ -177,6 +177,7 @@ export default function RetailerBrandsPage() {
                                 key={brand._id || brand.id}
                                 className="bg-white rounded-3xl border border-gray-50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all p-8 flex flex-col group relative overflow-hidden"
                             >
+                                <div className="flex-1">
                                 {/* Decorative circle */}
                                 <div className="absolute -top-12 -right-12 w-32 h-32 bg-gray-50 rounded-full group-hover:bg-[#e09a74]/5 transition-colors" />
 
@@ -203,24 +204,16 @@ export default function RetailerBrandsPage() {
                                         {brand.description || "Leading supplier of premium architectural materials and decorative elements."}
                                     </p>
 
-                                    {/* <div className="mt-6 flex items-center gap-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest font-mono">Products</span>
-                                            <span className="text-lg font-black text-gray-900">{brand.productsCount || 0}</span>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest font-mono">Category</span>
-                                            <span className="text-sm font-bold text-gray-600 truncate max-w-[120px]">{brand.category?.name || 'General'}</span>
-                                        </div>
-                                    </div> */}
+                                   
+                                </div>
                                 </div>
 
-                                <div className="mt-10 flex gap-3 pt-6 border-t border-gray-50">
+                                <div className=" flex gap-3 pt-6 border-t border-gray-50">
                                     {isJoined ? (
                                         <>
                                             <Link
                                                 href={`/dashboard/retailer/brands/${brand._id || brand.id}/inventory${retailerId ? `?retailerId=${retailerId}` : ''}`}
-                                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#1a202c] text-white rounded-2xl text-xs font-bold hover:bg-black transition-all shadow-lg"
+                                                className="flex-1 flex items-center justify-center gap-2 py-4 bg-[#e09a74]/90 text-white rounded-2xl text-sm font-bold hover:bg-[#e09a74] transition-all shadow-lg"
                                             >
                                                 <Package className="w-4 h-4" />
                                                 Inventory
@@ -228,10 +221,10 @@ export default function RetailerBrandsPage() {
                                             {!retailerId && (
                                                 <button
                                                     onClick={() => handleLeaveBrand(brand._id || brand.id)}
-                                                    className="px-4 py-3 border border-red-50 text-red-400 rounded-2xl hover:bg-red-50 transition-colors"
+                                                    className="px-4 py-3 border border-red-50 text-white bg-red-500     rounded-2xl hover:bg-red-600 transition-colors"
                                                     title="Leave Brand"
                                                 >
-                                                    <XIcon className="w-4 h-4" />
+                                                    <XIcon className="w-6 h-6" strokeWidth={3} />
                                                 </button>
                                             )}
                                         </>

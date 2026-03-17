@@ -10,8 +10,8 @@ import Cookies from 'js-cookie';
 import { LogOut, User, ChevronDown, Heart, Folder, ShoppingCart, LayoutDashboard, Menu, Search, Camera, Loader2 } from 'lucide-react';
 import { useSidebarStore } from '@/store/useSidebarStore';
 import NotificationCenter from '../dashboard/NotificationCenter';
-import { getProductImageUrl } from '@/lib/productUtils';
-import { useGetProducts } from '@/hooks/useProduct';
+import { useGetProducts, useGetRetailerProducts } from '@/hooks/useProduct';
+import { getProductThumbnail, resolvePricing, formatCurrency } from '@/lib/productUtils';
 import { useGetWishlist } from '@/hooks/useWishlist';
 import { useCartStore } from '@/store/useCartStore';
 import { useGetCartCount } from '@/hooks/useCart';
@@ -40,12 +40,12 @@ const Header = ({ variant = 'default' }) => {
         }, 500)
         return () => clearTimeout(timer)
     }, [searchText])
-    const { data: searchResults, isLoading: isSearching } = useGetProducts({
+    const { data: searchResults, isLoading: isSearching } = useGetRetailerProducts({
         search: debouncedSearch,
         limit: 5,
         enabled: !!debouncedSearch
     });
-    const products = searchResults?.data?.data || searchResults?.data?.products || searchResults?.data || [];
+    const products = searchResults?.data?.data || searchResults?.data || [];
 
 
     useEffect(() => {
@@ -166,42 +166,53 @@ const Header = ({ variant = 'default' }) => {
                                             <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                                 Products
                                             </div>
-                                            {products.map((product) => (
-                                                <Link
-                                                    key={product.id || product._id}
-                                                    href={`/productdetails/${product.id || product._id}`}
-                                                    onClick={() => {
-                                                        setShowResults(false);
-                                                        setSearchText("");
-                                                    }}
-                                                    className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none"
-                                                >
-                                                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 relative">
-                                                        {(product.images?.[0] || product.product_images?.[0]) ? (
-                                                            <Image
-                                                                src={getProductImageUrl(product.images?.[0] || product.product_images?.[0])}
-                                                                alt={product.name || product.product_name}
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                                <Folder size={16} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                                                            {product.name || product.product_name}
-                                                        </h4>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-xs font-semibold text-[#e09a74]">
-                                                                ₹{product.minPrice}
-                                                            </span>
+                                            {products.map((product) => {
+                                                const isVariantCentric = Boolean(product.productId && typeof product.productId === 'object');
+                                                const rootProduct = isVariantCentric ? product.productId : product;
+                                                const variantItem = isVariantCentric ? product : null;
+                                                
+                                                const id = rootProduct._id || rootProduct.id;
+                                                const name = product.product_name || product.name || rootProduct.product_name || rootProduct.name;
+                                                const thumbnail = getProductThumbnail(product);
+                                                const { price } = resolvePricing(rootProduct, variantItem);
+
+                                                return (
+                                                    <Link
+                                                        key={product.id || product._id || product.override_id}
+                                                        href={`/productdetails/${id}${variantItem ? `?variantId=${variantItem._id}` : ''}`}
+                                                        onClick={() => {
+                                                            setShowResults(false);
+                                                            setSearchText("");
+                                                        }}
+                                                        className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-none"
+                                                    >
+                                                        <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 relative">
+                                                            {thumbnail ? (
+                                                                <Image
+                                                                    src={thumbnail}
+                                                                    alt={name}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                    <Folder size={16} />
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                                                                {name}
+                                                            </h4>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-xs font-semibold text-[#e09a74]">
+                                                                    {formatCurrency(price)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="p-8 text-center">

@@ -21,7 +21,7 @@ export const useUpdateRetailerBrands = () => {
     return useMutation({
         mutationFn: retailerService.updateRetailerBrands,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.brands() });
+            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.all });
         },
     });
 };

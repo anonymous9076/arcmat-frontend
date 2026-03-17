@@ -14,8 +14,8 @@ import { useGetVariants } from '@/hooks/useVariant';
 import { useGetUsers, usePlatformStats } from '@/hooks/useAuth';
 import { useGetVendors } from '@/hooks/useVendor';
 import { useGetCategories } from '@/hooks/useCategory';
-import { getProductImageUrl } from '@/lib/productUtils';
-import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase } from 'lucide-react';
+import { getProductImageUrl, isProfileComplete } from '@/lib/productUtils';
+import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase, AlertTriangle } from 'lucide-react';
 import { useGetProjects } from '@/hooks/useProject';
 import { useGetAllMoodboards } from '@/hooks/useMoodboard';
 import { useGetMySampleRequests } from '@/hooks/useSampleRequest';
@@ -281,6 +281,27 @@ export default function DashboardPage() {
                     <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                     <p className="text-gray-500">Welcome {user?.name || user?.fullName || 'User'} Account</p>
                 </div>
+
+                {user?.role === 'brand' && !isProfileComplete(user?.selectedBrands?.[0]) && (
+                    <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 animate-in slide-in-from-top duration-500">
+                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                            <AlertTriangle className="w-6 h-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1 text-center md:text-left">
+                            <h3 className="text-lg font-bold text-amber-900">Complete Your Business Profile</h3>
+                            <p className="text-amber-800 text-sm mt-1">
+                                To start listing products and reach more professionals, please complete your business profile. 
+                                We require a logo, website, description, and business addresses.
+                            </p>
+                        </div>
+                        <Link 
+                            href="/profile" 
+                            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+                        >
+                            Complete Profile
+                        </Link>
+                    </div>
+                )}
 
                 <div className={clsx("grid gap-6 mb-8", isAdmin ? "grid-cols-1 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3")}>
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">

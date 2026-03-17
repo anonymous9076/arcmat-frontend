@@ -1,5 +1,5 @@
 import { Trash2, Plus, Minus } from "lucide-react";
-import { getProductImageUrl, getVariantImageUrl, formatCurrency } from "@/lib/productUtils";
+import { getProductImageUrl, getVariantImageUrl, getProductThumbnail, formatCurrency } from "@/lib/productUtils";
 
 export default function CartItem({ item, isAuth, onUpdateQuantity, onRemove }) {
     // Resolve data based on source (Backend vs Local Store)
@@ -7,19 +7,15 @@ export default function CartItem({ item, isAuth, onUpdateQuantity, onRemove }) {
     const isVariant = isAuth ? !!item.product_variant_id : !!item.variantId;
 
     const name = isAuth ? item.product_name : item.name;
-    const image = isAuth
-        ? (isVariant
-            ? getVariantImageUrl(item.product_variant_id)
-            : getProductImageUrl(item.product_id))
-        : (isVariant ? getVariantImageUrl(item) : getProductImageUrl(item));
+    const image = getProductThumbnail(item);
 
     const sellingPrice = isAuth ? Number(item.resolved_selling_price || 0) : Number(item.price || 0);
     const mrpPrice = isAuth ? Number(item.resolved_mrp_price || 0) : Number(item.mrp || 0);
     const quantity = isAuth ? item.product_qty : item.quantity;
     const id = isAuth ? item._id : item.cartItemId;
 
-    const color = isAuth ? (item.product_variant_id?.color || null) : item.color;
-    const size = isAuth ? (item.product_variant_id?.size || null) : item.size;
+    const color = isAuth ? (item.product_variant_id?.color || item.product_id?.color || null) : item.color;
+    const size = isAuth ? (item.product_variant_id?.size || item.product_id?.size || null) : item.size;
 
     return (
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100">
