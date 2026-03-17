@@ -379,18 +379,14 @@ export default function CreateProjectModal({ isOpen, onClose, project = null, is
                                             />
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="relative">
-                                                    <select
+                                                    <input
+                                                        type="text"
                                                         name="location.city"
+                                                        placeholder="City"
                                                         value={formData.location.city}
                                                         onChange={handleChange}
-                                                        className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 appearance-none cursor-pointer"
-                                                    >
-                                                        <option value="">Select City</option>
-                                                        {projectOptions.cities.map(city => (
-                                                            <option key={city} value={city}>{city}</option>
-                                                        ))}
-                                                    </select>
-                                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none w-5 h-5 text-gray-400" />
+                                                        className="w-full px-6 py-4 rounded-2xl bg-[#f3f4f6] border-transparent focus:bg-white focus:border-[#d9a88a] focus:ring-0 transition-all text-gray-700 placeholder:text-gray-400"
+                                                    />
                                                 </div>
                                                 <div className="relative">
                                                     <input
