@@ -249,16 +249,39 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
                             />
                             <select
                                 name="weight_type"
-                                value={formData.weight_type}
-                                onChange={handleChange}
-                                className="w-24 rounded-xl border border-gray-200 bg-gray-50 text-sm px-2"
+                                value={['kg', 'gm', 'ml', 'litre', 'mm', 'cm', 'm', 'inch', 'ft', 'sqft', 'nos'].includes(formData.weight_type) ? formData.weight_type : 'CUSTOM_UNIT'}
+                                onChange={(e) => {
+                                    if (e.target.value === 'CUSTOM_UNIT') {
+                                        setFormData(prev => ({ ...prev, weight_type: 'unit' }));
+                                    } else {
+                                        handleChange(e);
+                                    }
+                                }}
+                                className="w-28 rounded-xl border border-gray-200 bg-gray-50 text-xs px-2"
                             >
                                 <option value="kg">kg</option>
                                 <option value="gm">gm</option>
                                 <option value="ml">ml</option>
                                 <option value="litre">litre</option>
+                                <option value="mm">mm</option>
+                                <option value="cm">cm</option>
+                                <option value="m">m</option>
+                                <option value="inch">inch</option>
+                                <option value="ft">ft</option>
+                                <option value="sqft">sqft</option>
+                                <option value="nos">nos</option>
+                                <option value="CUSTOM_UNIT">Other...</option>
                             </select>
                         </div>
+                        {!['kg', 'gm', 'ml', 'litre', 'mm', 'cm', 'm', 'inch', 'ft', 'sqft', 'nos'].includes(formData.weight_type) && (
+                            <input
+                                name="weight_type"
+                                value={formData.weight_type}
+                                onChange={handleChange}
+                                className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-100 bg-orange-50/30 focus:ring-1 focus:ring-[#e09a74] text-xs"
+                                placeholder="Enter custom unit (e.g. gauge, ply)"
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -280,33 +303,76 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
                                 .filter(Boolean);
 
                             return (
-                                <div key={idx} className="flex gap-3 items-center">
-                                    <select
-                                        value={attr.key}
-                                        onChange={(e) => handleAttributeChange(idx, 'key', e.target.value)}
-                                        className="flex-1 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50/50 focus:ring-2 focus:ring-[#e09a74] text-sm appearance-none"
-                                    >
-                                        <option value="">Select Attribute</option>
-                                        {allAttributes
-                                            .filter(a => !otherSelectedKeys.includes(a.attributeName))
-                                            .map(a => (
-                                                <option key={a._id} value={a.attributeName}>{a.attributeName}</option>
-                                            ))}
-                                    </select>
-                                    <select
-                                        value={attr.value}
-                                        onChange={(e) => handleAttributeChange(idx, 'value', e.target.value)}
-                                        className="flex-1 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50/50 focus:ring-2 focus:ring-[#e09a74] text-sm appearance-none disabled:opacity-50"
-                                        disabled={!attr.key}
-                                    >
-                                        <option value="">Select Value</option>
-                                        {availableValues.map(v => (
-                                            <option key={v} value={v}>{v}</option>
-                                        ))}
-                                    </select>
-                                    <button type="button" onClick={() => removeAttribute(idx)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                <div key={idx} className="space-y-2 pb-2 border-b border-gray-50 last:border-0">
+                                    <div className="flex gap-3 items-center">
+                                        <div className="flex-1 flex flex-col gap-1">
+                                            <select
+                                                value={allAttributes.some(a => a.attributeName === attr.key) ? attr.key : (attr.key === '' ? '' : 'CUSTOM_KEY')}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'CUSTOM_KEY') {
+                                                        handleAttributeChange(idx, 'key', ''); 
+                                                    } else {
+                                                        handleAttributeChange(idx, 'key', val);
+                                                        handleAttributeChange(idx, 'value', ''); 
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-100 bg-gray-50/50 focus:ring-2 focus:ring-[#e09a74] text-sm appearance-none"
+                                            >
+                                                <option value="">Select Attribute</option>
+                                                {allAttributes
+                                                    .filter(a => !otherSelectedKeys.includes(a.attributeName))
+                                                    .map(a => (
+                                                        <option key={a._id} value={a.attributeName}>{a.attributeName}</option>
+                                                    ))}
+                                                <option value="CUSTOM_KEY">+ Custom Attribute</option>
+                                            </select>
+                                            
+                                            {(!allAttributes.some(a => a.attributeName === attr.key) && attr.key !== 'CUSTOM_KEY') && (
+                                                <input
+                                                    placeholder="Attribute name (e.g. Thickness)"
+                                                    value={attr.key}
+                                                    onChange={(e) => handleAttributeChange(idx, 'key', e.target.value)}
+                                                    className="px-4 py-2 rounded-lg border border-orange-100 bg-orange-50/30 focus:ring-1 focus:ring-[#e09a74] text-sm"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col gap-1">
+                                            <select
+                                                value={availableValues.includes(attr.value) ? attr.value : (attr.value === '' ? '' : 'CUSTOM_VALUE')}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'CUSTOM_VALUE') {
+                                                        handleAttributeChange(idx, 'value', '');
+                                                    } else {
+                                                        handleAttributeChange(idx, 'value', val);
+                                                    }
+                                                }}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-100 bg-gray-50/50 focus:ring-2 focus:ring-[#e09a74] text-sm appearance-none disabled:opacity-50"
+                                                disabled={!attr.key}
+                                            >
+                                                <option value="">Select Value</option>
+                                                {availableValues.map(v => (
+                                                    <option key={v} value={v}>{v}</option>
+                                                ))}
+                                                <option value="CUSTOM_VALUE">+ Custom Value</option>
+                                            </select>
+
+                                            {(attr.key && !availableValues.includes(attr.value) && attr.value !== 'CUSTOM_VALUE') && (
+                                                <input
+                                                    placeholder="Enter custom value"
+                                                    value={attr.value}
+                                                    onChange={(e) => handleAttributeChange(idx, 'value', e.target.value)}
+                                                    className="px-4 py-2 rounded-lg border border-orange-100 bg-orange-50/30 focus:ring-1 focus:ring-[#e09a74] text-sm"
+                                                />
+                                            )}
+                                        </div>
+                                        
+                                        <button type="button" onClick={() => removeAttribute(idx)} className="p-2 text-gray-300 hover:text-red-500 transition-colors shrink-0">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}
