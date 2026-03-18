@@ -14,10 +14,12 @@ import {
 } from '@/hooks/useTemplate';
 import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
 import useProjectStore from '@/store/useProjectStore';
+import { useSelectionStore } from '@/store/useSelectionStore';
 import { toast } from 'sonner';
 
 export default function AddToMoodboardModal({ isOpen, onClose, product, products }) {
     const { activeProjectId, activeProjectName, activeMoodboardId, activeMoodboardName } = useProjectStore();
+    const { clearSelection, toggleProduct } = useSelectionStore();
     const [targetType, setTargetType] = useState('project');
     const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId || '');
     const [selectedMoodboardId, setSelectedMoodboardId] = useState(activeMoodboardId || '');
@@ -87,6 +89,16 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
 
         const selectedMb = moodboards.find(mb => mb._id === selectedMoodboardId);
 
+        const onSuccessAction = () => {
+            // Clear selection state
+            if (products) clearSelection();
+            if (product) {
+                const isSelected = useSelectionStore.getState().selectedProducts.some(p => (p.override_id || p._id || p.id) === (product.override_id || product._id || product.id));
+                if (isSelected) toggleProduct(product);
+            }
+            onClose();
+        };
+
         if (targetType === 'template') {
             const existingCostId = selectedMb?.estimation?._id;
             if (existingCostId) {
@@ -108,7 +120,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                 }, {
                     onSuccess: () => {
                         toast.success("Added to Template Space successfully!");
-                        onClose();
+                        onSuccessAction();
                     }
                 });
             } else {
@@ -120,7 +132,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                 }, {
                     onSuccess: () => {
                         toast.success("Created Template Estimation and Added Products!");
-                        onClose();
+                        onSuccessAction();
                     }
                 });
             }
@@ -165,7 +177,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                             reason: 'Initial specification'
                         });
                     });
-                    onClose();
+                    onSuccessAction();
                 }
             });
         } else {
@@ -193,7 +205,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                             reason: 'Initial specification'
                         });
                     });
-                    onClose();
+                    onSuccessAction();
                 }
             });
         }

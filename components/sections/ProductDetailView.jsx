@@ -16,13 +16,18 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import 'swiper/css/thumbs'
 import 'swiper/css/free-mode'
-import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin, Send } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import useProjectStore from '@/store/useProjectStore'
+import { useGetMoodboard } from '@/hooks/useMoodboard'
+import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
+import dynamic from 'next/dynamic'
+const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
+import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin, Send, Plus, X } from 'lucide-react'
 import { useCartStore } from '@/store/useCartStore'
 import { useAddToCart } from '@/hooks/useCart'
 import { toast } from '@/components/ui/Toast';
 import { getProductImageUrl, getVariantImageUrl, getColorCode, resolvePricing, calculateDiscount, getSpecifications, formatNumber, formatCurrency } from '@/lib/productUtils'
 import { useAddToWishlist, useGetWishlist } from '@/hooks/useWishlist'
-import { useAuth } from '@/hooks/useAuth'
 import { useCreateNotification } from '@/hooks/useNotification'
 import { useGetProjects, useCreateProject } from '@/hooks/useProject'
 import { useCreateRetailerRequest } from '@/hooks/useRetailerRequest'
@@ -59,6 +64,35 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
     const { mutate: addToCartBackend } = useAddToCart();
     const { mutate: createNotification } = useCreateNotification()
+
+    const { activeProjectId, activeMoodboardName, activeMoodboardId } = useProjectStore();
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const { mutate: updateEstimateMutation } = useUpdateEstimatedCost();
+
+    // Check if product is already in the active moodboard
+    const { data: moodboardData } = useGetMoodboard(activeMoodboardId);
+
+    const rawId = product._id || product.id;
+    const isAlreadyAdded = React.useMemo(() => {
+        if (!moodboardData?.data?.estimatedCostId?.productIds) return false;
+        const addedIds = moodboardData.data.estimatedCostId.productIds;
+        return addedIds.some(p => {
+            const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
+            return String(addedId) === String(rawId);
+        });
+    }, [moodboardData, rawId]);
+
+    const handleRemoveFromMoodboard = () => {
+        if (!moodboardData?.data?.estimatedCostId) return;
+        const existingRetailerProductIds = moodboardData.data.estimatedCostId.productIds || [];
+        const normalizedExisting = existingRetailerProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
+        const updatedIds = normalizedExisting.filter(id => String(id) !== String(rawId));
+        updateEstimateMutation({
+            id: moodboardData.data.estimatedCostId._id,
+            data: { productIds: updatedIds }
+        });
+        toast.success(`Removed ${name} from Space`);
+    };
 
 
     const isInWishlist = React.useMemo(() => {
@@ -241,9 +275,9 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     };
 
     const currentRetailerId = useMemo(() => {
-        return selectedVariant?.isRetailerManaged ? (resolveId(selectedVariant?.retailerId) || resolveId(selectedVariant?.retailer_id)) : 
-               product.isRetailerDetail ? (resolveId(product.retailerId) || resolveId(product.retailer_id)) : 
-               null;
+        return selectedVariant?.isRetailerManaged ? (resolveId(selectedVariant?.retailerId) || resolveId(selectedVariant?.retailer_id)) :
+            product.isRetailerDetail ? (resolveId(product.retailerId) || resolveId(product.retailer_id)) :
+                null;
     }, [selectedVariant, product]);
 
     const handleRequestContact = async () => {
@@ -619,10 +653,10 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     {/* PRIMARY COMMERCE ACTIONS */}
                                     {showPrimaryAddToCart && (
                                         <Button
-                                            text={isAdded ? "ADDED TO CART" : "ADD TO CART"}
-                                            onClick={handleAddToCart}
-                                            className={`w-full ${isAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]"} font-bold py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2 shadow-sm`}
-                                            icon={isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                                            text={isArchitect ? (isAlreadyAdded ? "IN SPACES" : "ADD TO SPACES") : (isAdded ? "ADDED TO CART" : "ADD TO CART")}
+                                            onClick={isArchitect ? (isAlreadyAdded ? handleRemoveFromMoodboard : () => setIsAddModalOpen(true)) : handleAddToCart}
+                                            className={`w-full ${isArchitect ? (isAlreadyAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]") : (isAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]")} font-bold py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2 shadow-sm`}
+                                            icon={isArchitect ? (isAlreadyAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />) : (isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />)}
                                         />
                                     )}
 
@@ -750,6 +784,14 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     <Send className="w-4 h-4" />
                                     CONTACT
                                 </Button>
+
+                                {isAddModalOpen && (
+                                    <AddToMoodboardModal
+                                        isOpen={isAddModalOpen}
+                                        onClose={() => setIsAddModalOpen(false)}
+                                        product={product}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -861,7 +903,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                     </div>
 
                     {/* Request Sample Modal */}
-                    <RequestSampleModal 
+                    <RequestSampleModal
                         isOpen={isSampleModalOpen}
                         onClose={() => setIsSampleModalOpen(false)}
                         product={product}

@@ -2,21 +2,26 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useCompareStore } from '@/store/useCompareStore'
-import { X, ShoppingCart, Trash2, Check, AlertCircle, ChevronRight } from 'lucide-react'
+import { toast } from '@/components/ui/Toast'
+import clsx from 'clsx'
+import dynamic from 'next/dynamic'
+const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
+import { X, ShoppingCart, Trash2, Check, AlertCircle, ChevronRight, Plus } from 'lucide-react'
 import { getProductImageUrl, getVariantImageUrl, formatCurrency, resolvePricing } from '@/lib/productUtils'
 import { useAddToCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartStore } from '@/store/useCartStore'
-import { toast } from 'sonner'
-import clsx from 'clsx'
 
 const CompareSidebar = () => {
     const isCompareModalOpen = useCompareStore(state => state.isCompareModalOpen);
     const closeCompareModal = useCompareStore(state => state.closeCompareModal);
     const comparedProducts = useCompareStore(state => state.comparedProducts);
     const removeProduct = useCompareStore(state => state.removeProduct);
-    const { isAuthenticated } = useAuth();
     const { mutate: addToCartBackend } = useAddToCart();
+    const { user, isAuthenticated } = useAuth();
+    const isArchitect = user?.role === 'architect';
+    const [selectedProductForBoard, setSelectedProductForBoard] = useState(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
@@ -234,11 +239,18 @@ const CompareSidebar = () => {
                                 {comparedProducts.map((product) => (
                                     <div key={product._id || product.id} className="p-6 bg-white border-l border-t border-gray-100 flex justify-center items-center">
                                         <button
-                                            onClick={() => handleAddToCart(product)}
+                                            onClick={() => {
+                                                if (isArchitect) {
+                                                    setSelectedProductForBoard(product);
+                                                    setIsAddModalOpen(true);
+                                                } else {
+                                                    handleAddToCart(product);
+                                                }
+                                            }}
                                             className="w-full h-11 bg-[#e09a74] text-white hover:bg-[#d08963] active:scale-95 transition-all rounded-xl text-sm font-bold flex items-center justify-center shadow-lg shadow-orange-500/20"
                                         >
-                                            <ShoppingCart className="w-4 h-4 mr-2" />
-                                            Add to Cart
+                                            {isArchitect ? <Plus className="w-4 h-4 mr-2" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
+                                            {isArchitect ? 'Add to Board' : 'Add to Cart'}
                                         </button>
                                     </div>
                                 ))}
@@ -246,6 +258,17 @@ const CompareSidebar = () => {
                         </div>
                     )}
                 </div>
+
+                {isAddModalOpen && selectedProductForBoard && (
+                    <AddToMoodboardModal
+                        isOpen={isAddModalOpen}
+                        onClose={() => {
+                            setIsAddModalOpen(false);
+                            setSelectedProductForBoard(null);
+                        }}
+                        product={selectedProductForBoard}
+                    />
+                )}
             </div>
 
             <style jsx>{`

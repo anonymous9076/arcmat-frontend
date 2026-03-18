@@ -788,7 +788,7 @@ export default function MoodboardDetailPage() {
 
                             return true;
                         }).map(tab => {
-                            const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.data?.generalDiscussions > 0;
+                            const hasGeneralMessages = tab.id === 'discussion' && notificationsData?.generalDiscussions > 0;
                             return (
                                 <button
                                     key={tab.id}

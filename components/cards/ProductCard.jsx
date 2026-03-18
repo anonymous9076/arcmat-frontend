@@ -23,7 +23,7 @@ import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import dynamic from 'next/dynamic'
 const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp }) => {
     const isVariantCentric = Boolean(product.productId && typeof product.productId === 'object');
     const rootProduct = isVariantCentric ? product.productId : product;
     const variantItem = isVariantCentric ? product : null;
@@ -85,11 +85,15 @@ const ProductCard = ({ product }) => {
     const { mutate: updateEstimateMutation } = useUpdateEstimatedCost();
 
     // Check if product is already in the active moodboard
-    const { data: moodboardData } = useGetMoodboard(activeMoodboardId);
+    // Only fetch if isAlreadyAddedProp is not provided (for backward compatibility)
+    const { data: moodboardData } = useGetMoodboard(activeMoodboardId, { 
+        enabled: isAlreadyAddedProp === undefined && !!activeMoodboardId 
+    });
 
     // Safety check: ensure productId is mapped properly
     const rawId = rootProduct._id || rootProduct.id;
     const isAlreadyAdded = React.useMemo(() => {
+        if (isAlreadyAddedProp !== undefined) return isAlreadyAddedProp;
         if (!moodboardData?.data?.estimatedCostId?.productIds) return false;
         const addedIds = moodboardData.data.estimatedCostId.productIds;
 
@@ -98,10 +102,10 @@ const ProductCard = ({ product }) => {
             const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
             return String(addedId) === String(rawId);
         });
-    }, [moodboardData, rawId]);
+    }, [isAlreadyAddedProp, moodboardData, rawId]);
 
     const activeContextText = isAlreadyAdded
-        ? "In Moodboard"
+        ? "In Spaces"
         : activeMoodboardName
             ? `Add to ${activeMoodboardName}`
             : "Add to Spaces";
@@ -203,7 +207,7 @@ const ProductCard = ({ product }) => {
                 productIds: updatedIds
             }
         });
-        toast.success(`Removed ${name} from board`);
+        toast.success(`Removed ${name} from Space`);
     };
 
     const handleWishlist = (e) => {
@@ -325,7 +329,7 @@ const ProductCard = ({ product }) => {
                             <button
                                 onClick={handleRemoveFromMoodboard}
                                 className="flex items-center justify-center p-1 bg-green-500 rounded shadow-sm border border-green-500 hover:bg-red-500 hover:border-red-500 transition-colors group/remove"
-                                title="Remove from moodboard"
+                                title="Remove from Space"
                             >
                                 <Check className="w-4 h-4 text-white group-hover/remove:hidden" strokeWidth={4} />
                                 <X className="w-4 h-4 text-white hidden group-hover/remove:block" strokeWidth={4} />
@@ -373,30 +377,6 @@ const ProductCard = ({ product }) => {
                         </button>
                     </div>
 
-                    {isArchitect && (
-                        <div
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            }}
-                            className="inline-block opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        >
-                            <button
-                                onClick={() => setIsAddModalOpen(true)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-md backdrop-blur-sm ${isAlreadyAdded
-                                    ? 'bg-green-50 text-green-700 border border-green-200'
-                                    : 'bg-white/95 text-gray-700 hover:bg-[#e09a74] hover:text-white border border-gray-100'
-                                    }`}
-                            >
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isAlreadyAdded ? 'bg-green-600 border-green-600' : 'border-gray-300 bg-white/50'}`}>
-                                    {isAlreadyAdded ? <Check className="w-3 h-3 text-white" strokeWidth={4} /> : <Plus className="w-3 h-3" />}
-                                </div>
-                                <span className="tracking-tight">
-                                    {isAlreadyAdded ? 'In Board' : 'Add to Board'}
-                                </span>
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -448,17 +428,27 @@ const ProductCard = ({ product }) => {
 
             <div className="px-3 flex gap-2">
                 <Button
-                    onClick={isOutOfStock && !isInCart ? undefined : handleCartToggle}
-                    disabled={isOutOfStock && !isInCart}
-                    className={`flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg border text-[11px] font-medium transition-all duration-300 ${isOutOfStock && !isInCart
+                    onClick={isOutOfStock ? undefined : (isArchitect ? (isAlreadyAdded ? handleRemoveFromMoodboard : () => setIsAddModalOpen(true)) : handleCartToggle)}
+                    disabled={isOutOfStock}
+                    className={`flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg border text-[11px] font-medium transition-all duration-300 ${isOutOfStock
                         ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                        : isInCart || isAdded
-                            ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
-                            : 'bg-[#e09a74] border-[#e09a74] text-white hover:bg-white hover:text-[#e09a74]'
+                        : isArchitect
+                            ? isAlreadyAdded
+                                ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
+                                : 'bg-[#e09a74] border-[#e09a74] text-white hover:bg-white hover:text-[#e09a74]'
+                            : (isInCart || isAdded)
+                                ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
+                                : 'bg-[#e09a74] border-[#e09a74] text-white hover:bg-white hover:text-[#e09a74]'
                         }`}
                 >
-                    {isOutOfStock && !isInCart ? (
+                    {isOutOfStock ? (
                         <span>Out of Stock</span>
+                    ) : isArchitect ? (
+                        isAlreadyAdded ? (
+                            <><X className="w-3.5 h-3.5" /><span>Remove from Space</span></>
+                        ) : (
+                            <><Plus className="w-3.5 h-3.5" /><span>Add to Space</span></>
+                        )
                     ) : isInCart || isAdded ? (
                         <><X className="w-3.5 h-3.5" /><span>Remove from Cart</span></>
                     ) : (

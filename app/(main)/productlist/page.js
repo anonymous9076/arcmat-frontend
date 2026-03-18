@@ -8,6 +8,7 @@ import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import Image from "next/image";
 import { useGetVariants, useGetRetailerProducts } from "@/hooks/useProduct";
+import { useGetMoodboard } from "@/hooks/useMoodboard";
 import { useGetVendors } from "@/hooks/useVendor";
 import { useGetAttributes, useGetAttributesByCategory } from "@/hooks/useAttribute";
 import { resolvePricing, formatCurrency } from "@/lib/productUtils";
@@ -17,6 +18,8 @@ import Pagination from "@/components/ui/Pagination";
 import { parseFiltersFromURL, buildURLFromFilters } from "@/lib/urlParamsUtils";
 import { useAuth } from '@/hooks/useAuth';
 import dynamic from 'next/dynamic';
+import { useSelectionStore } from "@/store/useSelectionStore";
+import useProjectStore from "@/store/useProjectStore";
 
 const SelectionBar = dynamic(() => import("@/components/dashboard/projects/SelectionBar"), { ssr: false });
 
@@ -29,6 +32,8 @@ export default function ProductListPage() {
     const router = useRouter();
     const pathname = usePathname();
     const { user } = useAuth();
+    const { clearSelection } = useSelectionStore();
+    const { activeProjectId, activeMoodboardId } = useProjectStore();
 
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -70,6 +75,16 @@ export default function ProductListPage() {
         enabled: isInitialized
     });
 
+    // OPTIMIZATION: Fetch active moodboard at page level to avoid N+1 fetches in ProductCard
+    const { data: moodboardData } = useGetMoodboard(activeMoodboardId, { enabled: !!activeMoodboardId });
+    const addedProductIdsMap = useMemo(() => {
+        const prodIds = moodboardData?.data?.estimatedCostId?.productIds || [];
+        return new Set(prodIds.map(p => {
+            const id = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
+            return String(id);
+        }));
+    }, [moodboardData]);
+
     const { data: brandsData } = useGetVendors({ type: 'frontend' });
     const { data: globalAttributesData } = useGetAttributes();
     const { data: categoryAttributesData } = useGetAttributesByCategory(selectedCategory);
@@ -102,6 +117,11 @@ export default function ProductListPage() {
         setActiveFilters(parsed.filters);
         setIsInitialized(true);
     }, [searchParams]);
+
+    // Clear selection when project context changes or on unmount
+    useEffect(() => {
+        return () => clearSelection();
+    }, [activeProjectId, activeMoodboardId, clearSelection]);
 
     useEffect(() => {
         if (products.length && activeFilters.priceRange[1] === 500000 && isInitialized) {
@@ -243,9 +263,16 @@ export default function ProductListPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-x-4 gap-y-8">
-                            {displayedProducts.map((product, i) => (
-                                <ProductCard key={product._id || product.id || i} product={product} />
-                            ))}
+                            {displayedProducts.map((product, i) => {
+                                const productId = String(product?._id || product?.id);
+                                return (
+                                    <ProductCard 
+                                        key={product._id || product.id || i} 
+                                        product={product} 
+                                        isAlreadyAdded={addedProductIdsMap.has(productId)}
+                                    />
+                                );
+                            })}
                         </div>
                     )}
 
