@@ -23,7 +23,7 @@ import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
 import dynamic from 'next/dynamic'
 const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 
-const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp }) => {
+const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: moodboardProp }) => {
     const isVariantCentric = Boolean(product.productId && typeof product.productId === 'object');
     const rootProduct = isVariantCentric ? product.productId : product;
     const variantItem = isVariantCentric ? product : null;
@@ -194,15 +194,26 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp }) => {
             e.stopPropagation();
         }
 
-        if (!moodboardData?.data?.estimatedCostId) return;
+        const currentMoodboard = moodboardProp || moodboardData?.data;
+        if (!currentMoodboard?.estimatedCostId) {
+            console.error("No moodboard/estimate data available for removal");
+            return;
+        }
 
-        const existingRetailerProductIds = moodboardData.data.estimatedCostId.productIds || [];
-        const normalizedExisting = existingRetailerProductIds.map(p => typeof p === 'object' ? (p.productId?._id || p._id) : p);
-
-        const updatedIds = normalizedExisting.filter(id => String(id) !== String(rawId));
+        const existingRetailerProductIds = currentMoodboard.estimatedCostId.productIds || [];
+        
+        // We must filter out BOTH the root product ID and the RetailerProduct ID (override_id)
+        // because the item might be stored as either depending on how it was added.
+        const overrideId = product.override_id || product._id;
+        
+        const updatedIds = existingRetailerProductIds.filter(p => {
+            const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
+            const addedIdStr = String(addedId);
+            return addedIdStr !== String(rawId) && addedIdStr !== String(overrideId);
+        }).map(p => typeof p === 'object' ? p._id : p); // Ensure we send back an array of IDs
 
         updateEstimateMutation({
-            id: moodboardData.data.estimatedCostId._id,
+            id: currentMoodboard.estimatedCostId._id,
             data: {
                 productIds: updatedIds
             }
@@ -447,7 +458,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp }) => {
                         isAlreadyAdded ? (
                             <><X className="w-3.5 h-3.5" /><span>Remove from Space</span></>
                         ) : (
-                            <><Plus className="w-3.5 h-3.5" /><span>Add to Space</span></>
+                            <><Plus className="w-3.5 h-3.5" /><span>{activeContextText}</span></>
                         )
                     ) : isInCart || isAdded ? (
                         <><X className="w-3.5 h-3.5" /><span>Remove from Cart</span></>

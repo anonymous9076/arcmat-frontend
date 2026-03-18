@@ -11,6 +11,7 @@ import { getProductImageUrl, getVariantImageUrl, formatCurrency, resolvePricing 
 import { useAddToCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartStore } from '@/store/useCartStore'
+import useProjectStore from '@/store/useProjectStore'
 
 const CompareSidebar = () => {
     const isCompareModalOpen = useCompareStore(state => state.isCompareModalOpen);
@@ -19,6 +20,7 @@ const CompareSidebar = () => {
     const removeProduct = useCompareStore(state => state.removeProduct);
     const { mutate: addToCartBackend } = useAddToCart();
     const { user, isAuthenticated } = useAuth();
+    const { activeMoodboardName } = useProjectStore();
     const isArchitect = user?.role === 'architect';
     const [selectedProductForBoard, setSelectedProductForBoard] = useState(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -250,7 +252,7 @@ const CompareSidebar = () => {
                                             className="w-full h-11 bg-[#e09a74] text-white hover:bg-[#d08963] active:scale-95 transition-all rounded-xl text-sm font-bold flex items-center justify-center shadow-lg shadow-orange-500/20"
                                         >
                                             {isArchitect ? <Plus className="w-4 h-4 mr-2" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
-                                            {isArchitect ? 'Add to Board' : 'Add to Cart'}
+                                            {isArchitect ? (activeMoodboardName ? `Add to ${activeMoodboardName}` : 'Add to Board') : 'Add to Cart'}
                                         </button>
                                     </div>
                                 ))}

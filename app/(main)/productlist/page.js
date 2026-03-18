@@ -79,10 +79,18 @@ export default function ProductListPage() {
     const { data: moodboardData } = useGetMoodboard(activeMoodboardId, { enabled: !!activeMoodboardId });
     const addedProductIdsMap = useMemo(() => {
         const prodIds = moodboardData?.data?.estimatedCostId?.productIds || [];
-        return new Set(prodIds.map(p => {
-            const id = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
-            return String(id);
-        }));
+        const idSet = new Set();
+        prodIds.forEach(p => {
+            if (p) {
+                // Store root product ID
+                const rootId = (typeof p.productId === 'object' && p.productId) ? p.productId._id : p.productId;
+                if (rootId) idSet.add(String(rootId));
+                
+                // Store RetailerProduct ID
+                if (p._id) idSet.add(String(p._id));
+            }
+        });
+        return idSet;
     }, [moodboardData]);
 
     const { data: brandsData } = useGetVendors({ type: 'frontend' });
@@ -264,12 +272,21 @@ export default function ProductListPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-x-4 gap-y-8">
                             {displayedProducts.map((product, i) => {
-                                const productId = String(product?._id || product?.id);
+                                // Match the product ID derivation logic in ProductCard
+                                const isVariantCentric = Boolean(product.productId && typeof product.productId === 'object');
+                                const rootProduct = isVariantCentric ? product.productId : product;
+                                
+                                const rootId = String(rootProduct?._id || rootProduct?.id);
+                                const overrideId = String(product?.override_id || product?._id);
+
+                                const isAlreadyAdded = addedProductIdsMap.has(rootId) || addedProductIdsMap.has(overrideId);
+
                                 return (
                                     <ProductCard 
                                         key={product._id || product.id || i} 
                                         product={product} 
-                                        isAlreadyAdded={addedProductIdsMap.has(productId)}
+                                        isAlreadyAdded={isAlreadyAdded}
+                                        moodboard={moodboardData?.data}
                                     />
                                 );
                             })}

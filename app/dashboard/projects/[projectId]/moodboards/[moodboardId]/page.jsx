@@ -138,6 +138,20 @@ export default function MoodboardDetailPage() {
     const estimation = moodboard?.estimatedCostId;
     const products = estimation?.productIds || [];
     const siblingBoards = (moodboard?.siblings || []).filter(b => b._id !== moodboardId);
+
+    const setActiveMoodboard = useProjectStore(state => state.setActiveMoodboard);
+
+    // Sync active moodboard context to store for other pages (like Product List)
+    useEffect(() => {
+        if (moodboard && isMounted) {
+            setActiveMoodboard(
+                moodboard._id,
+                moodboard.moodboard_name,
+                moodboard.projectId?._id || moodboard.projectId,
+                moodboard.projectId?.projectName || moodboard.projectId?.name
+            );
+        }
+    }, [moodboard, isMounted, setActiveMoodboard]);
     console.log("Siblings:", siblingBoards); // Debug verify
 
     useEffect(() => { setIsMounted(true); }, []);
