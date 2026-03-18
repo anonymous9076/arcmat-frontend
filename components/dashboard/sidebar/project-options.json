@@ -1,10 +1,24 @@
 {
     "types": [
         "Residential",
-        "Commercial",
-        "Hospitality",
-        "Office",
-        "Retail"
+        "Workplace",
+        "Hospitality: Hotel",
+        "Retail",
+        "Marine",
+        "Hospitality: Restaurant",
+        "Institution Education",
+        "Healthcare",
+        "Tech",
+        "Industrial",
+        "Government",
+        "Mixed-Use & Multi-Unit Residential",
+        "Sports Entertainment",
+        "Power & Energy",
+        "Senior Living",
+        "Transportation",
+        "Wellness",
+        "Medical Dental",
+        "Aviation"
     ],
     "phases": [
         "Concept Design",

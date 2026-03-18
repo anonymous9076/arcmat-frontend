@@ -8,14 +8,14 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import Container from '@/components/ui/Container';
-import { useGetProducts } from '@/hooks/useProduct';
+import { useGetProducts, useUpdateProduct } from '@/hooks/useProduct';
 import { useGetOrders } from '@/hooks/useOrder';
 import { useGetVariants } from '@/hooks/useVariant';
 import { useGetUsers, usePlatformStats } from '@/hooks/useAuth';
 import { useGetVendors } from '@/hooks/useVendor';
 import { useGetCategories } from '@/hooks/useCategory';
 import { getProductImageUrl, isProfileComplete } from '@/lib/productUtils';
-import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase, AlertTriangle } from 'lucide-react';
+import { Package, Layout, IndianRupee, ArrowRight, User, FolderPlus, Users, Activity, UserPlus, FolderOpen, Store, Briefcase, AlertTriangle, Lock, Unlock } from 'lucide-react';
 import { useGetProjects } from '@/hooks/useProject';
 import { useGetAllMoodboards } from '@/hooks/useMoodboard';
 import { useGetMySampleRequests } from '@/hooks/useSampleRequest';
@@ -163,6 +163,7 @@ export default function DashboardPage() {
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [selectedProjectName, setSelectedProjectName] = useState('Select Project');
     const [showProjectMenu, setShowProjectMenu] = useState(false);
+    const updateProductMutation = useUpdateProduct();
 
     // ZUSTAND INTEGRATION
     const { user } = useAuthStore();
@@ -173,6 +174,8 @@ export default function DashboardPage() {
         setMounted(true);
         if (user?.role === 'retailer') {
             router.push('/dashboard/retailer');
+        } else if (user?.role === 'architect') {
+            router.push('/dashboard/projects');
         }
     }, [user, router]);
 
@@ -265,6 +268,32 @@ export default function DashboardPage() {
     }, [projects, selectedProjectId]);
 
     const recentBoards = boards.slice(0, 4);
+
+    const handleToggleStatus = async (productId, currentStatus) => {
+        try {
+            const isCurrentlyActive =
+                currentStatus === true ||
+                currentStatus === 1 ||
+                currentStatus === '1' ||
+                currentStatus === 'Active';
+
+            const newStatus = isCurrentlyActive ? 0 : 1;
+            await updateProductMutation.mutateAsync({ id: productId, data: { status: newStatus } });
+            // The success toast is already handled in the hook's onSuccess if it exists, 
+            // but useProduct.js doesn't have it for updateProduct.
+            // VendorProductTable has it in handleToggleStatus.
+            // Let's add it here too.
+            const { toast } = await import('@/components/ui/Toast');
+            toast.success(
+                newStatus === 0
+                    ? 'Product deactivated successfully'
+                    : 'Product activated successfully'
+            );
+        } catch (error) {
+            const { toast } = await import('@/components/ui/Toast');
+            toast.error("Failed to update status");
+        }
+    };
 
     if (!mounted || (user && !user.role)) {
         return (
@@ -470,13 +499,28 @@ export default function DashboardPage() {
                                             <h4 className="text-sm font-medium text-gray-900 truncate">{product.product_name}</h4>
                                             <p className="text-xs text-gray-500">ID: {product.skucode || product._id?.substring(0, 8)}</p>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right flex items-center gap-2">
                                             <span className={clsx(
                                                 "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
                                                 product.status === 1 || product.status === '1' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
                                             )}>
                                                 {product.status === 1 || product.status === '1' ? 'Active' : 'Inactive'}
                                             </span>
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        handleToggleStatus(product._id, product.status);
+                                                    }}
+                                                    className={clsx(
+                                                        "p-1.5 rounded-lg transition-all cursor-pointer",
+                                                        (product.status === 1 || product.status === '1') ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
+                                                    )}
+                                                    title={(product.status === 1 || product.status === '1') ? "Deactivate Product" : "Activate Product"}
+                                                >
+                                                    {(product.status === 1 || product.status === '1') ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))
