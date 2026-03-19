@@ -176,13 +176,24 @@ export default function ProductListPage() {
     }, [apiData, paginationData]);
 
     const availableColors = useMemo(() => {
+        // 1. Try prioritization: extract from "Color" attribute across all categories (global)
+        const colorAttr = (globalAttributesData?.data || []).find(
+            attr => attr.attributeName?.toLowerCase() === 'color' || attr.attributeName?.toLowerCase() === 'colors'
+        );
+        if (colorAttr && colorAttr.attributeValues?.length > 0) {
+            return colorAttr.attributeValues.sort();
+        }
+
+        // 2. Fallback to metadata from current products search
         if (metadata?.availableColors) return metadata.availableColors;
+
+        // 3. Last fallback: derive from current visible products list
         const colors = new Set();
         products.forEach(variant => {
             if (variant.color) colors.add(variant.color);
         });
         return Array.from(colors).sort();
-    }, [products, metadata]);
+    }, [products, metadata, globalAttributesData]);
 
     const availableAttributes = useMemo(() => {
         const metadataAttrs = metadata?.availableAttributes || [];

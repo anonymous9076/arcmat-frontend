@@ -423,7 +423,9 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
                             </div>
                           </td>
                           <td className="px-4 py-4 text-sm font-bold">{formatCurrency(v.selling_price)}</td>
-                          <td className="px-4 py-4 text-sm">{v.stock} units</td>
+                          <td className="px-4 py-4 text-sm">
+                            {(v.stock !== undefined && v.stock !== null && v.stock !== '') ? `${v.stock} units` : 'Available'}
+                          </td>
                           <td className="px-4 py-4 text-right">
                             <div className="flex justify-end gap-2">
                               <button

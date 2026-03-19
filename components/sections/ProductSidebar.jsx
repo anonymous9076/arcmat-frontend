@@ -235,7 +235,7 @@ const ProductSidebar = ({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="relative h-6 flex items-center group">
+                                    {/* <div className="relative h-6 flex items-center group">
                                         <input
                                             type="range"
                                             min={minPrice}
@@ -245,33 +245,27 @@ const ProductSidebar = ({
                                             onChange={(e) => handlePriceChange(1, e.target.value)}
                                             className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#e09a74]"
                                         />
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         )}
 
                         {cat === "Color" && (
-                            <div className="grid grid-cols-5 gap-3 mt-1">
-                                {availableColors.map(color => {
-                                    const code = getColorCode(color)
-                                    const isSelected = activeFilters.colors.includes(color)
-                                    return (
-                                        <button
-                                            key={color}
-                                            onClick={() => handleColorChange(color, !isSelected)}
-                                            className={`group relative flex flex-col items-center gap-1.5 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}
-                                            title={color}
-                                        >
-                                            <div
-                                                className={`w-8 h-8 rounded-full border-2 transition-all shadow-sm ${isSelected ? 'border-[#e09a74] ring-2 ring-[#e09a74]/20' : 'border-gray-100 group-hover:border-gray-300'}`}
-                                                style={{ backgroundColor: code }}
+                            <div className="flex flex-col gap-2.5 mt-1">
+                                {availableColors.map(color => (
+                                    <label key={color} className="flex items-center gap-3 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-gray-300 checked:bg-[#e09a74] checked:border-[#e09a74] transition-all"
+                                                checked={activeFilters.colors.includes(color)}
+                                                onChange={(e) => handleColorChange(color, e.target.checked)}
                                             />
-                                            {code === '#FFFFFF' && (
-                                                <div className="absolute inset-x-0 top-0 h-4 rounded-t-full border-t border-gray-100" />
-                                            )}
-                                        </button>
-                                    )
-                                })}
+                                            <svg className="absolute h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span className="text-[15px] text-gray-600 group-hover:text-gray-900 transition-colors uppercase">{color}</span>
+                                    </label>
+                                ))}
                             </div>
                         )}
 

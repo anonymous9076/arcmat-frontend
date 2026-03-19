@@ -152,9 +152,7 @@ const Header = ({ variant = 'default' }) => {
 
                                 {isSearching && <Loader2 className="animate-spin text-gray-400 w-4 h-4 mr-2" />}
 
-                                <div className='shrink-0 ml-3 cursor-pointer hover:opacity-80 transition-opacity'>
-                                    <Camera size={22} className="opacity-60" />
-                                </div>
+
                             </div>
 
                             {showResults && debouncedSearch && (
@@ -231,7 +229,7 @@ const Header = ({ variant = 'default' }) => {
                     </div>
                 )}
 
-                <div className="flex items-center gap-2 lg:gap-6 shrink-0">
+                <div className="flex items-center gap-2 lg:gap-4 shrink-0">
                     {/* Common Tools */}
                     {mounted && isAuthenticated && (
                         <>
@@ -284,22 +282,18 @@ const Header = ({ variant = 'default' }) => {
                         </>
                     )}
 
-                    <div className='flex md:flex items-center sm:gap-4'>
-                        {mounted && (!user || user.role !== 'brand') && (
-                            <>
-                                <Link href="/wishlist">
-                                    <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/wishlist'>
-                                        <Heart size={22} className="text-gray-600 group-hover/wishlist:text-[#e09a74] transition-colors" />
-                                        {wishlistCount > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
-                                                {wishlistCount > 99 ? '99+' : wishlistCount}
-                                            </span>
-                                        )}
-                                    </button>
-                                </Link>
-                            </>
-                        )}
-                        {mounted && (!user || user.role !== 'brand') && (
+                    {/* {mounted && (!user || (user.role !== 'brand' && user.role !== 'architect')) && (
+                        <div className='flex md:flex items-center sm:gap-3'>
+                            <Link href="/wishlist">
+                                <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/wishlist'>
+                                    <Heart size={22} className="text-gray-600 group-hover/wishlist:text-[#e09a74] transition-colors" />
+                                    {wishlistCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 bg-[#e09a74] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-transform duration-300 scale-110">
+                                            {wishlistCount > 99 ? '99+' : wishlistCount}
+                                        </span>
+                                    )}
+                                </button>
+                            </Link>
                             <Link href="/cart">
                                 <button className='p-2 hover:bg-gray-50 rounded-full transition-colors relative group/cart'>
                                     <ShoppingCart size={22} className="text-gray-600 group-hover/cart:text-[#e09a74] transition-colors" />
@@ -310,8 +304,8 @@ const Header = ({ variant = 'default' }) => {
                                     )}
                                 </button>
                             </Link>
-                        )}
-                    </div>
+                        </div>
+                    )} */}
 
                     <div className='hidden lg:flex items-center gap-2 min-w-[100px] justify-end'>
                         {!mounted ? (

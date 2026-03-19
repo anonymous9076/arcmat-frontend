@@ -21,14 +21,17 @@ export const useGetCartCount = (enabled = true) => {
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: cartService.addToCart,
+        mutationFn: async () => {
+            console.log("Add to Cart is disabled");
+            return null;
+        },
         onSuccess: (response) => {
-            queryClient.invalidateQueries(['cart']);
-            queryClient.invalidateQueries(['cartCount']);
-            toast.success("Item added to cart");
+            // queryClient.invalidateQueries(['cart']);
+            // queryClient.invalidateQueries(['cartCount']);
+            // toast.success("Item added to cart");
         },
         onError: (error) => {
-            toast.error("Failed to add item to cart");
+            // toast.error("Failed to add item to cart");
         }
     });
 };

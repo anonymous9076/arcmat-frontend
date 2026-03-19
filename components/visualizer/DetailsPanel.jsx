@@ -116,12 +116,12 @@ export default function DetailsPanel({
             <div className="relative shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imgSrc} alt={name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
-                <button
+                {/* <button
                     onClick={() => setIsWishlisted(!isWishlisted)}
                     className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow hover:scale-110 transition-transform"
                 >
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-                </button>
+                </button> */}
                 <div className="absolute bottom-3 left-3">
                     <span className="px-2 py-0.5 bg-black/60 text-white text-[10px] font-medium rounded-full backdrop-blur-sm">{badge}</span>
                 </div>
@@ -274,13 +274,13 @@ export default function DetailsPanel({
 
             {/* Actions */}
             <div className="px-4 mt-4 pb-6 flex flex-col gap-2 shrink-0">
-                <button
+                {/* <button
                     onClick={handleAddToCart}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${isAdded ? 'bg-green-600 text-white' : 'bg-gray-900 text-white hover:bg-gray-700'}`}
                 >
                     {isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                     {isAdded ? 'Added to Cart' : 'Add to Cart'}
-                </button>
+                </button> */}
                 <Link
                     href={`/dashboard/projects/${projectId}/moodboards/${moodboardId}`}
                     className="w-full"

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
 import { useGetVendor, useCreateVendor, useUpdateVendor } from '@/hooks/useVendor';
 import ProfileDetails from '@/components/profile/ProfileDetails';
 import ProfileForm from '@/components/profile/ProfileForm';
@@ -12,6 +13,7 @@ const BusinessProfileTab = () => {
     const { user } = useAuth();
     const fetchUser = useAuthStore((s) => s.fetchUser);
     const { setLoading } = useLoader();
+    const router = useRouter();
     const userId = user?._id || user?.id;
 
     // Hooks for brand data
@@ -76,6 +78,7 @@ const BusinessProfileTab = () => {
                     onSuccess: () => {
                         toast.success('Profile updated successfully', 'Success');
                         setIsEditing(false);
+                        router.push(`/dashboard`);
                     },
                     onError: (error) => {
                         toast.error(error.message || 'Failed to update profile', 'Error');
@@ -88,6 +91,8 @@ const BusinessProfileTab = () => {
                         setIsEditing(false);
                         // Re-fetch auth session so selectedBrands/activeBrand updates immediately
                         await fetchUser();
+                        // Redirect to create product page
+                        router.push(`/dashboard`);
                     },
                     onError: (error) => {
                         toast.error(error.message || 'Failed to create profile', 'Error');

@@ -46,12 +46,13 @@ export default function RetailerProductsPage() {
     const handleUpdateOverride = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
+        const stockVal = formData.get('stock');
         const data = {
             productId: editingItem.product?._id,
             variantId: editingItem.variant?._id,
             mrp_price: Number(formData.get('mrp_price')),
             selling_price: Number(formData.get('selling_price')),
-            stock: Number(formData.get('stock')),
+            stock: stockVal === '' ? null : Number(stockVal),
             isActive: formData.get('isActive') === 'on'
         };
 
@@ -167,9 +168,13 @@ export default function RetailerProductsPage() {
                                         <td className="px-6 py-4 align-middle">
                                             <span className={clsx(
                                                 "text-sm font-black",
-                                                item.stock <= 5 ? "text-red-500" : "text-gray-900"
+                                                (item.stock !== undefined && item.stock !== null && item.stock !== '' && item.stock <= 5) ? "text-red-500" : "text-gray-900"
                                             )}>
-                                                {item.stock} <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">in stock</span>
+                                                {(item.stock !== undefined && item.stock !== null && item.stock !== '') ? (
+                                                    <>{item.stock} <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">in stock</span></>
+                                                ) : (
+                                                    <span className="text-green-600">Unlimited</span>
+                                                )}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 align-middle">
@@ -284,8 +289,12 @@ export default function RetailerProductsPage() {
                                     type="number"
                                     name="stock"
                                     defaultValue={editingItem.stock}
+                                    onInput={(e) => {
+                                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                                            e.target.value = e.target.value.replace(/^0+/, '');
+                                        }
+                                    }}
                                     className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#e09a74] text-sm font-bold"
-                                    required
                                 />
                             </div>
 

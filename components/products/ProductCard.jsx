@@ -16,8 +16,8 @@ export default function ProductCard({ product }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
 
-  const stock = product.stock ?? product.variants?.[0]?.stock ?? 0;
-  const isOutOfStock = stock === 0;
+  const stock = product.stock ?? product.variants?.[0]?.stock;
+  const isOutOfStock = (stock !== undefined && stock !== null && stock !== '') ? Number(stock) === 0 : false;
 
   const discount = product.mrp > product.price
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
@@ -52,7 +52,7 @@ export default function ProductCard({ product }) {
           )}
 
           {/* Favorite Button */}
-          <button
+          {/* <button
             onClick={(e) => {
               e.preventDefault();
               setIsFavorite(!isFavorite);
@@ -66,7 +66,7 @@ export default function ProductCard({ product }) {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
-          </button>
+          </button> */}
         </div>
       </Link>
 
@@ -97,7 +97,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Add to Cart Button */}
-        <button
+        {/* <button
           onClick={(e) => {
             e.preventDefault();
             if (isOutOfStock) return;
@@ -130,7 +130,7 @@ export default function ProductCard({ product }) {
           ) : (
             <><ShoppingCart className="w-5 h-5" /> Add to Cart</>
           )}
-        </button>
+        </button> */}
       </div>
     </div>
   );

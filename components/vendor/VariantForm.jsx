@@ -14,7 +14,7 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
     const [formData, setFormData] = useState({
         weight_type: 'kg',
         weight: '',
-        stock: '0',
+        stock: '',
         skucode: '',
         mrp_price: '',
         selling_price: '',
@@ -38,7 +38,7 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
             setFormData({
                 weight_type: editingVariant.weight_type || 'kg',
                 weight: editingVariant.weight || '',
-                stock: editingVariant.stock || '0',
+                stock: (editingVariant.stock !== undefined && editingVariant.stock !== null) ? editingVariant.stock.toString() : '',
                 skucode: editingVariant.skucode || '',
                 mrp_price: editingVariant.mrp_price || '',
                 selling_price: editingVariant.selling_price || '',
@@ -70,7 +70,7 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
             setFormData({
                 weight_type: 'kg',
                 weight: '',
-                stock: '0',
+                stock: '',
                 skucode: '',
                 mrp_price: '',
                 selling_price: '',
@@ -218,8 +218,12 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
                             min="0"
                             value={formData.stock}
                             onChange={handleChange}
+                            onInput={(e) => {
+                                if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                                    e.target.value = e.target.value.replace(/^0+/, '');
+                                }
+                            }}
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#e09a74] transition-all"
-                            required
                         />
                     </div>
                 </div>

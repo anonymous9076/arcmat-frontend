@@ -272,6 +272,11 @@ export default function RetailerAdminInventoryPage() {
                                     type="number"
                                     name="stock"
                                     defaultValue={editingItem.stock}
+                                    onInput={(e) => {
+                                        if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                                            e.target.value = e.target.value.replace(/^0+/, '');
+                                        }
+                                    }}
                                     className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-[#e09a74] text-sm font-bold"
                                     required
                                 />

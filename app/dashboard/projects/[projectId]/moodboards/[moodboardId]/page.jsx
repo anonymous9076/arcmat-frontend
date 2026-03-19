@@ -152,7 +152,6 @@ export default function MoodboardDetailPage() {
             );
         }
     }, [moodboard, isMounted, setActiveMoodboard]);
-    console.log("Siblings:", siblingBoards); // Debug verify
 
     useEffect(() => { setIsMounted(true); }, []);
 

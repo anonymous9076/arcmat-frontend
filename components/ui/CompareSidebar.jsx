@@ -7,7 +7,7 @@ import clsx from 'clsx'
 import dynamic from 'next/dynamic'
 const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 import { X, ShoppingCart, Trash2, Check, AlertCircle, ChevronRight, Plus } from 'lucide-react'
-import { getProductImageUrl, getVariantImageUrl, formatCurrency, resolvePricing } from '@/lib/productUtils'
+import { getProductImageUrl, getVariantImageUrl, formatCurrency, resolvePricing, getSpecifications, getProductName, getProductCategory, getProductBrand } from '@/lib/productUtils'
 import { useAddToCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartStore } from '@/store/useCartStore'
@@ -53,30 +53,27 @@ const CompareSidebar = () => {
         }
     };
 
-    // Extract all unique attributes
+    // Extract all unique attributes using getSpecifications helper
     const allAttrKeysMap = new Map();
     comparedProducts.forEach(p => {
-        let attrs = p.dynamicAttributes;
-        if (typeof attrs === 'string') {
-            try { attrs = JSON.parse(attrs); } catch (e) { attrs = []; }
-        }
-        if (Array.isArray(attrs)) {
-            attrs.forEach(a => {
-                const key = a.attributeName || a.key;
-                if (key) {
-                    const lowKey = key.toLowerCase();
-                    if (!allAttrKeysMap.has(lowKey)) {
-                        allAttrKeysMap.set(lowKey, key);
-                    }
+        const isVariant = Boolean(p.productId && typeof p.productId === 'object');
+        const root = isVariant ? p.productId : p;
+        const variant = isVariant ? p : null;
+        const specs = getSpecifications(root, variant);
+        specs.forEach(s => {
+            if (s.label && s.value) {
+                const lowKey = s.label.toLowerCase();
+                if (!allAttrKeysMap.has(lowKey)) {
+                    allAttrKeysMap.set(lowKey, s.label);
                 }
-            });
-        }
+            }
+        });
     });
-    const allAttrKeys = Array.from(allAttrKeysMap.values());
+    const allAttrKeys = Array.from(allAttrKeysMap.values()).filter(key => key.toLowerCase() !== 'sku');
 
     return (
         <div className={clsx(
-            "fixed inset-y-0 right-0 z-[100] flex transition-transform duration-300 ease-in-out bg-white shadow-2xl border-l border-gray-200",
+            "fixed inset-y-0 right-0 z-100 flex transition-transform duration-300 ease-in-out bg-white shadow-2xl border-l border-gray-200",
             isCompareModalOpen ? "translate-x-0" : "translate-x-full"
         )}
             style={{ width: 'min(90vw, 1200px)' }}
@@ -108,7 +105,7 @@ const CompareSidebar = () => {
                             <p>No items to compare.</p>
                         </div>
                     ) : (
-                        <div className="grid divide-y divide-gray-100 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl overflow-hidden inline-block align-top min-w-full">
+                        <div className="grid divide-y divide-gray-100 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl overflow-hidden align-top min-w-full">
 
                             {/* Product Header Row */}
                             <div className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
@@ -145,10 +142,10 @@ const CompareSidebar = () => {
 
                                             <div className="text-center">
                                                 <div className="text-xs font-bold text-[#e09a74] uppercase tracking-wider mb-1">
-                                                    {(root.brand && typeof root.brand === 'object') ? (root.brand.name || root.brand.brand_name) : (root.brand || 'Arcmat')}
+                                                    {getProductBrand(product)}
                                                 </div>
                                                 <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] mb-2">
-                                                    {root.product_name || root.name}
+                                                    {getProductName(product)}
                                                 </h3>
                                             </div>
                                         </div>
@@ -162,7 +159,8 @@ const CompareSidebar = () => {
                                     Price
                                 </div>
                                 {comparedProducts.map((product) => {
-                                    const { price, mrp } = resolvePricing(product.productId && typeof product.productId === 'object' ? product.productId : product, product.productId && typeof product.productId === 'object' ? product : null);
+                                    const isVariant = Boolean(product.productId && typeof product.productId === 'object');
+                                    const { price, mrp } = resolvePricing(isVariant ? product.productId : product, isVariant ? product : null);
                                     return (
                                         <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex flex-col items-center justify-center">
                                             <div className="flex items-baseline gap-2">
@@ -183,6 +181,51 @@ const CompareSidebar = () => {
                                 })}
                             </div>
 
+                            {/* SKU Row */}
+                            <div className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
+                                <div className="p-4 px-6 bg-gray-50/80 text-sm font-medium text-gray-600 flex items-center">
+                                    SKU
+                                </div>
+                                {comparedProducts.map((product) => (
+                                    <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center text-center">
+                                        <span className="text-sm text-gray-700 font-mono uppercase tracking-tight">
+                                            {product.skucode || "-"}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Category Row */}
+                            <div className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
+                                <div className="p-4 px-6 bg-gray-50/80 text-sm font-medium text-gray-600 flex items-center">
+                                    Category
+                                </div>
+                                {comparedProducts.map((product) => (
+                                    <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center text-center">
+                                        <span className="text-sm text-gray-700">{getProductCategory(product)}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Description Row */}
+                            <div className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
+                                <div className="p-4 px-6 bg-gray-50/80 text-sm font-medium text-gray-600 flex items-center">
+                                    Description
+                                </div>
+                                {comparedProducts.map((product) => {
+                                    const isVariant = Boolean(product.productId && typeof product.productId === 'object');
+                                    const root = isVariant ? product.productId : product;
+                                    const desc = root.description || product.description || "";
+                                    return (
+                                        <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center">
+                                            <p className="text-xs text-gray-500 line-clamp-3 text-center leading-relaxed">
+                                                {desc || "No description available"}
+                                            </p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
                             {/* Attributes Rows */}
                             {allAttrKeys.map((key) => (
                                 <div key={key} className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
@@ -190,17 +233,16 @@ const CompareSidebar = () => {
                                         {key}
                                     </div>
                                     {comparedProducts.map((product) => {
-                                        let attrs = product.dynamicAttributes;
-                                        if (typeof attrs === 'string') {
-                                            try { attrs = JSON.parse(attrs); } catch (e) { attrs = []; }
-                                        }
-                                        const attr = (Array.isArray(attrs) ? attrs : []).find(a => (a.attributeName || a.key)?.toLowerCase() === key.toLowerCase());
-                                        const value = attr?.attributeValue || attr?.value;
+                                        const isVariant = Boolean(product.productId && typeof product.productId === 'object');
+                                        const root = isVariant ? product.productId : product;
+                                        const variant = isVariant ? product : null;
+                                        const specs = getSpecifications(root, variant);
+                                        const spec = specs.find(s => s.label?.toLowerCase() === key.toLowerCase());
 
                                         return (
                                             <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center text-center">
-                                                {value ? (
-                                                    <span className="text-sm text-gray-700 font-medium">{value}</span>
+                                                {spec?.value ? (
+                                                    <span className="text-sm text-gray-700 font-medium">{spec.value}</span>
                                                 ) : (
                                                     <span className="text-gray-300 text-lg">-</span>
                                                 )}
@@ -212,14 +254,25 @@ const CompareSidebar = () => {
 
                             {/* Stock / Availability */}
                             <div className="grid" style={{ gridTemplateColumns: `200px repeat(${comparedProducts.length}, minmax(280px, 1fr))` }}>
-                                {/* <div className="p-4 px-6 bg-gray-50/80 text-sm font-medium text-gray-600 flex items-center">
+                                <div className="p-4 px-6 bg-gray-50/80 text-sm font-medium text-gray-600 flex items-center">
                                     Availability
-                                </div> */}
-                                {/* {comparedProducts.map((product) => {
-                                    const stock = product.stock || (product.productId?.stock) || 0;
+                                </div>
+                                {comparedProducts.map((product) => {
+                                    const isVariant = Boolean(product.productId && typeof product.productId === 'object');
+                                    const root = isVariant ? product.productId : product;
+                                    // Robust stock check: check variant stock first, then root stock fields
+                                    const stockCount = 
+                                        product.stock !== undefined ? product.stock : 
+                                        (product.stockQuantity !== undefined ? product.stockQuantity : 
+                                        (root.stock !== undefined ? root.stock : 
+                                        (root.stockQuantity !== undefined ? root.stockQuantity : 0)));
+                                    
+                                    const inStock = product.inStock !== undefined ? product.inStock : 
+                                                   (root.inStock !== undefined ? root.inStock : stockCount > 0);
+
                                     return (
                                         <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center">
-                                            {stock > 0 ? (
+                                            {inStock ? (
                                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
                                                     <Check className="w-3 h-3" /> In Stock
                                                 </span>
@@ -230,7 +283,7 @@ const CompareSidebar = () => {
                                             )}
                                         </div>
                                     )
-                                })} */}
+                                })}
                             </div>
 
                             {/* Action Row */}
@@ -240,20 +293,21 @@ const CompareSidebar = () => {
                                 </div>
                                 {comparedProducts.map((product) => (
                                     <div key={product._id || product.id} className="p-6 bg-white border-l border-t border-gray-100 flex justify-center items-center">
-                                        <button
-                                            onClick={() => {
-                                                if (isArchitect) {
+                                        {isArchitect ? (
+                                            <button
+                                                onClick={() => {
                                                     setSelectedProductForBoard(product);
                                                     setIsAddModalOpen(true);
-                                                } else {
-                                                    handleAddToCart(product);
-                                                }
-                                            }}
-                                            className="w-full h-11 bg-[#e09a74] text-white hover:bg-[#d08963] active:scale-95 transition-all rounded-xl text-sm font-bold flex items-center justify-center shadow-lg shadow-orange-500/20"
-                                        >
-                                            {isArchitect ? <Plus className="w-4 h-4 mr-2" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
-                                            {isArchitect ? (activeMoodboardName ? `Add to ${activeMoodboardName}` : 'Add to Board') : 'Add to Cart'}
-                                        </button>
+                                                }}
+                                                className="w-full h-11 bg-[#e09a74] text-white hover:bg-[#d08963] active:scale-95 transition-all rounded-xl text-sm font-bold flex items-center justify-center shadow-lg shadow-orange-500/20"
+                                            >
+                                                <Plus className="w-4 h-4 mr-2" />
+                                                {activeMoodboardName ? `Add to ${activeMoodboardName}` : 'Add to Board'}
+                                            </button>
+                                        ) : (
+                                            /* Add to Cart hidden for all users */
+                                            null
+                                        )}
                                     </div>
                                 ))}
                             </div>

@@ -148,8 +148,8 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
 
     const isInCart = Boolean(cartItem);
 
-    const stock = displayVariant?.stock || 0;
-    const isOutOfStock = stock === 0;
+    const stock = displayVariant?.stock;
+    const isOutOfStock = (stock !== undefined && stock !== null && stock !== '') ? Number(stock) === 0 : false;
 
     const handleCartToggle = (e) => {
         if (e) {
@@ -448,8 +448,8 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                                 ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
                                 : 'bg-[#e09a74] border-[#e09a74] text-white hover:bg-white hover:text-[#e09a74]'
                             : (isInCart || isAdded)
-                                ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
-                                : 'bg-[#e09a74] border-[#e09a74] text-white hover:bg-white hover:text-[#e09a74]'
+                                ? 'hidden' // Hide remove from cart
+                                : 'hidden' // Hide add to cart
                         }`}
                 >
                     {isOutOfStock ? (
@@ -467,7 +467,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                     )}
                 </Button>
 
-                <button
+                {/* <button
                     onClick={handleWishlist}
                     className={`w-9 h-9 flex items-center justify-center rounded-full border transition-all ${isWishlisted
                         ? 'bg-red-50 border-red-200 text-red-500'
@@ -475,7 +475,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                         }`}
                 >
                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
-                </button>
+                </button> */}
             </div>
 
 

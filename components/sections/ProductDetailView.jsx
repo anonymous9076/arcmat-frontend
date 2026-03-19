@@ -211,9 +211,10 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
     const name = product.product_name || product.name
     const description = product.description
     const subtitle = product.subtitle || (description ? description.replace(/<[^>]*>?/gm, '').substring(0, 150) + '...' : '')
-    const stockQuantity = Number(currentItem.stock || currentItem.available_stock || 0)
+    const stock = (currentItem.stock !== undefined && currentItem.stock !== null) ? currentItem.stock : currentItem.available_stock;
+    const stockQuantity = (stock === '' || stock === undefined || stock === null) ? null : Number(stock);
     const isActive = currentItem.status === 1 || currentItem.status === '1' || currentItem.status === 'Active'
-    const inStock = isActive && stockQuantity > 0
+    const inStock = isActive && (stockQuantity === null || stockQuantity > 0)
     const isPurchasable = hasPrice && inStock
     const isPremium = product.featuredproduct === 'Active'
     const vendorName = product.createdBy?.name
@@ -291,12 +292,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
         const projectId = selectedProject?._id;
         const cityName = selectedProject?.location || "Gurgaon";
 
-        console.log('Creating Retailer Request with data:', {
-            projectId,
-            materialId: product._id,
-            retailerId: currentRetailerId,
-            city: cityName
-        });
+        
 
         createRetailerRequest({
             projectId,
@@ -651,12 +647,22 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
                                 <div className="flex flex-col gap-2 mb-4">
                                     {/* PRIMARY COMMERCE ACTIONS */}
-                                    {showPrimaryAddToCart && (
+                                    {/* {showPrimaryAddToCart && (
                                         <Button
                                             text={isArchitect ? (isAlreadyAdded ? "IN SPACES" : "ADD TO SPACES") : (isAdded ? "ADDED TO CART" : "ADD TO CART")}
                                             onClick={isArchitect ? (isAlreadyAdded ? handleRemoveFromMoodboard : () => setIsAddModalOpen(true)) : handleAddToCart}
                                             className={`w-full ${isArchitect ? (isAlreadyAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]") : (isAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]")} font-bold py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2 shadow-sm`}
                                             icon={isArchitect ? (isAlreadyAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />) : (isAdded ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />)}
+                                        />
+                                    )} */}
+
+                                    {/* Re-add "Add to Space" button for architects since it's not a cart/wishlist feature */}
+                                    {mounted && isArchitect && (
+                                        <Button
+                                            text={isAlreadyAdded ? "IN SPACES" : "ADD TO SPACES"}
+                                            onClick={isAlreadyAdded ? handleRemoveFromMoodboard : () => setIsAddModalOpen(true)}
+                                            className={`w-full ${isAlreadyAdded ? "bg-green-600 text-white" : "bg-[#e09a74]/80 text-white hover:bg-[#e09a74]"} font-bold py-3 px-5 rounded-full text-sm transition-all flex items-center justify-center gap-2 shadow-sm mb-2`}
+                                            icon={isAlreadyAdded ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                                         />
                                     )}
 
@@ -765,7 +771,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                     </div>
                                 </div>
 
-                                <button
+                                {/* <button
                                     onClick={handleAddToWishlist}
                                     className={`
                                             w-full py-2.5 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 border
@@ -776,7 +782,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                                         `}>
                                     <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
                                     {isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}
-                                </button>
+                                </button> */}
                                 <Button
                                     onClick={() => handleOpenModal({})}
                                     className="w-full py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2 border bg-[#e09a74] text-white hover:bg-white hover:text-[#e09a74] border border-[#e09a74] mt-2"

@@ -9,9 +9,18 @@ import OrderSummary from "@/components/cart/OrderSummary";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartStore } from "@/store/useCartStore";
 import { useGetCart, useUpdateCartQuantity, useRemoveFromCart } from "@/hooks/useCart";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.push('/');
+    }, [router]);
+
+    return null; // or a loading/redirecting message
+
     const { isAuthenticated } = useAuth();
     const { data: backendCart, isLoading: isBackendLoading } = useGetCart(isAuthenticated);
     const localCart = useCartStore(state => state.cart);

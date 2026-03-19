@@ -294,6 +294,11 @@ export default function AddVariantModal({ isOpen, onClose, productId, parentProd
                                         min="0"
                                         value={formData.stock}
                                         onChange={handleChange}
+                                        onInput={(e) => {
+                                            if (e.target.value.length > 1 && e.target.value.startsWith('0')) {
+                                                e.target.value = e.target.value.replace(/^0+/, '');
+                                            }
+                                        }}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#e09a74]"
                                         required
                                     />

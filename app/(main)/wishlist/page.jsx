@@ -6,8 +6,18 @@ import { useGetWishlist, useRemoveFromWishlist } from '@/hooks/useWishlist'
 import { Loader2, HeartBreak, Heart, ShoppingBag, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 const WishlistPage = () => {
+    const router = useRouter()
+
+    useEffect(() => {
+        router.push('/')
+    }, [router])
+
+    return null
+
     const { isAuthenticated, isLoading: authLoading } = useAuth()
     const { data: wishlistData, isLoading, error } = useGetWishlist(isAuthenticated)
     const { mutate: removeFromWishlist } = useRemoveFromWishlist()
