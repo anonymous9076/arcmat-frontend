@@ -7,7 +7,7 @@ import {
   HelpCircle, ChevronRight, ChevronLeft, Plus,
   Package, Tags, Layers, Heart, ShoppingBag, User, Users,
   LayoutDashboard, Image, HardHat, Store, Palette,
-  PlayCircle, BarChart3, Briefcase, MessageSquare, Star
+  PlayCircle, BarChart3, Briefcase, MessageSquare, Star, Folder
 } from 'lucide-react';
 import clsx from 'clsx';
 import useAuthStore from '@/store/useAuthStore';
@@ -22,7 +22,7 @@ import { useNotificationCounts } from '@/hooks/useNotificationCounts';
 const ICON_MAP = {
   Package, Tags, Layers, HelpCircle, ShoppingBag, Heart,
   User, Users, LayoutDashboard, Image, HardHat, Store,
-  Palette, PlayCircle, BarChart3, Briefcase, MessageSquare, Star
+  Palette, PlayCircle, BarChart3, Briefcase, MessageSquare, Star, Folder
 };
 
 const mapIcons = (items) => items.map(item => ({ ...item, icon: ICON_MAP[item.icon] }));

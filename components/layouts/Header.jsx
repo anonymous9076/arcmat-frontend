@@ -278,6 +278,16 @@ const Header = ({ variant = 'default' }) => {
                                 </div>
                             )}
 
+                            {mounted && user?.role === 'architect' && (
+                                <Link 
+                                    href="/dashboard/projects"
+                                    className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'
+                                    title="All Projects"
+                                >
+                                    <Folder size={22} className="text-gray-600 hover:text-[#e09a74] transition-colors" />
+                                </Link>
+                            )}
+
                             <NotificationCenter />
                         </>
                     )}

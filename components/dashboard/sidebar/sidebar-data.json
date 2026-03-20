@@ -162,7 +162,7 @@
         {
             "id": "all-projects",
             "label": "All projects",
-            "icon": "Package",
+            "icon": "Folder",
             "href": "/dashboard/projects"
         },
         {
