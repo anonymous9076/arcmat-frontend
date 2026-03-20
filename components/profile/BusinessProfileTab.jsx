@@ -75,9 +75,11 @@ const BusinessProfileTab = () => {
 
             if (currentBrand) {
                 updateVendor({ id: currentBrand._id || currentBrand.id, data: payload }, {
-                    onSuccess: () => {
+                    onSuccess: async () => {
                         toast.success('Profile updated successfully', 'Success');
                         setIsEditing(false);
+                        // Refresh user data to update selectedBrands in store
+                        await fetchUser();
                         router.push(`/dashboard`);
                     },
                     onError: (error) => {

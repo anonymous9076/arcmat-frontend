@@ -24,7 +24,10 @@ export default function AddProductPage() {
     const [createdProductId, setCreatedProductId] = useState(null);
     const [createdProductData, setCreatedProductData] = useState(null);
 
-    const effectiveVendorId = vendorId || user?._id || user?.id;
+    const brand = user?.selectedBrands?.[0];
+    const effectiveVendorId = user?.role === 'brand' 
+        ? (brand?._id || (typeof brand === 'string' ? brand : undefined))
+        : vendorId;
 
     const handleCreateProduct = async (formData) => {
         try {
@@ -89,43 +92,62 @@ export default function AddProductPage() {
                 </div>
 
                 {/* Conditional wizard content */}
-                {user?.role === 'brand' && !isProfileComplete(user?.selectedBrands?.[0]) ? (
-                    <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm max-w-2xl mx-auto">
-                        <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-100">
-                            <Building2 className="w-10 h-10 text-amber-600" />
+                {(() => {
+                    if (user?.role !== 'brand') return null;
+                    const { complete, missingFields } = isProfileComplete(user?.selectedBrands?.[0]);
+                    if (complete) return null;
+
+                    return (
+                        <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm max-w-2xl mx-auto">
+                            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-100">
+                                <Building2 className="w-10 h-10 text-amber-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete Your Business Profile First</h2>
+                            <p className="text-gray-600 mb-4 leading-relaxed">
+                                You must complete your business profile before you can start creating products. 
+                                A complete profile helps build trust with architects and professionals.
+                            </p>
+                            <div className="bg-amber-50 rounded-xl p-4 mb-8 text-left border border-amber-100">
+                                <p className="text-amber-900 font-bold text-sm mb-1 uppercase tracking-wider">Missing Information:</p>
+                                <ul className="list-disc list-inside text-amber-800 text-sm space-y-1">
+                                    {missingFields.map(field => (
+                                        <li key={field}>{field}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <Link href="/profile">
+                                    <Button className="bg-[#e09a74] text-white hover:bg-white hover:text-[#e09a74] border-[#e09a74] border px-8 py-3 rounded-xl font-bold w-full sm:w-auto">
+                                        Update Profile
+                                    </Button>
+                                </Link>
+                                <Link href={`/dashboard/products-list/${effectiveVendorId}`}>
+                                    <Button variant="outline" className="px-8 py-3 rounded-xl font-bold w-full sm:w-auto">
+                                        Go Back
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Complete Your Business Profile First</h2>
-                        <p className="text-gray-600 mb-8 leading-relaxed">
-                            You must complete your business profile before you can start creating products. 
-                            A complete profile helps build trust with architects and professionals.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link href="/profile">
-                                <Button className="bg-[#e09a74] text-white hover:bg-white hover:text-[#e09a74] border-[#e09a74] border px-8 py-3 rounded-xl font-bold w-full sm:w-auto">
-                                    Update Profile
-                                </Button>
-                            </Link>
-                            <Link href={`/dashboard/products-list/${effectiveVendorId}`}>
-                                <Button variant="outline" className="px-8 py-3 rounded-xl font-bold w-full sm:w-auto">
-                                    Go Back
-                                </Button>
-                            </Link>
+                    );
+                })()}
+
+                {/* Conditional wizard content */}
+                {(user?.role !== 'brand' || isProfileComplete(user?.selectedBrands?.[0]).complete) && (
+                    !createdProductId ? (
+                        <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                            <ProductForm
+                                onSubmit={handleCreateProduct}
+                                isSubmitting={createProductMutation.isPending}
+                                vendorId={effectiveVendorId}
+                            />
                         </div>
-                    </div>
-                ) : !createdProductId ? (
-                    <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                        <ProductForm
-                            onSubmit={handleCreateProduct}
-                            isSubmitting={createProductMutation.isPending}
+                    ) : (
+                        <VariantForm
+                            productId={createdProductId}
                             vendorId={effectiveVendorId}
+                            onComplete={handleVariantComplete}
                         />
-                    </div>
-                ) : (
-                    <VariantForm
-                        productId={createdProductId}
-                        vendorId={effectiveVendorId}
-                        onComplete={handleVariantComplete}
-                    />
+                    )
                 )}
             </Container>
 
