@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDeleteMoodboard } from '@/hooks/useMoodboard';
-import { useGetProject, useCompleteProject } from '@/hooks/useProject';
+import { useGetProject, useCompleteProject, useMarkNotificationsRead } from '@/hooks/useProject';
 import { useAuth } from '@/hooks/useAuth';
 import MoodboardCard from '@/components/dashboard/projects/MoodboardCard';
 import CreateMoodboardModal from '@/components/dashboard/projects/CreateMoodboardModal';
@@ -42,9 +42,17 @@ export default function MoodboardsPage() {
     const { data: projectData, isLoading: projectLoading } = useGetProject(projectId, { includeSpaces: true });
     const deleteMutation = useDeleteMoodboard();
     const completeMutation = useCompleteProject();
+    const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
     const project = projectData?.data;
     const moodboards = project?.moodboards || [];
+
+    // Mark all project-level notifications as read when entering the project spaces page
+    useEffect(() => {
+        if (projectId && user) {
+            markNotificationsRead({ id: projectId });
+        }
+    }, [projectId, user, markNotificationsRead]);
 
     const handleDeleteClick = (id) => {
         setMoodboardToDelete(id);
