@@ -90,6 +90,12 @@
             "href": "/dashboard/retailer/sample-requests"
         },
         {
+            "id": "retailer-contacts",
+            "label": "Contact Requests",
+            "icon": "MessageSquare",
+            "href": "/dashboard/retailer/requests"
+        },
+        {
             "id": "retailer-ratings",
             "label": "Performance",
             "icon": "Star",

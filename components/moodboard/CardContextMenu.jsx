@@ -124,18 +124,18 @@ export default function CardContextMenu({
                             className="w-full text-left px-4 py-2 text-sm font-semibold text-[#d9a88a] flex items-center justify-between hover:bg-[#fef7f2] transition-colors"
                         >
                             <span>Replace Material</span>
-                            {pendingApprovals > 0 && (
-                                <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                                    {pendingApprovals}
-                                </span>
-                            )}
                         </button>
                     )}
                     <button
                         onClick={() => { onOpenHistory?.(); onClose(); }}
-                        className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-700 flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
-                        Material History
+                        <span>Material History</span>
+                        {pendingApprovals > 0 && (
+                            <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                                {pendingApprovals}
+                            </span>
+                        )}
                     </button>
                     {!isClient && (
                         <>

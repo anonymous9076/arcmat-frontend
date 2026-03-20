@@ -132,7 +132,6 @@ export default function RetailerDashboardPage() {
                     </Link>
                 ))}
             </div>
-            {/* 
             <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -144,7 +143,7 @@ export default function RetailerDashboardPage() {
                             <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mt-0.5">Manage your professional network</p>
                         </div>
                     </div>
-                    <Link href="/dashboard/notifications" className="text-sm font-bold text-[#e09a74] hover:underline uppercase tracking-widest">
+                    <Link href="/dashboard/retailer/requests" className="text-sm font-bold text-[#e09a74] hover:underline uppercase tracking-widest">
                         View All
                     </Link>
                 </div>
@@ -211,7 +210,6 @@ export default function RetailerDashboardPage() {
                     </div>
                 )}
             </div>
-            */}
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Recent Activity / Brands */}

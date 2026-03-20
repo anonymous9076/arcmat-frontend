@@ -285,7 +285,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
         setIsRequestingContact(true)
 
-        const projectId = selectedProject?._id;
+        const projectId = selectedProject?._id || null;
         const cityName = selectedProject?.location || "Gurgaon";
 
 
@@ -850,7 +850,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
                         isOpen={isSampleModalOpen}
                         onClose={() => setIsSampleModalOpen(false)}
                         product={product}
-                        projectId={selectedProject?._id}
+                        projectId={selectedProject?._id || null}
                         retailerId={currentRetailerId}
                     />
 

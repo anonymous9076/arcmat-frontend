@@ -148,9 +148,9 @@ export default function RetailerRequestsPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50/50 rounded-3xl p-6 border border-gray-50">
                                         <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 bg-white rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                                                <img 
-                                                    src={getProductThumbnail(request.materialId)} 
-                                                    alt="" 
+                                                <img
+                                                    src={getProductThumbnail(request.materialId)}
+                                                    alt=""
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -179,14 +179,14 @@ export default function RetailerRequestsPage() {
                                     </div>
 
                                     <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                                        <Button 
+                                        <Button
                                             onClick={() => handleCall(request.professionalId?.mobile)}
                                             className="flex-1 bg-[#2d3142] text-white hover:bg-black font-black rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
                                         >
                                             <Phone className="w-4 h-4" />
                                             Call Architect
                                         </Button>
-                                        <Button 
+                                        {/* <Button 
                                             onClick={() => handleOpenChat(request)}
                                             className="relative flex-1 border-2 border-gray-100 text-gray-500 hover:bg-gray-50 font-black rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
                                         >
@@ -197,9 +197,9 @@ export default function RetailerRequestsPage() {
                                                     {request.unreadMessages}
                                                 </span>
                                             )}
-                                        </Button>
+                                        </Button> */}
                                         <div className="hidden sm:block w-fit">
-                                            <Button 
+                                            <Button
                                                 onClick={() => {
                                                     const nextStatus = request.status === 'Pending' ? 'Processing' : 'Confirmed';
                                                     updateStatus({ requestId: request._id, status: nextStatus });
@@ -220,7 +220,7 @@ export default function RetailerRequestsPage() {
             )}
 
             {messagingRequest && (
-                <MessageModal 
+                <MessageModal
                     isOpen={!!messagingRequest}
                     onClose={() => setMessagingRequest(null)}
                     projectId={messagingRequest.projectId?._id || messagingRequest.projectId}
