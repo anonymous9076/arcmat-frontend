@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, Pagination, Thumbs, FreeMode } from 'swiper/modules'
+import dynamic from 'next/dynamic'
+const ProductImageCarousel = dynamic(() => import('./ProductImageCarousel'), { ssr: false })
+
 import Button from '@/components/ui/Button'
 import Accordion from '@/components/ui/Accordion'
 import RequestInfo from './RequestInfo'
@@ -11,16 +12,11 @@ import RequestSampleModal from './RequestSampleModal'
 import Link from 'next/link'
 import Modal from '@/components/ui/ProductDetailPageModal'
 import Container from '../ui/Container'
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
-import 'swiper/css/thumbs'
-import 'swiper/css/free-mode'
+
 import { useAuth } from '@/hooks/useAuth'
 import useProjectStore from '@/store/useProjectStore'
 import { useGetMoodboard } from '@/hooks/useMoodboard'
 import { useUpdateEstimatedCost } from '@/hooks/useEstimatedCost';
-import dynamic from 'next/dynamic'
 const AddToMoodboardModal = dynamic(() => import('@/components/dashboard/projects/AddToMoodboardModal'), { ssr: false })
 import { ShoppingCart, Check, Heart, User, Package, ExternalLink, MapPin, Send, Plus, X } from 'lucide-react'
 import { useCartStore } from '@/store/useCartStore'
@@ -292,7 +288,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
         const projectId = selectedProject?._id;
         const cityName = selectedProject?.location || "Gurgaon";
 
-        
+
 
         createRetailerRequest({
             projectId,
@@ -357,70 +353,11 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
                         {/* LEFT: Images */}
                         <div className="space-y-4">
-                            <div className="relative aspect-4/3 bg-white rounded-none overflow-hidden">
-                                {!mounted ? (
-                                    <div className="w-full h-full bg-gray-50 animate-pulse" />
-                                ) : images.length > 1 ? (
-                                    <Swiper
-                                        key={selectedVariant?._id || 'main'}
-                                        modules={[Navigation, Pagination, Thumbs]}
-                                        navigation
-                                        pagination={{ clickable: true }}
-                                        thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
-                                        className="h-full w-full product-detail-swiper"
-                                    >
-                                        {displayImages.map((img, idx) => (
-                                            <SwiperSlide key={idx}>
-                                                <div className="relative w-full h-full">
-                                                    <Image
-                                                        src={img || '/Icons/arcmatlogo.svg'}
-                                                        alt={`${name || 'Product'} - Image ${idx + 1}`}
-                                                        fill
-                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw"
-                                                        className="object-contain"
-                                                        priority={idx === 0}
-                                                    />
-                                                </div>
-                                            </SwiperSlide>
-                                        ))}
-                                    </Swiper>
-                                ) : (
-                                    <div className="relative w-full h-full">
-                                        <Image
-                                            src={displayImages[0] || '/Icons/arcmatlogo.svg'}
-                                            alt={name || "Product Image"}
-                                            fill
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw"
-                                            className="object-contain"
-                                            priority
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                            {mounted && images.length > 1 && (
-                                <Swiper
-                                    key={selectedVariant?._id || 'thumbs-main'}
-                                    onSwiper={setThumbsSwiper}
-                                    modules={[Thumbs, FreeMode]}
-                                    spaceBetween={8}
-                                    slidesPerView={5}
-                                    breakpoints={{
-                                        640: { slidesPerView: 6, spaceBetween: 10 },
-                                        768: { slidesPerView: 7, spaceBetween: 12 },
-                                    }}
-                                    freeMode={true}
-                                    watchSlidesProgress={true}
-                                    className="product-thumbs-swiper"
-                                >
-                                    {images.map((img, idx) => (
-                                        <SwiperSlide key={idx}>
-                                            <div className="relative aspect-square bg-white overflow-hidden cursor-pointer border border-gray-200 hover:border-gray-400 transition-all">
-                                                <Image src={img} alt={`Thumbnail ${idx + 1}`} fill className="object-contain p-1" />
-                                            </div>
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
-                            )}
+                            <ProductImageCarousel
+                                images={displayImages}
+                                name={name}
+                                selectedVariantId={selectedVariant?._id}
+                            />
                         </div>
 
                         {/* RIGHT: Product Info */}
@@ -481,7 +418,7 @@ const ProductDetailView = ({ product, initialVariantId, categories = [], childCa
 
                                                     return (
                                                         <button
-                                                            key={v._id || idx}
+                                                            key={`${v._id || 'v'}-${idx}`}
                                                             onClick={() => handleVariantSelect(v)}
                                                             className={`group relative w-16 h-16 rounded-xl border-2 transition-all p-1 bg-white ${isSelected
                                                                 ? 'border-[#e09a74] ring-2 ring-[#e09a74]/20 shadow-sm'

@@ -86,8 +86,8 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
 
     // Check if product is already in the active moodboard
     // Only fetch if isAlreadyAddedProp is not provided (for backward compatibility)
-    const { data: moodboardData } = useGetMoodboard(activeMoodboardId, { 
-        enabled: isAlreadyAddedProp === undefined && !!activeMoodboardId 
+    const { data: moodboardData } = useGetMoodboard(activeMoodboardId, {
+        enabled: isAlreadyAddedProp === undefined && !!activeMoodboardId
     });
 
     // Safety check: ensure productId is mapped properly
@@ -201,11 +201,11 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
         }
 
         const existingRetailerProductIds = currentMoodboard.estimatedCostId.productIds || [];
-        
+
         // We must filter out BOTH the root product ID and the RetailerProduct ID (override_id)
         // because the item might be stored as either depending on how it was added.
         const overrideId = product.override_id || product._id;
-        
+
         const updatedIds = existingRetailerProductIds.filter(p => {
             const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
             const addedIdStr = String(addedId);
@@ -394,7 +394,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
             <div className="flex flex-col flex-1 px-3">
                 <h4 className="text-[14px] font-bold text-gray-900 uppercase tracking-tight mb-0.5 group-hover:text-[#e09a74] transition-colors line-clamp-2">{name}</h4>
                 <h3 className="text-[11px] font-medium text-gray-400 leading-tight mb-1 ">
-                    {(typeof brand === 'object' ? brand.name : brand) || 'Generic'}
+                    {(typeof brand === 'object' && brand !== null ? brand.name : brand) || 'Generic'}
                 </h3>
 
                 {displayAttrs.length > 0 && (
