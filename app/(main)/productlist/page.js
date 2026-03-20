@@ -294,7 +294,7 @@ export default function ProductListPage() {
 
                                 return (
                                     <ProductCard 
-                                        key={product._id || product.id || i} 
+                                        key={`${product._id || product.id || 'p'}-${i}`} 
                                         product={product} 
                                         isAlreadyAdded={isAlreadyAdded}
                                         moodboard={moodboardData?.data}

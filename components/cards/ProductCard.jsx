@@ -326,11 +326,11 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                                 Trending
                             </div>
                         )}
-                        {isOutOfStock && (
+                        {/* {isOutOfStock && (
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-lg uppercase z-20 text-nowrap">
                                 Out of Stock
                             </div>
-                        )}
+                        )} */}
                     </div>
                 </Link>
 
@@ -442,7 +442,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                     onClick={isOutOfStock ? undefined : (isArchitect ? (isAlreadyAdded ? handleRemoveFromMoodboard : () => setIsAddModalOpen(true)) : handleCartToggle)}
                     disabled={isOutOfStock}
                     className={`flex-1 h-9 flex items-center justify-center gap-1.5 rounded-lg border text-[11px] font-medium transition-all duration-300 ${isOutOfStock
-                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                        ? (isArchitect ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'hidden')
                         : isArchitect
                             ? isAlreadyAdded
                                 ? 'bg-green-700 hover:border-red-600 text-white font-semibold hover:bg-white hover:text-red-600'
@@ -453,7 +453,7 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
                         }`}
                 >
                     {isOutOfStock ? (
-                        <span>Out of Stock</span>
+                        <span>{activeContextText}</span>
                     ) : isArchitect ? (
                         isAlreadyAdded ? (
                             <><X className="w-3.5 h-3.5" /><span>Remove from Space</span></>
