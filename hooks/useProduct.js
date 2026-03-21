@@ -128,3 +128,39 @@ export const useBulkImportProduct = () => {
         },
     });
 };
+
+// Hook to submit product lead
+export const useSubmitProductLead = () => {
+    return useMutation({
+        mutationFn: productService.submitProductLead,
+        onSuccess: () => {
+            toast.success('Your request has been sent successfully!', 'Success');
+        },
+        onError: (error) => {
+            toast.error(error?.response?.data?.message || 'Failed to send request', 'Error');
+        }
+    });
+};
+
+// Hook to get all product leads (Admin)
+export const useGetProductLeads = () => {
+    return useQuery({
+        queryKey: ['product-leads'],
+        queryFn: productService.getProductLeads,
+    });
+};
+
+// Hook to update lead status (Admin)
+export const useUpdateProductLeadStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status }) => productService.updateProductLeadStatus({ id, status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['product-leads'] });
+            toast.success('Lead status updated', 'Success');
+        },
+        onError: (error) => {
+            toast.error(error?.response?.data?.message || 'Failed to update status', 'Error');
+        }
+    });
+};

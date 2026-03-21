@@ -9,12 +9,14 @@ import { useAuth } from '@/hooks/useAuth';
 import Cookies from 'js-cookie';
 import { LogOut, User, ChevronDown, Heart, Folder, ShoppingCart, LayoutDashboard, Menu, Search, Camera, Loader2 } from 'lucide-react';
 import { useSidebarStore } from '@/store/useSidebarStore';
+import { motion, AnimatePresence } from 'framer-motion';
 import NotificationCenter from '../dashboard/NotificationCenter';
 import { useGetProducts, useGetRetailerProducts } from '@/hooks/useProduct';
 import { getProductThumbnail, resolvePricing, formatCurrency } from '@/lib/productUtils';
 import { useGetWishlist } from '@/hooks/useWishlist';
 import { useCartStore } from '@/store/useCartStore';
 import { useGetCartCount } from '@/hooks/useCart';
+const MotionFolder = motion(Folder);
 
 const Header = ({ variant = 'default' }) => {
 
@@ -28,7 +30,7 @@ const Header = ({ variant = 'default' }) => {
     const [projectsOpen, setProjectsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
-    const { toggleMobileSidebar } = useSidebarStore();
+    const { toggleMobileSidebar, isFolderAnimating } = useSidebarStore();
 
     useEffect(() => {
         setMounted(true);
@@ -243,9 +245,30 @@ const Header = ({ variant = 'default' }) => {
                                 <div ref={projectsRef} className="relative">
                                     <button
                                         onClick={() => setProjectsOpen(!projectsOpen)}
-                                        className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'
+                                        className='p-2 hover:bg-gray-50 rounded-full hidden sm:flex shrink-0'
                                     >
-                                        <Folder size={22} className={`${projectsOpen ? 'text-[#e09a74]' : 'text-gray-600'} transition-colors`} />
+                                        <MotionFolder
+                                            size={22}
+                                            initial={false}
+                                            animate={(isFolderAnimating || projectsOpen) ? "animating" : "default"}
+                                            variants={{
+                                                animating: {
+                                                    scale: [1, 1.1, 1],
+                                                    color: "#e09a74",
+                                                    rotate: 0
+                                                },
+                                                default: {
+                                                    scale: 1,
+                                                    color: "#4b5563",
+                                                    rotate: 0
+                                                }
+                                            }}
+                                            transition={{
+                                                duration: isFolderAnimating ? 0.8 : 0.3,
+                                                repeat: isFolderAnimating ? Infinity : 0,
+                                                ease: "easeInOut"
+                                            }}
+                                        />
                                     </button>
 
                                     {projectsOpen && (
@@ -281,10 +304,31 @@ const Header = ({ variant = 'default' }) => {
                             {mounted && user?.role === 'architect' && (
                                 <Link 
                                     href="/dashboard/projects"
-                                    className='p-2 hover:bg-gray-50 rounded-full transition-colors hidden sm:flex shrink-0'
+                                    className='p-2 hover:bg-gray-50 rounded-full hidden sm:flex shrink-0'
                                     title="All Projects"
                                 >
-                                    <Folder size={22} className="text-gray-600 hover:text-[#e09a74] transition-colors" />
+                                    <MotionFolder
+                                        size={22}
+                                        initial={false}
+                                        animate={isFolderAnimating ? "animating" : "default"}
+                                        variants={{
+                                            animating: {
+                                                scale: [1, 1.1, 1],
+                                                color: "#e09a74",
+                                                rotate: 0
+                                            },
+                                            default: {
+                                                scale: 1,
+                                                color: "#4b5563",
+                                                rotate: 0
+                                            }
+                                        }}
+                                        transition={{
+                                            duration: isFolderAnimating ? 0.8 : 0.3,
+                                            repeat: isFolderAnimating ? Infinity : 0,
+                                            ease: "easeInOut"
+                                        }}
+                                    />
                                 </Link>
                             )}
 
@@ -434,7 +478,27 @@ const Header = ({ variant = 'default' }) => {
                                                 onClick={() => setProfileOpen(false)}
                                                 className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-[#fcf6f3] hover:text-[#e09a74]"
                                             >
-                                                <Folder size={16} />
+                                                <MotionFolder
+                                                    size={16}
+                                                    initial={false}
+                                                    animate={isFolderAnimating ? "animating" : "default"}
+                                                    variants={{
+                                                        animating: {
+                                                            scale: [1, 1.3, 0.9, 1.1, 1],
+                                                            color: "#e09a74",
+                                                            rotate: [0, -10, 10, -5, 5, 0]
+                                                        },
+                                                        default: {
+                                                            scale: 1,
+                                                            color: "#4b5563",
+                                                            rotate: 0
+                                                        }
+                                                    }}
+                                                    transition={{
+                                                        duration: isFolderAnimating ? 0.6 : 0.3,
+                                                        ease: "easeInOut"
+                                                    }}
+                                                />
                                                 Projects
                                             </Link>
                                         )}

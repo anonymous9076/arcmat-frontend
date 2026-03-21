@@ -50,6 +50,12 @@
             "href": "/dashboard/users"
         },
         {
+            "id": "product-leads",
+            "label": "Product Leads",
+            "icon": "MessageSquare",
+            "href": "/dashboard/product-leads"
+        },
+        {
             "id": "help",
             "label": "Help",
             "icon": "HelpCircle",

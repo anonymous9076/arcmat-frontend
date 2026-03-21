@@ -14,6 +14,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import useProjectStore from '@/store/useProjectStore';
+import { useSidebarStore } from '@/store/useSidebarStore';
 import { resolvePricing } from '@/lib/productUtils';
 
 import { ArrowLeft, Loader2, Edit2, Check, X, ImagePlus } from 'lucide-react';
@@ -45,6 +46,7 @@ export default function TemplateSpaceDetailPage() {
     const products = estimation?.productIds || [];
 
     const { setActiveMoodboard, clearActiveProject } = useProjectStore();
+    const { triggerFolderAnimation } = useSidebarStore();
 
     useEffect(() => {
         if (moodboard) {
@@ -101,6 +103,7 @@ export default function TemplateSpaceDetailPage() {
             });
             return nextPhotos;
         });
+        triggerFolderAnimation();
         toast.success(`"${title}" added!`);
     }, [spaceId, updateMoodboardMutation]);
 

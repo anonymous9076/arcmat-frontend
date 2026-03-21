@@ -69,8 +69,8 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
     const toggleSelection = useSelectionStore((state) => state.toggleProduct);
     const isSelected = useSelectionStore((state) => {
         const getProductId = (p) => {
-            const baseProduct = p?.productId ? p.productId : p;
-            return String(baseProduct?._id || baseProduct?.id || p?._id || p?.id || p?.override_id);
+            const id = p?.override_id || p?._id || p?.id || (typeof p?.productId === 'string' ? p.productId : p?.productId?._id);
+            return String(id);
         };
         const currentId = getProductId(product);
         return state.selectedProducts.some(p => getProductId(p) === currentId);
@@ -98,9 +98,10 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
         const addedIds = moodboardData.data.estimatedCostId.productIds;
 
         // Handle case where productIds might be populated objects vs raw string IDs
+        const currentSpecificId = String(product.override_id || product._id || product.id);
         return addedIds.some(p => {
-            const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
-            return String(addedId) === String(rawId);
+            const addedId = typeof p === 'object' && p !== null ? p._id : p;
+            return String(addedId) === currentSpecificId;
         });
     }, [isAlreadyAddedProp, moodboardData, rawId]);
 
@@ -207,9 +208,9 @@ const ProductCard = ({ product, isAlreadyAdded: isAlreadyAddedProp, moodboard: m
         const overrideId = product.override_id || product._id;
 
         const updatedIds = existingRetailerProductIds.filter(p => {
-            const addedId = typeof p === 'object' && p !== null ? (p.productId?._id || p._id) : p;
+            const addedId = typeof p === 'object' && p !== null ? p._id : p;
             const addedIdStr = String(addedId);
-            return addedIdStr !== String(rawId) && addedIdStr !== String(overrideId);
+            return addedIdStr !== String(overrideId);
         }).map(p => typeof p === 'object' ? p._id : p); // Ensure we send back an array of IDs
 
         updateEstimateMutation({

@@ -180,7 +180,7 @@ const CompareModal = () => {
                                 {comparedProducts.map((product) => (
                                     <div key={product._id || product.id} className="p-4 px-6 border-l border-gray-100 flex items-center justify-center text-center">
                                         <span className="text-sm text-gray-700 font-mono uppercase tracking-tight">
-                                            {product.skucode || "-"}
+                                            {product.product_unique_id || "-"}
                                         </span>
                                     </div>
                                 ))}

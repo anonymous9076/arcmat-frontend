@@ -84,7 +84,7 @@ export default function VendorProductTable({ products = [] }) {
                 Product Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
-                SKU Code
+                Unique Code
               </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
                 Date Created
@@ -133,7 +133,7 @@ export default function VendorProductTable({ products = [] }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">
-                    {product.skucode || '-'}
+                    {product.product_unique_id || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {product.createdAt ? new Date(product.createdAt).toLocaleDateString('en-GB', {

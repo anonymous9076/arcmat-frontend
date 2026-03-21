@@ -3,11 +3,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Button from '../ui/Button'
 import { useAuth } from '@/hooks/useAuth'
+import { useSubmitProductLead } from '@/hooks/useProduct'
 import { toast } from '../ui/Toast'
 import { Send } from 'lucide-react'
 
 const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false }) => {
     const { user } = useAuth();
+    const { mutate: submitLead, isPending } = useSubmitProductLead();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -74,9 +76,15 @@ const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false })
             return;
         }
 
-        // Simulate API call
-        toast.success('Your request has been sent successfully!', 'Success');
-        if (onClose) onClose();
+        // Submit to backend
+        submitLead({
+            ...formData,
+            productId: product._id
+        }, {
+            onSuccess: () => {
+                if (onClose) onClose();
+            }
+        });
     };
 
     return (
@@ -299,9 +307,10 @@ const RequestInfo = ({ product, initialRequest = {}, onClose, isModal = false })
                         </div>
 
                         <Button
-                            text="SEND"
+                            text={isPending ? 'SENDING...' : 'SEND'}
                             onClick={handleSubmit}
-                            className="w-full md:w-auto bg-[#e09a74] hover:bg-white hover:text-[#e09a74] border-[#e09a74] border text-white font-semibold py-3 px-8 rounded-md transition-colors flex items-center justify-center gap-2"
+                            disabled={isPending}
+                            className="w-full md:w-auto bg-[#e09a74] hover:bg-white hover:text-[#e09a74] border-[#e09a74] border text-white font-semibold py-3 px-8 rounded-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                         </Button>
                     </div>

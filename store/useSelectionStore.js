@@ -6,8 +6,10 @@ export const useSelectionStore = create((set, get) => ({
     toggleProduct: (product) => set((state) => {
         // Handle RetailerProducts (nested productId) and generic Products
         const getProductId = (p) => {
-            const baseProduct = p.productId ? p.productId : p;
-            return String(baseProduct._id || baseProduct.id || p._id || p.id || p.override_id);
+            // Priority: Specific id (override_id or _id) which represents the RetailerProduct/Variant entry.
+            // We avoid p.productId as that is typically the root/parent product object.
+            const id = p.override_id || p._id || p.id || (typeof p.productId === 'string' ? p.productId : null);
+            return String(id || '');
         };
 
         const currentId = getProductId(product);

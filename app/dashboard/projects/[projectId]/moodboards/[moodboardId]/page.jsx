@@ -13,6 +13,7 @@ import { usePostComment } from '@/hooks/useDiscussion';
 import { useMarkNotificationsRead } from '@/hooks/useProject';
 import { useQueryClient } from '@tanstack/react-query';
 import useProjectStore from '@/store/useProjectStore';
+import { useSidebarStore } from '@/store/useSidebarStore';
 import { useAddToCart } from '@/hooks/useCart';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -140,6 +141,7 @@ export default function MoodboardDetailPage() {
     const siblingBoards = (moodboard?.siblings || []).filter(b => b._id !== moodboardId);
 
     const setActiveMoodboard = useProjectStore(state => state.setActiveMoodboard);
+    const { triggerFolderAnimation } = useSidebarStore();
 
     // Sync active moodboard context to store for other pages (like Product List)
     useEffect(() => {
@@ -474,6 +476,7 @@ export default function MoodboardDetailPage() {
             return nextPhotos;
         });
 
+        triggerFolderAnimation();
         toast.success(`"${title}" added to Overview and Canvas!`);
     }, [moodboardId, updateMoodboard]);
 
@@ -488,6 +491,7 @@ export default function MoodboardDetailPage() {
             tags: []
         };
         setCustomRows(prev => [...prev, newRow]);
+        triggerFolderAnimation();
         toast.success("Custom row added to Export!");
     }, []);
 
@@ -503,6 +507,10 @@ export default function MoodboardDetailPage() {
     /* ── Status Handlers ───────────────────────── */
     const handlePhotoStatusChange = useCallback((photoId, status) => {
         setCustomPhotos(prev => prev.map(p => p.id === photoId ? { ...p, status } : p));
+    }, []);
+
+    const handleToggleGalleryPermission = useCallback((photoId) => {
+        setCustomPhotos(prev => prev.map(p => p.id === photoId ? { ...p, allowInGallery: !p.allowInGallery } : p));
     }, []);
 
     const handleProductStatusChange = useCallback((productId, status) => {
@@ -973,6 +981,21 @@ export default function MoodboardDetailPage() {
                                         </div>
                                     )}
 
+                                    {/* Gallery Permission Badge */}
+                                    {isArchitect && (
+                                        <div 
+                                            onClick={(e) => { e.stopPropagation(); handleToggleGalleryPermission(photo.id); }}
+                                            className="absolute top-4 left-4 z-20 group/permission"
+                                        >
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border backdrop-blur-md transition-all ${photo.allowInGallery ? 'bg-green-500/90 border-green-400 text-white shadow-lg' : 'bg-white/90 border-gray-200 text-gray-500 hover:bg-[#fef7f2] hover:border-[#d9a88a]/30'}`}>
+                                                <div className={`w-2.5 h-2.5 rounded-full ${photo.allowInGallery ? 'bg-white' : 'bg-gray-300'}`} />
+                                                <span className="text-[10px] font-black uppercase tracking-wider">
+                                                    {photo.allowInGallery ? 'In Gallery' : 'Private'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Action Buttons */}
                                     <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                                         <button
@@ -1163,6 +1186,23 @@ export default function MoodboardDetailPage() {
                                 title="Delete Drawing/Render"
                             >
                                 <Trash2 className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                            </button>
+                        )}
+
+                        {/* Full Screen Gallery Toggle */}
+                        {isArchitect && (
+                            <button
+                                className={`absolute bottom-32 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl border backdrop-blur-md transition-all z-350 flex items-center gap-3 shadow-2xl ${selectedFullScreenImage.allowInGallery ? 'bg-green-500/90 border-green-400 text-white' : 'bg-white/90 border-gray-200 text-gray-900'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleGalleryPermission(selectedFullScreenImage.id);
+                                    setSelectedFullScreenImage(prev => ({ ...prev, allowInGallery: !prev.allowInGallery }));
+                                }}
+                            >
+                                <div className={`w-3 h-3 rounded-full ${selectedFullScreenImage.allowInGallery ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
+                                <span className="text-xs font-black uppercase tracking-widest">
+                                    {selectedFullScreenImage.allowInGallery ? 'Visible in Inspiration Gallery' : 'Hidden from Inspiration Gallery'}
+                                </span>
                             </button>
                         )}
 

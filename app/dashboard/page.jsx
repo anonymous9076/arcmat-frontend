@@ -237,13 +237,13 @@ export default function DashboardPage() {
 
     const allVariants = allProducts.reduce((acc, p) => {
         if (p.variants && Array.isArray(p.variants)) {
-            return [...acc, ...p.variants.map(v => ({ ...v, productName: p.product_name }))];
+            return [...acc, ...p.variants.map(v => ({ ...v, productName: p.product_name, productId: p._id }))];
         }
         return acc;
     }, []);
 
     const lowStockVariants = [...allVariants]
-        .sort((a, b) => (a.stock || 0) - (b.stock || 0))
+        .sort((a, b) => (a.stock ?? 1000000) - (b.stock ?? 1000000))
         .slice(0, 10);
 
     // PROJECTS & MOODBOARDS
@@ -492,19 +492,24 @@ export default function DashboardPage() {
                             ) : recentProducts.length > 0 ? (
                                 recentProducts.map((product) => (
                                     <div key={product._id} className="flex items-center gap-4 p-2 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-50 last:border-0 pb-3">
-                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                            {product.product_images?.[0] ? (
-                                                <Image src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])} alt={product.product_name} fill className="object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-medium text-gray-900 truncate">{product.product_name}</h4>
-                                            <p className="text-xs text-gray-500">ID: {product.skucode || product._id?.substring(0, 8)}</p>
-                                        </div>
+                                        <Link 
+                                            href={`/dashboard/products-list/${product.createdBy?._id || product.createdBy || user?._id}/edit/${product._id}`}
+                                            className="flex items-center gap-4 flex-1 min-w-0"
+                                        >
+                                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                                                {product.product_images?.[0] ? (
+                                                    <Image src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])} alt={product.product_name} fill className="object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0 text-left">
+                                                <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#d9a88a] transition-colors">{product.product_name}</h4>
+                                                <p className="text-xs text-gray-500">ID: {product.product_unique_id || product._id?.substring(0, 8)}</p>
+                                            </div>
+                                        </Link>
                                         <div className="text-right flex items-center gap-2">
                                             <span className={clsx(
                                                 "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
@@ -575,8 +580,12 @@ export default function DashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {allProducts.filter(p => p.status === 0 || p.status === '0').length > 0 ? (
                                 allProducts.filter(p => p.status === 0 || p.status === '0').slice(0, 6).map((product) => (
-                                    <div key={product._id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                                    <Link 
+                                        key={product._id} 
+                                        href={`/dashboard/products-list/${product.createdBy?._id || product.createdBy || ''}/edit/${product._id}`}
+                                        className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors group"
+                                    >
+                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                                             {product.product_images?.[0] ? (
                                                 <Image src={getProductImageUrl(product.product_images?.[0] || product.images?.[0])} alt={product.product_name} fill className="object-cover" />
                                             ) : (
@@ -586,13 +595,13 @@ export default function DashboardPage() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-medium text-gray-900 truncate">{product.product_name}</h4>
+                                            <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#d9a88a] transition-colors">{product.product_name}</h4>
                                             <p className="text-xs text-gray-500">Brand: {product.createdBy?.name || 'N/A'}</p>
                                         </div>
-                                        <Link href={`/dashboard/products-list/${product.createdBy?._id || ''}/edit/${product._id}`} className="text-xs text-[#d9a88a] font-semibold hover:underline">
+                                        <span className="text-xs text-[#d9a88a] font-semibold hover:underline">
                                             Edit
-                                        </Link>
-                                    </div>
+                                        </span>
+                                    </Link>
                                 ))
                             ) : (
                                 <p className="col-span-full text-center py-4 text-gray-500 text-sm">No inactive products found.</p>
@@ -626,18 +635,23 @@ export default function DashboardPage() {
                                     lowStockVariants.map((variant, idx) => (
                                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-3">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-medium text-gray-900">{variant.productName}</span>
+                                                <Link 
+                                                    href={`/dashboard/products-list/${user?._id}/edit/${variant?.productId}`}
+                                                    className="flex flex-col group"
+                                                >
+                                                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#d9a88a] transition-colors">{variant.productName}</span>
                                                     <span className="text-xs text-gray-500">{variant.color} / {variant.size} {variant.weight}{variant.weight_type}</span>
-                                                </div>
+                                                </Link>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600">{variant.skucode || 'N/A'}</td>
                                             <td className="px-4 py-3">
                                                 <span className={clsx(
                                                     "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                                    (variant.stock || 0) <= 5 ? "bg-red-100 text-red-800" : (variant.stock || 0) <= 20 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
+                                                    (variant.stock === undefined || variant.stock === null || variant.stock === '') 
+                                                        ? "bg-blue-50 text-blue-700 border border-blue-100" 
+                                                        : (variant.stock <= 5 ? "bg-red-100 text-red-800" : (variant.stock <= 20 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"))
                                                 )}>
-                                                    {variant.stock || 0} in stock
+                                                    {(variant.stock === undefined || variant.stock === null || variant.stock === '') ? 'Available' : `${variant.stock} in stock`}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-right">

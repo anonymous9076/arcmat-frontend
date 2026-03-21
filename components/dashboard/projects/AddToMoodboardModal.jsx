@@ -15,10 +15,12 @@ import {
 import { useAddMaterialVersion } from '@/hooks/useMaterialHistory';
 import useProjectStore from '@/store/useProjectStore';
 import { useSelectionStore } from '@/store/useSelectionStore';
+import { useSidebarStore } from '@/store/useSidebarStore';
 import { toast } from 'sonner';
 
 export default function AddToMoodboardModal({ isOpen, onClose, product, products }) {
     const { activeProjectId, activeProjectName, activeMoodboardId, activeMoodboardName } = useProjectStore();
+    const { triggerFolderAnimation } = useSidebarStore();
     const { clearSelection, toggleProduct } = useSelectionStore();
     const [targetType, setTargetType] = useState('project');
     const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId || '');
@@ -96,6 +98,7 @@ export default function AddToMoodboardModal({ isOpen, onClose, product, products
                 const isSelected = useSelectionStore.getState().selectedProducts.some(p => (p.override_id || p._id || p.id) === (product.override_id || product._id || product.id));
                 if (isSelected) toggleProduct(product);
             }
+            triggerFolderAnimation();
             onClose();
         };
 

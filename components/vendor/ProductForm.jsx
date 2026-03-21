@@ -10,7 +10,7 @@ import clsx from 'clsx';
 import VariantForm from './VariantForm';
 import { useGetVariants, useDeleteVariant } from '@/hooks/useVariant';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
-import { generateSlug, getProductImageUrl, getVariantImageUrl, parseAttributes, formatCurrency, formatSKU } from '@/lib/productUtils';
+import { generateSlug, getProductImageUrl, getVariantImageUrl, parseAttributes, formatCurrency, formatSKU, generateProductUniqueID } from '@/lib/productUtils';
 import useAuthStore from '@/store/useAuthStore';
 import { useGetBrands } from '@/hooks/useBrand';
 
@@ -51,7 +51,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
     product_name: '',
     product_url: '',
     description: '',
-    skucode: '',
+    product_unique_id: '',
     meta_title: '',
     meta_keywords: '',
     meta_description: '',
@@ -74,7 +74,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
         product_url: initialData.product_url || initialData.url || '',
         description: initialData.description || '',
         status: initialData.status || (initialData.isActive ? 'Active' : 'Inactive'),
-        skucode: initialData.skucode || '',
+        product_unique_id: initialData.product_unique_id || '',
         meta_title: initialData.meta_title || '',
         meta_keywords: initialData.meta_keywords || '',
         meta_description: initialData.meta_description || '',
@@ -105,6 +105,12 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
           setFormData(prev => ({ ...prev, brand: activeBrand?._id || activeBrand }));
         }
       }
+    } else {
+      // For new products, auto-generate a unique ID
+      setFormData(prev => ({
+        ...prev,
+        product_unique_id: generateProductUniqueID()
+      }));
     }
   }, [initialData, activeBrand]);
 
@@ -123,7 +129,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'skucode' ? formatSKU(value) : value
+      [name]: name === 'product_unique_id' ? formatSKU(value) : value
     }));
 
     if (name === "product_name" && !initialData) {
@@ -153,29 +159,25 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const file = files[0];
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const validFiles = [];
-    const invalidFiles = [];
 
-    files.forEach(file => {
-      if (file.size > MAX_SIZE) {
-        invalidFiles.push(`${file.name} (Too large, max 5MB)`);
-      } else if (!file.type.startsWith('image/')) {
-        invalidFiles.push(`${file.name} (Not an image)`);
-      } else {
-        validFiles.push(file);
-      }
-    });
-
-    if (invalidFiles.length > 0) {
-      toast.error(`Some files were skipped: ${invalidFiles.join(', ')}`);
+    if (file.size > MAX_SIZE) {
+      toast.error(`${file.name} is too large (max 5MB)`);
+      return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error(`${file.name} is not an image`);
+      return;
     }
 
-    if (validFiles.length > 0) {
-      setNewImages(prev => [...prev, ...validFiles]);
-      const newPreviews = validFiles.map(file => URL.createObjectURL(file));
-      setPreviewImages(prev => [...prev, ...newPreviews]);
-    }
+    // Only allow single image: replace current ones
+    setNewImages([file]);
+    setExistingImages([]);
+    setPreviewImages([URL.createObjectURL(file)]);
   };
 
   const removeImage = (index) => {
@@ -222,7 +224,7 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
     const newErrors = {};
     if (!formData.product_name) newErrors.product_name = "Product name is required";
     if (!formData.product_url) newErrors.product_url = "Product URL is required";
-    if (!formData.skucode) newErrors.skucode = "SKU Code is required";
+    // if (!formData.product_unique_id) newErrors.product_unique_id = "Product Unique ID is required";
     if (!formData.description) newErrors.description = "Description is required";
 
     if (!formData.subsubcategoryId && !initialData) newErrors.category = "Category selection is required";
@@ -291,9 +293,19 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Product URL *</label>
                 <input name="product_url" value={formData.product_url} onChange={handleChange} className="w-full px-4 py-2 border border-gray-200 rounded-lg outline-none bg-gray-50" />
               </div>
-              <div className="col-span-1">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">SKU Code *</label>
-                <input name="skucode" value={formData.skucode} onChange={handleChange} className={clsx("w-full px-4 py-2 border rounded-lg outline-none", errors.skucode ? "border-red-500" : "border-gray-200")} />
+              <div className="col-span-1 border-2 border-orange-50 bg-orange-50/20  rounded-xl">
+                <label className="block text-sm font-bold text-gray-700 mb-1">Product Unique ID</label>
+                <p className="text-[10px] text-gray-400 mb-2 font-medium italic">Auto-generated to connect variants. Non-editable.</p>
+                <input 
+                  name="product_unique_id" 
+                  value={formData.product_unique_id} 
+                  onChange={handleChange} 
+                  readOnly 
+                  className={clsx(
+                    "w-full px-4 py-2 border rounded-lg outline-none bg-white/50 cursor-not-allowed font-mono text-xs font-bold text-[#e09a74]", 
+                    errors.product_unique_id ? "border-red-500" : "border-gray-200"
+                  )} 
+                />
               </div>
               <div className="col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
@@ -337,12 +349,13 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 border-b pb-2">Images</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 border-b pb-2">Product Image (Identification Only)</h3>
+            <p className="text-xs text-gray-500 mb-6 italic">This is the main image to identify the product. Specific images for individual colors or variants are added in the next step.</p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               <label className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
                 <Upload className="w-6 h-6 text-gray-400 mb-2" />
                 <span className="text-xs text-gray-500">Add Images</span>
-                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
               </label>
               {previewImages.map((src, idx) => (
                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 group">

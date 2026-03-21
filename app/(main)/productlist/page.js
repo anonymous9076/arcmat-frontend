@@ -82,12 +82,10 @@ export default function ProductListPage() {
         const idSet = new Set();
         prodIds.forEach(p => {
             if (p) {
-                // Store root product ID
-                const rootId = (typeof p.productId === 'object' && p.productId) ? p.productId._id : p.productId;
-                if (rootId) idSet.add(String(rootId));
-                
-                // Store RetailerProduct ID
-                if (p._id) idSet.add(String(p._id));
+                // Only store specific variant ID (RetailerProduct _id)
+                // Avoid using root product ID (p.productId) for the map to prevent spreading
+                const specificId = typeof p === 'object' ? p._id : p;
+                if (specificId) idSet.add(String(specificId));
             }
         });
         return idSet;
@@ -290,7 +288,7 @@ export default function ProductListPage() {
                                 const rootId = String(rootProduct?._id || rootProduct?.id);
                                 const overrideId = String(product?.override_id || product?._id);
 
-                                const isAlreadyAdded = addedProductIdsMap.has(rootId) || addedProductIdsMap.has(overrideId);
+                                const isAlreadyAdded = addedProductIdsMap.has(overrideId);
 
                                 return (
                                     <ProductCard 

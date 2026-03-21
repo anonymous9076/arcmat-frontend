@@ -78,7 +78,7 @@ export default function BrandProductAnalytics() {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-black text-gray-900">{product.product_name}</h4>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">SKU: {product.skucode}</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">ID: {product.product_unique_id}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">

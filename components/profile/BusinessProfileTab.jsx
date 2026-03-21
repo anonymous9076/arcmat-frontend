@@ -75,12 +75,20 @@ const BusinessProfileTab = () => {
 
             if (currentBrand) {
                 updateVendor({ id: currentBrand._id || currentBrand.id, data: payload }, {
-                    onSuccess: async () => {
+                    onSuccess: async (response) => {
                         toast.success('Profile updated successfully', 'Success');
                         setIsEditing(false);
                         // Refresh user data to update selectedBrands in store
                         await fetchUser();
-                        router.push(`/dashboard`);
+                        
+                        // Redirect to create product page with a reload to ensure all data is fresh
+                        const brand = response?.data || response;
+                        const brandId = brand?._id || brand?.id || currentBrand?._id || currentBrand?.id;
+                        if (brandId) {
+                            window.location.href = `/dashboard/products-list/${brandId}/add`;
+                        } else {
+                            router.push(`/dashboard`);
+                        }
                     },
                     onError: (error) => {
                         toast.error(error.message || 'Failed to update profile', 'Error');
@@ -88,13 +96,20 @@ const BusinessProfileTab = () => {
                 });
             } else {
                 createVendor(payload, {
-                    onSuccess: async () => {
+                    onSuccess: async (response) => {
                         toast.success('Brand profile created successfully', 'Success');
                         setIsEditing(false);
                         // Re-fetch auth session so selectedBrands/activeBrand updates immediately
                         await fetchUser();
-                        // Redirect to create product page
-                        router.push(`/dashboard`);
+                        
+                        // Redirect to create product page with a reload to ensure all data is fresh
+                        const brand = response?.data || response;
+                        const brandId = brand?._id || brand?.id;
+                        if (brandId) {
+                            window.location.href = `/dashboard/products-list/${brandId}/add`;
+                        } else {
+                            router.push(`/dashboard`);
+                        }
                     },
                     onError: (error) => {
                         toast.error(error.message || 'Failed to create profile', 'Error');

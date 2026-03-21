@@ -98,7 +98,7 @@ export default function ProductsListPage() {
 
                 return {
                     'Product Name': p.product_name,
-                    'SKU Code': p.skucode || '',
+                    'Unique Code': p.product_unique_id || '',
                     'Brand': p.userid?.name || 'N/A',
                     'Price Range': minPrice === maxPrice ? minPrice : `${minPrice} - ${maxPrice}`,
                     'Total Stock': totalStock,
@@ -382,7 +382,7 @@ export default function ProductsListPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
-                                    placeholder="Search by name or SKU..."
+                                    placeholder="Search by name or CODE..."
                                     value={searchTerm}
                                     onChange={handleSearchChange}
                                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#e09a74] transition-colors"

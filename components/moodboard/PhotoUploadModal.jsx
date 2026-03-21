@@ -9,6 +9,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [dragging, setDragging] = useState(false);
+    const [allowInGallery, setAllowInGallery] = useState(true);
     const inputRef = useRef(null);
 
     const reset = () => {
@@ -16,6 +17,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
         setPreviewUrl(null);
         setTitle('');
         setDescription('');
+        setAllowInGallery(true);
     };
 
     const handleClose = () => { reset(); onClose(); };
@@ -83,7 +85,8 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
                 description: description.trim(),
                 price: 0,
                 quantity: 1,
-                tags: tags
+                tags: tags,
+                allowInGallery: tags.includes('Render') ? allowInGallery : false
             });
             reset();
             onClose();
@@ -93,9 +96,8 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
     };
 
     if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -113,7 +115,7 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
                         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                         onDragLeave={() => setDragging(false)}
                         onDrop={handleDrop}
-                        className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-dashed transition-all cursor-pointer ${dragging ? 'border-[#d9a88a] bg-[#fef7f2]' : previewUrl ? 'border-transparent' : 'border-gray-200 hover:border-[#d9a88a] hover:bg-[#fef7f2]/50'}`}
+                        className={`relative w-full aspect-video rounded-2xl overflow-hidden border-2 border-dashed transition-all cursor-pointer ${dragging ? 'border-[#d9a88a] bg-[#fef7f2]' : previewUrl ? 'border-transparent' : 'border-gray-200 hover:border-[#d9a88a] hover:bg-[#fef7f2]/50'}`}
                     >
                         {(typeof previewUrl === 'string' && previewUrl.trim()) ? (
                             <>
@@ -164,6 +166,20 @@ export default function PhotoUploadModal({ isOpen, onClose, onAdd, tags = [] }) 
                             className="w-full text-sm text-gray-600 bg-transparent focus:outline-none placeholder:text-gray-300"
                         />
                     </div>
+
+                    {/* Gallery Permission */}
+                    {tags.includes('Render') && (
+                        <div className="flex items-center gap-3 p-3 bg-[#fef7f2] rounded-2xl border border-[#fef7f2] hover:border-[#d9a88a]/30 transition-all cursor-pointer select-none"
+                             onClick={() => setAllowInGallery(!allowInGallery)}>
+                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${allowInGallery ? 'bg-[#d9a88a] border-[#d9a88a]' : 'bg-white border-gray-300'}`}>
+                                {allowInGallery && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-900">Allow visibility in Inspiration Gallery</p>
+                                <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">If checked, this render can be featured by admins.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}

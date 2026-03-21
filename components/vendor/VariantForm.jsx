@@ -211,7 +211,7 @@ export default function VariantForm({ productId, vendorId, onComplete, editingVa
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Stock *</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Stock (optional)</label>
                         <input
                             name="stock"
                             type="number"

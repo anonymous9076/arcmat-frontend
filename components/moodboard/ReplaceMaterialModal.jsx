@@ -37,7 +37,7 @@ export default function ReplaceMaterialModal({
             if (p._id === oldMaterialId) return false; // Exclude current material
             return getProductName(p).toLowerCase().includes(term) ||
                 getProductBrand(p).toLowerCase().includes(term) ||
-                (p.skucode || '').toLowerCase().includes(term);
+                (p.product_unique_id || '').toLowerCase().includes(term);
         }).slice(0, 5); // Limit to top 5 results
     }, [searchTerm, allProducts, oldMaterialId]);
 

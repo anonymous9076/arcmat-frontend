@@ -173,7 +173,7 @@ export default function RetailerProductsPage() {
                                                 {(item.stock !== undefined && item.stock !== null && item.stock !== '') ? (
                                                     <>{item.stock} <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">in stock</span></>
                                                 ) : (
-                                                    <span className="text-green-600">Unlimited</span>
+                                                    <span className="text-blue-600 font-bold">Available</span>
                                                 )}
                                             </span>
                                         </td>

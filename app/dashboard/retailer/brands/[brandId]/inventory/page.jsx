@@ -313,7 +313,7 @@ export default function BrandInventoryPage() {
                                     <input
                                         type="number"
                                         required
-                                        max={selectedItem?.variant?.stock || 0}
+                                        // max={selectedItem?.variant?.stock || 0}
                                         value={formData.stock}
                                         onChange={e => setFormData({ ...formData, stock: e.target.value })}
                                         placeholder="Enter Stock"

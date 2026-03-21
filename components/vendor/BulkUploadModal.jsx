@@ -301,7 +301,7 @@ export default function BulkUploadModal() {
                         <ul className="space-y-1 text-orange-800/80 text-[13px] font-medium">
                           <li>• All three category levels (L1, L2, L3) are required</li>
                           <li>• Brand ID or Brand Name is required</li>
-                          <li>• Base SKU Code and Product URL are mandatory (and must be unique)</li>
+                          <li>• Unique Code and Product URL are mandatory (and must be unique)</li>
                           <li>• Image names in CSV should match uploaded ZIP files from Step 1</li>
                         </ul>
                       </div>
@@ -363,10 +363,10 @@ export default function BulkUploadModal() {
                       <div className="text-sm">
                         <p className="font-bold text-orange-900 mb-1">Variant Import Guidelines</p>
                         <ul className="space-y-1 text-orange-800/80 text-[13px] font-medium">
-                          <li>• Product Base SKU Code is required to map variants</li>
+                          <li>• Unique Code is required to map variants</li>
                           <li>• Variant SKU Code must be unique</li>
                           <li>• Attributes format: "Size: XL | Color: Red"</li>
-                          <li>• Variants will be linked automatically via Base SKU</li>
+                          <li>• Variants will be linked automatically via Unique Code</li>
                         </ul>
                       </div>
                     </div>

@@ -349,7 +349,7 @@ export default function ExportTab({
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest min-w-[140px]">Spec Status</th>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Tags</th>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Brand</th>
-                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">SKU</th>
+                            <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Unique Code</th>
                             <th className="text-left px-3 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">Quantity</th>
                             {showPrice && (
                                 <>
@@ -378,7 +378,7 @@ export default function ExportTab({
                                 const thumb = isProduct ? getProductThumbnail(data) : (isPhoto ? data.previewUrl : null);
                                 const name = isProduct ? getProductName(data) : data.title;
                                 const brand = isProduct ? getProductBrand(data) : (isPhoto ? 'Custom Upload' : 'Custom Row');
-                                const sku = isProduct ? (data?.skucode || (typeof data?.productId === 'object' ? data?.productId?.skucode : '') || '—') : '—';
+                                const sku = isProduct ? (data?.product_unique_id || (typeof data?.productId === 'object' ? data?.productId?.product_unique_id : '') || '—') : '—';
 
                                 const statusData = isProduct ? productStatuses[id] : data.status;
                                 const st = (typeof statusData === 'object' ? statusData.status : statusData) || 'Considering';

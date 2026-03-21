@@ -57,7 +57,7 @@ export const useUpsertProductOverride = () => {
             return retailerService.upsertProductOverride(data);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.products() });
+            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.all });
         },
     });
 };
@@ -67,7 +67,7 @@ export const useDeleteProductOverride = () => {
     return useMutation({
         mutationFn: retailerService.deleteProductOverride,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.products() });
+            queryClient.invalidateQueries({ queryKey: RETAILER_KEYS.all });
         },
     });
 };

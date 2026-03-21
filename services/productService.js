@@ -157,5 +157,23 @@ export const productService = {
             responseType: 'blob' // Important for binary download
         });
         return response.data;
+    },
+
+    // Submit Product Lead
+    submitProductLead: async (leadData) => {
+        const response = await api.post('/product/submit-lead', leadData);
+        return response.data;
+    },
+
+    // Get Product Leads (Admin)
+    getProductLeads: async () => {
+        const response = await api.get('/product/leads/all');
+        return response.data;
+    },
+
+    // Update Product Lead Status (Admin)
+    updateProductLeadStatus: async ({ id, status }) => {
+        const response = await api.patch(`/product/leads/${id}/status`, { status });
+        return response.data;
     }
 };

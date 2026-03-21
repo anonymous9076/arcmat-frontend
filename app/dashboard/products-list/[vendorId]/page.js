@@ -143,7 +143,7 @@ export default function ProductsListPage() {
       productsToExport.forEach(p => {
         const baseProductInfo = {
           'Product Name': p.product_name || '',
-          'Base SKU Code': p.skucode || '',
+          'Unique Code': p.product_unique_id || '',
           'Product URL': p.product_url || '',
           'Category (L1)': p.categoryId?.name || '',
           'Sub Category (L2)': p.subcategoryId?.name || '',
@@ -328,7 +328,7 @@ export default function ProductsListPage() {
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e09a74] w-5 h-5 transition-colors" />
                   <input
                     type="text"
-                    placeholder="Search by name, SKU or description..."
+                    placeholder="Search by name, Unique Code or description..."
                     value={searchTerm}
                     onChange={handleSearchChange}
                     className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-[#e09a74] focus:ring-4 focus:ring-orange-50 transition-all text-sm"
@@ -359,7 +359,7 @@ export default function ProductsListPage() {
                       >
                         <option value="createdAt">Date</option>
                         <option value="product_name">Name</option>
-                        <option value="skucode">SKU</option>
+                        <option value="product_unique_id">Unique Code</option>
                       </select>
                       <div className="w-px h-6 bg-gray-200"></div>
                       <select
