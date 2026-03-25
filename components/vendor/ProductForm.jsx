@@ -243,7 +243,10 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
 
     const submissionData = new FormData();
     Object.keys(formData).forEach(key => {
-      submissionData.append(key, formData[key]);
+      // Skip brand here, we handle it with fallback logic below
+      if (key !== 'brand') {
+        submissionData.append(key, formData[key]);
+      }
     });
 
     if (productAttributes.length > 0) {
@@ -253,10 +256,10 @@ const ProductForm = ({ initialData = null, onSubmit, onCancel, isSubmitting, ven
     if (user?._id) submissionData.append('user_id', user._id);
 
     // Use 'brand' instead of 'brandId' to match refactored backend
-    if (formData.brand) {
-      submissionData.append('brand', formData.brand);
-    } else if (activeBrand) {
-      submissionData.append('brand', activeBrand?._id || activeBrand);
+    // Only append once with fallback
+    const finalBrand = formData.brand || activeBrand?._id || activeBrand;
+    if (finalBrand) {
+      submissionData.append('brand', finalBrand);
     }
 
     if (initialData) {
