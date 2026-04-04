@@ -54,22 +54,22 @@ export default function BrandInventoryPage() {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.mrp_price || !formData.selling_price || !formData.stock) {
-            toast.error('All fields are mandatory');
+        if (!formData.mrp_price || !formData.selling_price) {
+            toast.error('Price fields are mandatory');
             return;
         }
 
         try {
-            await upsertOverride.mutateAsync({
+            const result = await upsertOverride.mutateAsync({
                 productId: selectedItem.product._id,
                 variantId: selectedItem.variant._id,
                 mrp_price: Number(formData.mrp_price),
                 selling_price: Number(formData.selling_price),
-                stock: Number(formData.stock),
+                stock: formData.stock !== '' ? Number(formData.stock) : null,
                 isActive: true,
                 retailerId: retailerIdFromParams
             });
-            toast.success(`${selectedItem.product.product_name} added to inventory`);
+            toast.success(result?.message || `${selectedItem.product.product_name} updated in inventory`);
             setIsModalOpen(false);
         } catch (error) {
             toast.error(error.message || 'Failed to add product');
@@ -333,7 +333,7 @@ export default function BrandInventoryPage() {
                                     <Button
                                         type="submit"
                                         isLoading={upsertOverride.isPending}
-                                        className="flex-1 rounded-xl h-12 bg-[#e09a74] hover:bg-[#d08963]"
+                                        className="flex-1 text-white rounded-xl h-12 bg-[#e09a74] hover:bg-[#d08963]"
                                     >
                                         Confirm & Add
                                     </Button>
