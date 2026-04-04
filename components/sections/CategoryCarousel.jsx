@@ -1,12 +1,14 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import Image from 'next/image';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import Container from '../ui/Container';
-import { toast } from '../ui/Toast';
+import { useGetCategories } from '@/hooks/useCategory';
+import Link from 'next/link';
+import { useMemo } from 'react';
 
 const categories = [
     { name: 'NEW', image: '/Category/new.jpg' },
@@ -22,15 +24,41 @@ const categories = [
 
 
 const CategoryCarousel = () => {
+    const { data: categoriesData, isLoading } = useGetCategories({ level: 1 });
+
+    const categoriesWithLinks = useMemo(() => {
+        if (!categoriesData) return categories;
+        return categories.map(cat => {
+            if (cat.name.toUpperCase() === 'NEW') {
+                return { ...cat, href: '/productlist' };
+            }
+
+            const backendCat = categoriesData.find(
+                bc => bc.name?.toLowerCase() === cat.name.toLowerCase()
+            );
+            return {
+                ...cat,
+                href: backendCat ? `/productlist?category=${backendCat._id || backendCat.id}` : '/productlist'
+            };
+        });
+    }, [categoriesData]);
+
     return (
         <Container>
             <section className="w-full py-10 relative lg:px-10">
-                <div className="custom-prev absolute left-0 z-10 cursor-pointer transition-transform hidden lg:block">
-                    <Image src="/Icons/Back.svg" alt="Previous" width={40} height={40} />
-                </div>
-                <div className="custom-next absolute right-0 z-10 cursor-pointer transition-transform hidden lg:block">
-                    <Image src="/Icons/Forward.svg" alt="Next" width={40} height={40} />
-                </div>
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-10">
+                        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#e09a74] rounded-full animate-spin"></div>
+                        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mt-4">Loading Categories...</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="custom-prev absolute left-0 z-10 cursor-pointer transition-transform hidden lg:block hover:scale-110 active:scale-95">
+                            <Image src="/Icons/Back.svg" alt="Previous" width={40} height={40} />
+                        </div>
+                        <div className="custom-next absolute right-0 z-10 cursor-pointer transition-transform hidden lg:block hover:scale-110 active:scale-95">
+                            <Image src="/Icons/Forward.svg" alt="Next" width={40} height={40} />
+                        </div>
 
                 <Swiper
                     modules={[Navigation]}
@@ -54,31 +82,36 @@ const CategoryCarousel = () => {
                             slidesPerView: 8,
                         },
                     }}
-                    className="flex items-center justify-center"
 
                 >
-                    {categories.map((cat, index) => (
+                    {categoriesWithLinks.map((cat, index) => (
                         <SwiperSlide
                             key={index}
-                            onClick={() => toast.info(`Coming Soon: ${cat.name}`)}
-                            className="!flex flex-col items-center justify-center group cursor-pointer pt-2"
+                            className="!flex flex-col items-center justify-center pt-2"
                         >
-                            <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-4xl overflow-hidden bg-linear-to-br from-white/90 to-[#F5F5F0]/60 backdrop-blur-[2px] border-2 border-gray-50  shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex items-center justify-center mb-4 transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] group-hover:border-gray-50">
-                                <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-10" />
-                                <Image
-                                    src={cat.image}
-                                    alt={cat.name}
-                                    width={128}
-                                    height={128}
-                                    className="w-full h-full object-cover grayscale-20 group-hover:grayscale-0 transition-all duration-500"
-                                />
-                            </div>
-                            <h3 className="w-full text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-widest text-center mt-2 group-hover:text-black transition-colors">
-                                {cat.name}
-                            </h3>
+                            <Link
+                                href={cat.href}
+                                className="flex flex-col items-center justify-center group cursor-pointer"
+                            >
+                                <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-4xl overflow-hidden bg-linear-to-br from-white/90 to-[#F5F5F0]/60 backdrop-blur-[2px] border-2 border-gray-50  shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex items-center justify-center mb-4 transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] group-hover:border-gray-50">
+                                    <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-10" />
+                                    <Image
+                                        src={cat.image}
+                                        alt={cat.name}
+                                        width={128}
+                                        height={128}
+                                        className="w-full h-full object-cover grayscale-20 group-hover:grayscale-0 transition-all duration-500"
+                                    />
+                                </div>
+                                <h3 className="w-full text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-widest text-center mt-2 group-hover:text-black transition-colors">
+                                    {cat.name}
+                                </h3>
+                            </Link>
                         </SwiperSlide>
                     ))}
                 </Swiper>
+                    </>
+                )}
 
                 <style jsx>{`
                 .custom-prev,
